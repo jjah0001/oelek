@@ -106,6 +106,7 @@ section{padding-block:64px}
 .fam-body{display:grid;gap:18px;min-width:0}
 .fam-body h3{font-size:1.8rem}
 .fam-body .try{display:flex;flex-wrap:wrap;gap:8px}
+.fam-body .btn{justify-self:start}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:.85rem;cursor:pointer}
 .pill:hover{border-color:var(--chili)}
 .pill i{width:8px;height:8px;border-radius:50%;display:inline-block}

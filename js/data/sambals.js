@@ -142,10 +142,10 @@ const S = [
   src:["P","W"],persona:["The Islander","Relaxed and open, you bring the sea breeze with you."]}
 ];
 const STYLE = {
- raw:{label:"Raw · mentah",en:"Raw",color:"var(--raw)",sum:"Pounded or sliced fresh, eaten the same day.",
+ raw:{examples:["matah","dabu","terasi"],label:"Raw · mentah",en:"Raw",color:"var(--raw)",sum:"Pounded or sliced fresh, eaten the same day.",
   body:"Raw sambals are sharp, bright and aromatic. The chilli is never cooked, so its fruitiness and full heat come through. Some are pounded to a coarse paste; others, like matah and dabu-dabu, are sliced and dressed so they eat like a salsa. Make them close to mealtime: they lose their snap within a day."},
- cooked:{label:"Cooked · masak",en:"Cooked",color:"var(--cooked)",sum:"Fried after pounding; deeper, keeps for days.",
+ cooked:{examples:["balado","roa","pecel"],label:"Cooked · masak",en:"Cooked",color:"var(--cooked)",sum:"Fried after pounding; deeper, keeps for days.",
   body:"Cooked sambals are pounded first and then fried in oil, sometimes for a long time. The heat rounds off, sugars caramelise and candlenut, peanuts or smoked fish add body. These are the sambals that live in a jar by the stove."},
- fermented:{label:"Fermented · fermentasi",en:"Fermented",color:"var(--fermented)",sum:"Built on a fermented base for sourness and funk.",
+ fermented:{examples:["tempoyak","tauco","rusip"],label:"Fermented · fermentasi",en:"Fermented",color:"var(--fermented)",sum:"Built on a fermented base for sourness and funk.",
   body:"Fermented sambals start from something left to sour: durian in tempoyak, anchovies in rusip, tiny shrimp in cencalok, soybeans in tauco, fruit skin in mandai. They are pungent, tangy and keep well. Terasi is itself fermented, so in a sense nearly every sambal carries some fermentation."}
 };

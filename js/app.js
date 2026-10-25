@@ -1,8 +1,9 @@
 "use strict";
 // Hash routing and boot.
 // ================= pages =================
-const VIEWS=["beranda","kenal","peta","rempah","padanan","kuis"];
+const VIEWS=["beranda","peta","rempah","padanan","kuis"];
 function go(v,push=true){
+  if(v==="kenal"){ go("beranda",push); $("#kenal").scrollIntoView(); return; } // old "What is sambal" links
   if(!VIEWS.includes(v)) v="beranda";
   for(const k of VIEWS) $("#"+k).hidden=k!==v;
   document.querySelectorAll(".bar [data-view]").forEach(a=>{if(a.dataset.view===v&&v!=="beranda")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});

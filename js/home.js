@@ -27,10 +27,14 @@ function renderFam(){
     const dot = el("span",{class:"dot"}); dot.style.background=v.color;
     return el("button",{type:"button","aria-pressed":String(k===fam),onclick:()=>{fam=k;renderFam();}}, dot, el("b",{text:v.label}), el("span",{text:v.sum}));
   }));
-  const v = STYLE[fam]; const list = S.filter(s=>s.style===fam);
+  const v = STYLE[fam]; const count = S.filter(s=>s.style===fam).length;
   $("#famBody").replaceChildren(
     el("h3",{text:v.label}), el("p",{class:"lede",text:v.body}),
-    el("p",{class:"eyebrow",text:`Profiled in the atlas · ${list.length}`}),
-    el("div",{class:"try"}, ...list.map(s=>el("button",{class:"pill",type:"button",text:s.name,onclick:()=>openSambal(s.id)})))
+    el("p",{class:"eyebrow",text:"Start with"}),
+    el("div",{class:"try"}, ...v.examples.map(id=>el("button",{class:"pill",type:"button",text:byId[id].name,onclick:()=>openSambal(id)}))),
+    el("button",{class:"btn ghost",type:"button",text:`Browse all ${count} ${v.en.toLowerCase()} sambals in the atlas →`,onclick:()=>{
+      document.querySelector(`.chip.fam[data-f="${fam}"]`).click();
+      go("peta"); document.querySelector(".atlas-head").scrollIntoView();
+    }})
   );
 }
