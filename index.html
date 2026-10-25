@@ -10826,6 +10826,8 @@ $("#spices").replaceChildren(...SPICES.map(([id,en,t],index)=>{
 const EXAMPLES=["Grilled snapper","Beef rendang","Fried chicken","Nasi goreng","Avocado toast","Roast pork belly","Tofu and vegetables","Fish tacos"];
 $("#examples").replaceChildren(...EXAMPLES.map(t=>el("button",{type:"button",text:t,onclick:()=>{$("#dish").value=t; $("#askForm").requestSubmit();}})));
 const samplePromise = (window.claude && typeof window.claude.use==="function") ? Promise.resolve(window.claude.use("sample")).catch(()=>null) : Promise.resolve(null);
+// Outside claude.ai the page asks Claude through the oelek-pair Cloudflare Worker (see worker/).
+const PAIR_PROXY = "https://oelek-pair.jjah0001-tea.workers.dev/pair";
 let aiOff = false, ctl = null;
 const RULES=[
  [/fish|seafood|snapper|prawn|shrimp|squid|tuna|salmon|crab|ikan|udang|cumi|oyster|mussel|scallop/,{matah:3,dabu:3,colo:3,acan:2,"asam-udeung":2}],
@@ -10869,7 +10871,7 @@ $("#askForm").addEventListener("submit", async e=>{
   const dish=$("#dish").value.trim();
   if(!dish){ $("#askStatus").textContent="Type a dish or ingredient first."; $("#dish").focus(); return; }
   const sample = aiOff ? null : await samplePromise;
-  if(!sample){ renderPicks(localPairs(dish),"Suggested by the built-in matcher (AI isn't available in this view)."); return; }
+  if(!sample && !PAIR_PROXY){ renderPicks(localPairs(dish),"Suggested by the built-in matcher (AI isn't available in this view)."); return; }
   ctl=new AbortController();
   $("#askBtn").disabled=true; $("#stopBtn").hidden=false;
   $("#askStatus").textContent="Asking Claude…"; $("#picks").replaceChildren();
@@ -10885,13 +10887,30 @@ ${catalogue}
 
 Reply with only JSON in this shape:
 {"picks":[{"id":"matah","reason":"..."}],"tip":"..."}`;
+  const viaProxy=async()=>{
+    const r=await fetch(PAIR_PROXY,{method:"POST",headers:{"content-type":"application/json"},signal:ctl.signal,body:JSON.stringify({dish,catalogue})});
+    if(r.status===429) throw {code:"rate_limited"};
+    if(!r.ok) throw {code:"upstream",status:r.status};
+    return await r.json();
+  };
+  const ask=async()=>{
+    if(sample){
+      try{ return await sample.json(prompt,{signal:ctl.signal}); }
+      catch(err){
+        if(!["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(err&&err.code)) throw err;
+        aiOff=true;
+      }
+    }
+    if(PAIR_PROXY) return await viaProxy();
+    throw {code:"no_ai"};
+  };
   try{
-    const res=await sample.json(prompt,{signal:ctl.signal});
+    const res=await ask();
     renderPicks(res||{}, "Suggested by Claude from the atlas.");
   }catch(err){
-    const code=err&&err.code;
-    if(code==="cancelled"){ $("#askStatus").textContent="Stopped."; }
-    else if(["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(code)){ aiOff=true; renderPicks(localPairs(dish),"AI isn't enabled here, so the built-in matcher picked these."); }
+    const code=err&&(err.code||err.name);
+    if(code==="cancelled"||code==="AbortError"){ $("#askStatus").textContent="Stopped."; }
+    else if(code==="no_ai"){ renderPicks(localPairs(dish),"AI isn't enabled here, so the built-in matcher picked these."); }
     else if(code==="rate_limited"){ renderPicks(localPairs(dish),"Claude is busy right now; the built-in matcher picked these. Try AI again in a minute."); }
     else { renderPicks(localPairs(dish),"Claude couldn't answer this time, so the built-in matcher picked these."); }
   }finally{ $("#askBtn").disabled=false; $("#stopBtn").hidden=true; }

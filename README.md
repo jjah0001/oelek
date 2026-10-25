@@ -6,7 +6,7 @@ Everything is in one self-contained `index.html` (fonts load from Google Fonts).
 
 ## Notes
 
-- **Dish pairing:** inside claude.ai the pairing asks Claude. Anywhere else, the page uses its built-in keyword matcher instead.
+- **Dish pairing:** inside claude.ai the pairing asks Claude directly. Elsewhere, including GitHub Pages, it asks Claude through the `oelek-pair` Cloudflare Worker in `worker/`. If the Worker is busy or unavailable, the page falls back to its built-in keyword matcher.
 - **Quiz results:** saved in the visitor's browser only.
 - **Sources:** each sambal links to its source. Heat levels, flavour profiles, illustrations and persona texts are editorial.
 
@@ -18,4 +18,17 @@ All 207 formerly Listed entries now use the existing full-profile layout, bringi
 
 https://jjah0001.github.io/oelek/
 
-GitHub Actions deploys `index.html` to GitHub Pages on every push to `main`. The website is self-contained, including the ingredient illustrations. Dish pairing uses the built-in matcher on GitHub Pages.
+GitHub Actions deploys `index.html` to GitHub Pages on every push to `main`. The website is self-contained, including the ingredient illustrations. Dish pairing calls the Worker at `PAIR_PROXY` in `index.html`.
+
+## Pairing proxy (Cloudflare Worker)
+
+`worker/` holds a small Worker that forwards pairing requests to the Anthropic API. Your API key stays server-side, the Worker only accepts calls from `https://jjah0001.github.io`, and each IP is limited to 10 requests a minute.
+
+```sh
+cd worker
+npm install
+npx wrangler deploy                          # https://oelek-pair.<subdomain>.workers.dev
+npx wrangler secret put ANTHROPIC_API_KEY    # once
+```
+
+If the URL changes, update `PAIR_PROXY` in `index.html`. To change the model, edit `ANTHROPIC_MODEL` in `worker/wrangler.toml`.

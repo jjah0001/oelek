@@ -1,0 +1,19 @@
+name = "oelek-pair"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# Comma-separated origins that may call /pair. Leave empty to allow all.
+[vars]
+ALLOWED_ORIGINS = "https://jjah0001.github.io"
+ANTHROPIC_MODEL = "claude-haiku-5-5"
+
+# Per-IP rate limit: 10 requests per 60 seconds. namespace_id only needs to be
+# unique among your own rate-limit bindings (tea-pair uses 1001).
+[[unsafe.bindings]]
+name = "PAIR_RL"
+type = "ratelimit"
+namespace_id = "1002"
+simple = { limit = 10, period = 60 }
+
+# Secret, set with:  wrangler secret put ANTHROPIC_API_KEY
+# ANTHROPIC_API_KEY is read from env in worker.js; do not commit it.
