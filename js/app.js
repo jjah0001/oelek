@@ -6,6 +6,7 @@ function go(v,push=true){
   if(v==="kenal"){ go("beranda",push); $("#kenal").scrollIntoView(); return; } // old "What is sambal" links
   if(!VIEWS.includes(v)) v="beranda";
   for(const k of VIEWS) $("#"+k).hidden=k!==v;
+  document.body.dataset.view=v; // the kampung backdrop shows through more on the home page
   document.querySelectorAll(".bar [data-view]").forEach(a=>{if(a.dataset.view===v&&v!=="beranda")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   if(push){try{history.replaceState(null,"","#"+v)}catch(e){}}
   window.scrollTo({top:0});

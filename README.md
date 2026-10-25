@@ -27,6 +27,7 @@ js/
   pairing.js               dish pairing (Claude + keyword fallback)
   quiz.js                  personality quiz
   app.js                   hash routing and boot
+  kampung.js               animated Merapi kampung backdrop and synthesised soundscape
 worker/                    Cloudflare Worker that proxies pairing requests to Claude
 build.js                   optional: inlines everything into dist/oelek.html
 ```
@@ -38,6 +39,7 @@ The scripts share globals and must load in the order listed in `index.html`: dat
 ## Notes
 
 - **Dish pairing:** inside claude.ai the pairing asks Claude directly. Elsewhere, including GitHub Pages, it asks Claude through the `oelek-pair` Cloudflare Worker in `worker/`. If the Worker is busy or unavailable, the page falls back to its built-in keyword matcher.
+- **Kampung backdrop:** behind every page is a village at the foot of Merapi that follows the visitor's clock (dawn mist, egrets, midday cicadas, afternoon kites, bats at dusk, fireflies and lava glow at night, afternoon rain on some wet-season days). The moon shows its real phase. The "Kampung sounds" button plays a soundscape synthesised in Web Audio: roosters, birds, cicadas, frogs, crickets, tokek, an owl, the night watch's kentongan striking the hour, and a neighbour's gamelan in the evening. Sound never starts on its own. Preview another hour with `?jam=21.5` and rain with `?hujan=1`.
 - **Quiz results:** saved in the visitor's browser only.
 - **Sources:** each sambal links to its source. Heat levels, flavour profiles, illustrations and persona texts are editorial.
 
