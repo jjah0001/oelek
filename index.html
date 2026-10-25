@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: sticky section bar, hero with today's sambal, then long single page of bands separated by kawung batik strips */
+/* Layout: sticky section bar; each section is its own hash-routed page (home = hero with today's sambal), kawung batik strip above the footer */
 :root{
   --bg:#EEF0E6; --surface:#F9FAF4; --ink:#1B2140; --muted:#5A6075; --line:#D3D7C6;
   --chili:#C3301D; --kunyit:#B97B0C; --leaf:#4A6E3A; --nila:#2E3672; --soga:#7A4A26;
@@ -60,6 +60,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tabs a{display:flex;flex-direction:column;align-items:center;padding:6px 10px;border-radius:8px;text-decoration:none;color:var(--muted);white-space:nowrap;font-size:.86rem;font-weight:600}
 .tabs a small{font:400 .64rem/1.2 var(--f-mono);letter-spacing:.06em;text-transform:lowercase;color:var(--soga)}
 .tabs a:hover{background:var(--chili-soft);color:var(--ink)}
+.tabs a[aria-current="page"]{background:var(--ink);color:var(--bg)}
+.tabs a[aria-current="page"] small{color:var(--bg)}
+main>.kawung{display:none}
+main>section{min-height:calc(100vh - 220px)}
 
 /* kawung strip */
 .kawung{height:22px;position:relative;overflow:hidden}
@@ -306,19 +310,19 @@ footer ul{margin:0;padding-left:18px;display:grid;gap:4px}
 
 <header class="bar">
   <div class="wrap">
-    <a class="brand" href="#top">Oelek<b>.</b></a>
+    <a class="brand" href="#beranda" data-view="beranda">Oelek<b>.</b></a>
     <nav class="tabs" aria-label="Sections">
-      <a href="#kenal">What is sambal<small>kenal</small></a>
-      <a href="#peta">Atlas<small>peta</small></a>
-      <a href="#rempah">Spices<small>rempah</small></a>
-      <a href="#padanan">Pairing<small>padanan</small></a>
-      <a href="#kuis">Which sambal<small>kepribadian</small></a>
+      <a href="#kenal" data-view="kenal">What is sambal<small>kenal</small></a>
+      <a href="#peta" data-view="peta">Atlas<small>peta</small></a>
+      <a href="#rempah" data-view="rempah">Spices<small>rempah</small></a>
+      <a href="#padanan" data-view="padanan">Pairing<small>padanan</small></a>
+      <a href="#kuis" data-view="kuis">Which sambal<small>kepribadian</small></a>
     </nav>
   </div>
 </header>
 
 <main id="top">
-<section class="hero">
+<section class="hero" id="beranda">
   <div class="wrap">
     <div>
       <h1>Oelek<b>.</b></h1>
@@ -10929,6 +10933,22 @@ function renderResult(saved){
   ));
 }
 
+// ================= pages =================
+const VIEWS=["beranda","kenal","peta","rempah","padanan","kuis"];
+function go(v,push=true){
+  if(!VIEWS.includes(v)) v="beranda";
+  for(const k of VIEWS) $("#"+k).hidden=k!==v;
+  document.querySelectorAll(".bar [data-view]").forEach(a=>{if(a.dataset.view===v&&v!=="beranda")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  if(push){try{history.replaceState(null,"","#"+v)}catch(e){}}
+  window.scrollTo({top:0});
+}
+document.querySelectorAll(".bar [data-view]").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();go(a.dataset.view)}));
+function routeFromHash(){
+  let h="";try{h=location.hash.slice(1)}catch(e){}
+  go(h==="top"?"beranda":h,false);
+}
+window.addEventListener("hashchange",routeFromHash);
+
 // ================= boot =================
 $("#stAll").textContent=S.length+L.length;
 $("#stFull").textContent=S.length;
@@ -10937,6 +10957,7 @@ $("#cAll").textContent=ALL.length; $("#cFull").textContent=S.length; $("#cList")
 $("#srcList").replaceChildren(...Object.entries(SRC).filter(([key])=>!key.startsWith("http")).map(([,s])=>el("li",{},el("a",{href:s.u,target:"_blank",rel:"noopener",text:s.t}))));
 renderToday(); renderFam(); drawMap(); renderProv(null); renderGrid();
 try{ const sv0=JSON.parse(store.get("ulek.quiz")||"null"); if(sv0&&Array.isArray(sv0.p)&&sv0.p.length===6) renderResult(sv0); else renderQuiz(); }catch(e){ renderQuiz(); }
+routeFromHash();
 </script>
 
 </body>
