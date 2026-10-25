@@ -2,7 +2,38 @@
 
 An English atlas of Indonesian sambal: 241 fully profiled sambals across 35 provinces, each illustrated as a card, with a province map, sambal of the day, dish pairing, a spice primer and a "Which sambal are you?" quiz.
 
-Everything is in one self-contained `index.html` (fonts load from Google Fonts). Open it in a browser, or host it on GitHub Pages by putting `index.html` at the root of a repository and enabling Pages.
+Plain HTML, CSS and JavaScript with no build step (fonts load from Google Fonts). Open `index.html` in a browser.
+
+## Layout
+
+```
+index.html                 page markup; loads the scripts below in order
+style.css
+js/data/
+  sambals.js               flavour axes (DIMS), the 34 core profiles (S) and families (STYLE)
+  sambals-regional.js      the 207 regional profiles l0–l206, pushed onto S
+  sources.js               citation keys and every linked source URL (SRC)
+  provinces.js             province codes and names (PROV)
+  spices.js                spice primer (SPICES)
+  quiz.js                  quiz questions and weights (QUIZ)
+js/
+  core.js                  helpers and the combined index (ALL, byId)
+  art.js                   procedural recipe illustrations
+  dialog.js                flavour radar and the detail dialog
+  home.js                  sambal of the day and families panel
+  map.js                   province map
+  atlas.js                 card grid and filters
+  rempah.js                spice primer page
+  pairing.js               dish pairing (Claude + keyword fallback)
+  quiz.js                  personality quiz
+  app.js                   hash routing and boot
+worker/                    Cloudflare Worker that proxies pairing requests to Claude
+build.js                   optional: inlines everything into dist/oelek.html
+```
+
+The scripts share globals and must load in the order listed in `index.html`: data first, then `core.js`, then the pages, then `app.js`. To add a sambal, append an object to `js/data/sambals-regional.js` and add any new source URL to `js/data/sources.js`.
+
+`node build.js` produces a single self-contained `dist/oelek.html` for use as a claude.ai artifact, where pairing calls Claude directly.
 
 ## Notes
 
@@ -18,7 +49,7 @@ All 207 formerly Listed entries now use the existing full-profile layout, bringi
 
 https://jjah0001.github.io/oelek/
 
-GitHub Actions deploys `index.html` to GitHub Pages on every push to `main`. The website is self-contained, including the ingredient illustrations. Dish pairing calls the Worker at `PAIR_PROXY` in `index.html`.
+GitHub Actions deploys `index.html`, `style.css` and `js/` to GitHub Pages on every push to `main`. The ingredient illustrations are drawn in code, so there are no image files. Dish pairing calls the Worker at `PAIR_PROXY` in `js/pairing.js`.
 
 ## Pairing proxy (Cloudflare Worker)
 
@@ -31,4 +62,4 @@ npx wrangler deploy                          # https://oelek-pair.<subdomain>.wo
 npx wrangler secret put ANTHROPIC_API_KEY    # once
 ```
 
-If the URL changes, update `PAIR_PROXY` in `index.html`. To change the model, edit `ANTHROPIC_MODEL` in `worker/wrangler.toml`.
+If the URL changes, update `PAIR_PROXY` in `js/pairing.js`. To change the model, edit `ANTHROPIC_MODEL` in `worker/wrangler.toml`.
