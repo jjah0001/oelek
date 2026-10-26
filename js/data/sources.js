@@ -367,3 +367,71 @@ Object.assign(SRC, {
     "u": "https://budaya-indonesia.org/sambal-ikan-bakar-khas-kalimantan-selatan"
   }
 });
+
+// Sources for the additional profiles.
+Object.assign(SRC, {
+  "https://cookpad.com/id/resep/9113376": {
+    "t": "Inday Ariana, Sambal Cengek (Cookpad, 2019)",
+    "u": "https://cookpad.com/id/resep/9113376"
+  },
+  "https://www.cookmeindonesian.com/sambal-pencok-sundanese-spicy-sambal-with-string-beans/": {
+    "t": "Nunuk Sri Rahayu, Sambal Pencok (Cook Me Indonesian, 2021)",
+    "u": "https://www.cookmeindonesian.com/sambal-pencok-sundanese-spicy-sambal-with-string-beans/"
+  },
+  "https://garuda.kemdiktisaintek.go.id/documents/detail/4331528": {
+    "t": "Asmawati et al., Quality Analysis of Sambal Masin (2020)",
+    "u": "https://garuda.kemdiktisaintek.go.id/documents/detail/4331528"
+  },
+  "https://www.detik.com/bali/kuliner/d-7631994/mencicipi-pencok-beras-sambal-khas-karangasem-bikin-ketagihan": {
+    "t": "Ni Komang Nartini, Pencok Beras vendor interview (detikBali, 2024)",
+    "u": "https://www.detik.com/bali/kuliner/d-7631994/mencicipi-pencok-beras-sambal-khas-karangasem-bikin-ketagihan"
+  },
+  "https://www.detik.com/jateng/kuliner/d-6434350/5-sambal-khas-jawa-tengah-cabuk-wonogiri-hingga-brambang-asem-solo": {
+    "t": "detikJateng, Sambal Cabuk Wonogiri (2022)",
+    "u": "https://www.detik.com/jateng/kuliner/d-6434350/5-sambal-khas-jawa-tengah-cabuk-wonogiri-hingga-brambang-asem-solo"
+  },
+  "https://food.detik.com/bumbu-dasar-dan-sambal/d-5571795/resep-sambal-brambang-asem-solo-yang-pedas-segar": {
+    "t": "Odilia WS, Sambal Brambang Asem (detikFood, 2021)",
+    "u": "https://food.detik.com/bumbu-dasar-dan-sambal/d-5571795/resep-sambal-brambang-asem-solo-yang-pedas-segar"
+  },
+  "https://cookpad.com/id/resep/7035426": {
+    "t": "Susanti Budi, Sambal Klotok (Cookpad, 2019)",
+    "u": "https://cookpad.com/id/resep/7035426"
+  },
+  "https://keykey.kitchen/recipes/sambal-ayam-pop/": {
+    "t": "KeyKey Kitchen, Sambal Ayam Pop (2024)",
+    "u": "https://keykey.kitchen/recipes/sambal-ayam-pop/"
+  },
+  "https://cookpad.com/id/resep/17114599-sambal-kedondong": {
+    "t": "Mawaddah Tarjib, Sambal Kedondong (Cookpad, 2023)",
+    "u": "https://cookpad.com/id/resep/17114599-sambal-kedondong"
+  },
+  "https://cookpad.com/id/resep/3754220": {
+    "t": "Mey’s Cila, Sambal Bekasam (Cookpad, 2017)",
+    "u": "https://cookpad.com/id/resep/3754220"
+  },
+  "https://budaya-indonesia.org/Sambal-Jeruk-Mentah": {
+    "t": "Budaya Indonesia, Sambal Jeruk Mentah (2012)",
+    "u": "https://budaya-indonesia.org/Sambal-Jeruk-Mentah"
+  },
+  "https://cookpad.com/id/resep/5314283": {
+    "t": "Anita Rusvarina, Sambal Genjer Limau Kuit (Cookpad, 2018)",
+    "u": "https://cookpad.com/id/resep/5314283"
+  },
+  "https://www.primarasa.co.id/resep-anda/138/pepes-kembung-sambal-kenikir-": {
+    "t": "Rahel Ngesti, Pepes Kembung Sambal Kenikir (Primarasa, 2017)",
+    "u": "https://www.primarasa.co.id/resep-anda/138/pepes-kembung-sambal-kenikir-"
+  },
+  "https://cookpad.com/id/resep/25717433": {
+    "t": "Vika Saraswati, Sambal Jantung Pisang (Cookpad, 2026)",
+    "u": "https://cookpad.com/id/resep/25717433"
+  },
+  "https://cookpad.com/id/resep/3957791": {
+    "t": "Hepy Widiastoeti, Sambal Goreng Keong Mas (Cookpad, 2018)",
+    "u": "https://cookpad.com/id/resep/3957791"
+  },
+  "https://www.waroengss.com/article/products-list": {
+    "t": "Waroeng SS, official menu: Sambal Gobal Gabul",
+    "u": "https://www.waroengss.com/article/products-list"
+  }
+});

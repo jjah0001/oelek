@@ -1,6 +1,6 @@
 # Oelek
 
-An English atlas of Indonesian sambal: 241 fully profiled sambals across 35 provinces, each illustrated as a card, with a province map, sambal of the day, dish pairing, a spice primer and a "Which sambal are you?" quiz.
+An English atlas of Indonesian sambal: 257 fully profiled sambals across 35 provinces, each illustrated as a card, with a province map, sambal of the day, dish pairing, a spice primer and a "Which sambal are you?" quiz.
 
 Plain HTML, CSS and JavaScript with no build step (fonts load from Google Fonts). Open `index.html` in a browser.
 
@@ -12,6 +12,7 @@ style.css
 js/data/
   sambals.js               flavour axes (DIMS), the 34 core profiles (S) and families (STYLE)
   sambals-regional.js      the 207 regional profiles l0–l206, pushed onto S
+  sambals-additional.js    16 further documented profiles, pushed onto S
   sources.js               citation keys and every linked source URL (SRC)
   provinces.js             province codes and names (PROV)
   spices.js                spice primer (SPICES)
@@ -48,7 +49,7 @@ The scripts share globals and must load in the order listed in `index.html`: dat
 
 ## Profile coverage
 
-All 207 formerly Listed entries now use the existing full-profile layout, bringing the atlas to 241 Profiled entries and 0 Listed entries. Each has representative ingredients, suggested pairings, a six-axis editorial flavour profile, a description and source links. Regional recipes vary; supporting seasonings are editorial reconstructions where a source records only a defining ingredient. Province-only records appear in the map panel without invented coordinates. Original catalogue IDs are preserved. The source spelling Picak corrects the old Pikak entry, which remains searchable as an alias. Duo Sale now uses dried small fish, correcting the original mango/coconut data.
+All 207 formerly Listed entries now use the existing full-profile layout, initially bringing the atlas to 241 Profiled entries and 0 Listed entries. Each has representative ingredients, suggested pairings, a six-axis editorial flavour profile, a description and source links. Regional recipes vary; supporting seasonings are editorial reconstructions where a source records only a defining ingredient. Province-only records appear in the map panel without invented coordinates. Original catalogue IDs are preserved. The source spelling Picak corrects the old Pikak entry, which remains searchable as an alias. Duo Sale now uses dried small fish, correcting the original mango/coconut data.
 
 ## Live website
 
@@ -126,3 +127,9 @@ The Supabase browser SDK is loaded from a pinned CDN URL only when configured.
 
 Setup references: https://supabase.com/docs/guides/auth/auth-anonymous and
 https://supabase.com/docs/guides/getting-started/api-keys.
+
+## Additional profiles
+
+Sixteen source-linked profiles bring the current catalogue to 257. These are independently documented additions, not a reconstruction of the 257 entries in the UGM survey. Home-recipe locations are labelled as such; flavour scores and suggested pairings remain editorial. Existing IDs and card templates are unchanged.
+
+For an existing Supabase project, run the **contents** of `supabase/additional-sambals.sql` in its SQL Editor to enable voting on the new profiles. This only registers their IDs and leaves votes untouched. Fresh installations can use the updated `supabase/schema.sql`.

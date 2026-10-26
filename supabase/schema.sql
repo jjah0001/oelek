@@ -305,6 +305,22 @@ insert into public.oelek_sambals(id) values
 ('l203'),
 ('l204'),
 ('l205'),
-('l206')
+('l206'),
+('cengek'),
+('pencok-kacang-panjang'),
+('masin'),
+('pencok-beras'),
+('cabuk'),
+('brambang-asem'),
+('klotok'),
+('ayam-pop'),
+('kedondong'),
+('bekasam'),
+('jeruk-mentah'),
+('genjer-limau-kuit'),
+('kenikir'),
+('jantung-pisang'),
+('goreng-keong-mas'),
+('gobal-gabul')
 on conflict do nothing;
 commit;
