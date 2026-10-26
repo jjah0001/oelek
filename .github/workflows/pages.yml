@@ -30,7 +30,7 @@ jobs:
       - name: Prepare static website
         run: |
           mkdir -p site
-          cp -R index.html style.css js site/
+          cp -R index.html style.css favicon.svg js site/
           touch site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

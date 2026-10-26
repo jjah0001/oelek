@@ -7,6 +7,9 @@ const root = __dirname;
 let html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 html = html.replace('<link rel="stylesheet" href="style.css">', () =>
   `<style>\n${fs.readFileSync(path.join(root, "style.css"), "utf8")}</style>`);
+// Keep the tab icon embedded in the standalone export, too.
+html = html.replace('href="favicon.svg"', () =>
+  `href="data:image/svg+xml;base64,${fs.readFileSync(path.join(root, "favicon.svg")).toString("base64")}"`);
 const srcs = [];
 html = html.replace(/(?:<script src="([^"]+)"><\/script>\n?)+/, (block) => {
   for (const m of block.matchAll(/<script src="([^"]+)"><\/script>/g)) srcs.push(m[1]);
