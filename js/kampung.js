@@ -416,58 +416,59 @@ function dove(t){ // perkutut: "hur … ketek … kung"
     run1(o,s0,1.6); run1(tr,s0,1.6);
   }
 }
-function cicada(t){ // tonggeret swelling in the midday heat
-  const n=Nz(), bp=Fl("bandpass",3600,7), am=Gn(.5), l=O("sine",rand(80,130)), lg=Gn(.5), g=Gn(), dur=rand(5,11), peak=rand(4400,5200);
-  chain(l,lg,am.gain); chain(n,bp,am,g,busFor(Math.random()<.5));
-  bp.frequency.setValueAtTime(3600,t); bp.frequency.linearRampToValueAtTime(peak,t+2.5); bp.frequency.setValueAtTime(peak,t+dur-2); bp.frequency.linearRampToValueAtTime(3400,t+dur);
-  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.35,t+2.5); g.gain.setValueAtTime(.35,t+dur-2); g.gain.linearRampToValueAtTime(0,t+dur);
+function cicada(t){ // tonggeret swelling in the trees: kept up the hillside, a shimmer in the heat rather than a buzz in your ear
+  const sore=moods(hourNow()).sore>.3, n=Nz(), bp=Fl("bandpass",3600,3.5), am=Gn(.75), l=O("sine",rand(90,140)), lg=Gn(.25), g=Gn(),
+    dur=rand(6,12), peak=rand(4000,4600), v=sore?rand(.05,.08):rand(.1,.15), sw=Math.min(3.5,dur/3);
+  chain(l,lg,am.gain); chain(n,bp,am,g,busFor(Math.random()<.75));
+  bp.frequency.setValueAtTime(3500,t); bp.frequency.linearRampToValueAtTime(peak,t+sw); bp.frequency.setValueAtTime(peak,t+dur-sw); bp.frequency.linearRampToValueAtTime(3300,t+dur);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+sw); g.gain.setValueAtTime(v,t+dur-sw); g.gain.linearRampToValueAtTime(0,t+dur);
   run1(n,t,dur); run1(l,t,dur);
 }
-function frog(t){ // kodok sawah: low "kung" and nasal "orek"
+// Pitch swoops and square-wave buzz read as electronic; real croaks are a buzzy source through a throat formant, pulsed softly.
+function frog(t){ // kodok sawah: hollow "kung" (bangkong) and rasping "orek" (katak sawah)
   const fr=A.frogs[Math.random()*A.frogs.length|0];
   for(let i=0,reps=1+(Math.random()*3|0);i<reps;i++){
-    const s=t+i*rand(.22,.34);
+    const s=t+i*rand(.24,.36);
     if(fr.type===0){
-      const o=O("sine",fr.f), o2=O("triangle",fr.f*2), g=Gn(), g2=Gn(.3);
-      o.frequency.setValueAtTime(fr.f*1.5,s); o.frequency.exponentialRampToValueAtTime(fr.f,s+.07);
-      o2.frequency.setValueAtTime(fr.f*3,s); o2.frequency.exponentialRampToValueAtTime(fr.f*2,s+.07);
-      chain(o2,g2,g); chain(o,g,fr.bus); env(g.gain,s,.01,.16,.04,.12); run1(o,s,.25); run1(o2,s,.25);
+      const o=O("triangle",fr.f), g=Gn(), bp=Fl("bandpass",fr.f*2.2,2.5), g2=Gn(.5);
+      o.frequency.setValueAtTime(fr.f*1.06,s); o.frequency.exponentialRampToValueAtTime(fr.f,s+.05);
+      chain(o,Fl("lowpass",fr.f*3,.7),g,fr.bus); chain(o,bp,g2,g); env(g.gain,s,.02,.09,.03,.14); run1(o,s,.3);
     } else {
-      const o=O("square",fr.f), am=O("square",rand(24,32)), ag=Gn(.5), mg=Gn(.5), g=Gn();
-      chain(am,ag,mg.gain); chain(o,Fl("lowpass",1100,2),mg,g,fr.bus); env(g.gain,s,.02,.05,.12,.08); run1(o,s,.3); run1(am,s,.3);
+      const o=O("sawtooth",fr.f), am=O("sine",rand(45,65)), ag=Gn(.5), mg=Gn(.5), g=Gn();
+      chain(am,ag,mg.gain); chain(o,Fl("bandpass",fr.f*2.5,3),Fl("lowpass",1800),mg,g,fr.bus); env(g.gain,s,.025,.07,.1,.1); run1(o,s,.3); run1(am,s,.3);
     }
   }
 }
 function syl(t,f0,f1,d,v,type,bpf,out,grit=0){ // grit pulses the voice ~70×/s for a throaty edge
-  const o=O(type,f0), g=Gn(), m=Gn(1-grit/2), q=O("square",rand(60,80)), qg=Gn(grit/2);
+  const o=O(type,f0), g=Gn(), m=Gn(1-grit/2), q=O("sine",rand(60,80)), qg=Gn(grit/2);
   o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+d);
   chain(q,qg,m.gain); chain(o,Fl("bandpass",bpf,1.5),m,g,out); env(g.gain,t,.015,v,d*.4,d*.6); run1(o,t,d+.05); run1(q,t,d+.05);
 }
 function tokek(t){ // a throaty warm-up, then "to-KEK" a handful of times, slowing down
-  const out=busFor(Math.random()<.4), r=Nz(), ra=Gn(.5), rl=O("square",38), rlg=Gn(.5), rg=Gn();
-  chain(rl,rlg,ra.gain); chain(r,Fl("bandpass",700,4),ra,rg,out); env(rg.gain,t,.05,.5,.35,.1); run1(r,t,.6); run1(rl,t,.6);
+  const out=busFor(Math.random()<.7), r=Nz(), ra=Gn(.5), rl=O("sine",38), rlg=Gn(.5), rg=Gn();
+  chain(rl,rlg,ra.gain); chain(r,Fl("bandpass",700,4),ra,rg,out); env(rg.gain,t,.08,.25,.3,.15); run1(r,t,.6); run1(rl,t,.6);
   let s=t+1;
   for(let i=0,n=4+(Math.random()*5|0);i<n;i++){
     const v=i>n-3?.6:1;
-    syl(s,380,330,.09,.5*v,"triangle",900,out,.4);
-    syl(s+.17,560,480,.15,.6*v,"sawtooth",1200,out,.8);
+    syl(s,380,330,.09,.3*v,"triangle",900,out,.4);
+    syl(s+.17,560,480,.15,.35*v,"triangle",1100,out,.6);
     s+=1.1+i*.08;
   }
 }
 function owl(t){ // burung hantu calling across the valley
-  const o=O("sine",370), g=Gn(), v=O("sine",5), vg=Gn(6);
-  chain(v,vg,o.frequency); chain(o,Fl("lowpass",800),g,A.far[Math.random()*5|0]);
+  const out=A.far[Math.random()*5|0], o=O("sine",370), g=Gn(), v=O("sine",4), vg=Gn(3), n=Nz(), ng=Gn(.25);
+  chain(v,vg,o.frequency); chain(o,Fl("lowpass",600),g,out); chain(n,Fl("bandpass",380,6),ng,g); // a little breath through the "hoo"
   g.gain.setValueAtTime(0,t);
   for(const [s,d] of [[0,.32],[.75,.16],[1,.7]]){
-    o.frequency.setValueAtTime(380,t+s); o.frequency.linearRampToValueAtTime(340,t+s+d);
-    g.gain.setValueAtTime(0,t+s); g.gain.linearRampToValueAtTime(.16,t+s+.06); g.gain.setValueAtTime(.16,t+s+d*.6); g.gain.linearRampToValueAtTime(0,t+s+d);
+    o.frequency.setValueAtTime(380,t+s); o.frequency.linearRampToValueAtTime(345,t+s+d);
+    g.gain.setValueAtTime(0,t+s); g.gain.linearRampToValueAtTime(.1,t+s+.1); g.gain.setValueAtTime(.1,t+s+d*.55); g.gain.linearRampToValueAtTime(0,t+s+d);
   }
-  run1(o,t,2); run1(v,t,2);
+  run1(o,t,2); run1(v,t,2); run1(n,t,2);
 }
 function drip(t){ // the kali over the stones
   const o=O("sine",1), g=Gn(), f=rand(700,1400);
   o.frequency.setValueAtTime(f,t); o.frequency.exponentialRampToValueAtTime(f*2.2,t+.04);
-  chain(o,g,A.near[Math.random()<.7?0:1]); env(g.gain,t,.002,rand(.012,.03),0,.06); run1(o,t,.1);
+  chain(o,Fl("lowpass",1600),g,A.near[Math.random()<.7?0:1]); env(g.gain,t,.004,rand(.006,.016),0,.06); run1(o,t,.1);
 }
 function knock(t,v,out){ // bamboo kentongan: a hollow wooden "tok"; a broadband crack in reverb sounds like a gunshot
   const f=rand(430,470), o=O("triangle",f), o2=O("sine",f*2.3), g=Gn(), g2=Gn(.18), n=Nz(), gc=Gn();
@@ -479,8 +480,8 @@ function knock(t,v,out){ // bamboo kentongan: a hollow wooden "tok"; a broadband
 // The night watch strikes the hour on the kentongan; in between, a patrol passes.
 function kentongan(t,count){
   const out=A.kent[Math.random()*A.kent.length|0];
-  if(count) for(let i=0;i<count;i++) knock(t+i*1.25,.35,out);
-  else for(const s of [0,.3,.6,1.6,1.9,2.2,3.4]) knock(t+s,.28,out);
+  if(count) for(let i=0;i<count;i++) knock(t+i*1.25,.22,out);
+  else for(const s of [0,.3,.6,1.6,1.9,2.2,3.4]) knock(t+s,.18,out);
 }
 // A neighbour's gamelan rehearsing a slendro piece; gong at the turn of each cycle.
 const SLENDRO={1:1,2:1.1487,3:1.3195,5:1.5157,6:1.7411};
@@ -514,11 +515,11 @@ const EV={
   bird:   {gap:[1.5,5], w:m=>(m.dawn*.8+m.day*.6)*(1-m.rain*.8), fn:chirp},
   dove:   {gap:[14,32], w:m=>(m.dawn*.6+m.day*.4)*(1-m.rain), fn:dove},
   cicada: {gap:[4,10], w:m=>Math.max(m.noon,m.sore*.7)*(1-m.rain), fn:cicada},
-  frog:   {gap:[.25,1.2], w:m=>Math.min(1,m.night*.9+m.dusk*.5+m.rain*.6), fn:frog},
-  tokek:  {gap:[35,90], w:m=>m.night, fn:tokek},
-  owl:    {gap:[25,60], w:m=>m.night*(1-m.rain), fn:owl},
-  drip:   {gap:[.15,.9], w:m=>.5+m.rain*.5, fn:drip},
-  ronda:  {gap:[150,320], w:m=>m.h>=21||m.h<3.5?1:0, fn:t=>kentongan(t,0)},
+  frog:   {gap:[.4,1.6], w:m=>Math.min(1,m.night*.9+m.dusk*.5+m.rain*.6), fn:frog},
+  tokek:  {gap:[60,150], w:m=>m.night, fn:tokek},
+  owl:    {gap:[40,90], w:m=>m.night*(1-m.rain), fn:owl},
+  drip:   {gap:[.3,1.5], w:m=>.5+m.rain*.5, fn:drip},
+  ronda:  {gap:[400,900], w:m=>m.h>=21||m.h<3.5?1:0, fn:t=>kentongan(t,0)},
   gamelan:{gap:[60,180], w:m=>bump(m.h,19,19.5,21.8,22.4), fn:gamelan},
 };
 function initAudio(){
@@ -526,7 +527,8 @@ function initAudio(){
   const ac=A.ctx=new C(), sr=ac.sampleRate;
   A.out=Gn(0); const comp=ac.createDynamicsCompressor(); comp.threshold.value=-18; comp.ratio.value=4; chain(A.out,comp,ac.destination);
   const len=sr*3.2|0, ir=ac.createBuffer(2,len,sr);
-  for(let ch=0;ch<2;ch++){ const d=ir.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.2); }
+  // Outdoors the air soaks up the highs first, so the tail darkens as it decays; a bright white-noise tail hisses behind every chirp.
+  for(let ch=0;ch<2;ch++){ const d=ir.getChannelData(ch); let y=0; for(let i=0;i<len;i++){ const k=i/len, c=.5*Math.pow(.06,k); y+=c*((Math.random()*2-1)-y); d[i]=y*Math.sqrt((2-c)/c)*Math.pow(1-k,3.2); } }
   const conv=ac.createConvolver(); conv.buffer=ir; A.wet=Gn(.8); chain(A.wet,conv,A.out);
   A.noise=ac.createBuffer(1,sr*2,sr); const nd=A.noise.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
   A.near=[-.7,-.3,0,.3,.7].map(p=>mkBus(p,.25));
@@ -540,13 +542,14 @@ function initAudio(){
   A.bubble=bed([Fl("bandpass",1800,6)],0,A.near[0]);
   A.rainHi=bed([Fl("highpass",800),Fl("lowpass",7000)],0,A.near[2]);
   A.rainLo=bed([Fl("lowpass",300)],0,A.near[2]);
-  // jangkrik: each cricket is a tone pulsed ~30×/s, gated into chirps
-  A.crk=Array.from({length:5},(_,i)=>{
-    const o=O("sine",rand(4200,5200)), a=Gn(.5), p=O("square",rand(28,40)), pg=Gn(.5), b=Gn(.5), c=O("square",rand(1.2,2.6)), cg=Gn(.5), v=Gn(0);
-    chain(p,pg,a.gain); chain(c,cg,b.gain); chain(o,a,b,v,i<3?A.near[i*2]:A.far[i]);
-    o.start(); p.start(); c.start(); v.lvl=rand(.012,.03); return v;
+  // jangkrik: each cricket is a tone pulsed ~30×/s, gated into chirps. Hard square gates click like a machine,
+  // so the pulses are rounded and the gate low-passed; most sit out in the sawah, and each one rests now and then.
+  A.crk=Array.from({length:6},(_,i)=>{
+    const o=O("sine",rand(4300,5000)), a=Gn(.5), p=O("sine",rand(26,34)), pg=Gn(.5), b=Gn(.5), c=O("square",rand(1.3,2.2)), cl=Fl("lowpass",12,.5), cg=Gn(.5), v=Gn(0);
+    chain(p,pg,a.gain); chain(c,cl,cg,b.gain); chain(o,a,b,v,i<2?A.near[i*4]:A.far[i-1]);
+    o.start(); p.start(); c.start(); v.lvl=i<2?rand(.005,.01):rand(.012,.022); v.on=Math.random()<.75; return v;
   });
-  A.frogs=Array.from({length:7},(_,i)=>({type:i<4?0:1,f:i<4?rand(170,260):rand(380,520),bus:busFor(Math.random()<.5)}));
+  A.frogs=Array.from({length:7},(_,i)=>({type:i<4?0:1,f:i<4?rand(190,260):rand(300,420),bus:busFor(Math.random()<.7)}));
   return true;
 }
 function tick(){
@@ -556,7 +559,7 @@ function tick(){
   set(A.leaves,.015*A.gust*(1-m.night*.5),2);
   set(A.stream,.05,3); set(A.bubble,rand(.004,.03),.05);
   set(A.rainHi,.12*m.rain,3); set(A.rainLo,.2*m.rain,3);
-  for(const v of A.crk) set(v,v.lvl*Math.min(1,m.night+m.dusk*.4)*(1-m.rain*.5),3);
+  for(const v of A.crk){ if(Math.random()<.004) v.on=!v.on; set(v,v.on*v.lvl*Math.min(1,m.night+m.dusk*.4)*(1-m.rain*.5),4); }
   for(const [k,e] of Object.entries(EV)){
     if(now<A.next[k]) continue;
     A.next[k]=now+rand(...e.gap);
