@@ -362,6 +362,16 @@ footer{background:color-mix(in srgb,var(--bg) 90%,transparent)}
 .public-ratings{padding:24px 0;margin:24px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:grid;gap:16px;min-height:0}
 .public-ratings h4{margin:0}.rating-summary,.rating-badge{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted)}.rating-summary b{color:var(--ink)}.rating-badge{font-size:.75rem;margin-top:8px;gap:5px}.rating-badge .rating-stars{font-size:.9rem}
 .rating-stars{display:inline-flex;font-size:1.25rem;letter-spacing:1px}.rating-stars>span{background:linear-gradient(to right,var(--chili) var(--fill),var(--line) var(--fill));background-clip:text;-webkit-background-clip:text;color:transparent}
-.rating-yours{display:flex;gap:16px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;background:var(--bg)}.rating-buttons{display:flex;gap:3px}.rating-buttons button{border:0;padding:0;min-width:38px;min-height:44px;font-size:2.1rem;line-height:1;background:none;color:var(--line);cursor:pointer}.rating-buttons button.selected,.rating-buttons button:hover,.rating-buttons button:focus-visible{color:var(--chili)}.rating-buttons button:disabled{cursor:wait;opacity:.55}.rating-remove{border:0;background:none;text-decoration:underline;padding:5px 0;cursor:pointer;font-size:.8rem}.rating-note{font-size:.85rem;color:var(--muted)}.rating-bars{display:grid;gap:5px;max-width:360px;font:12px var(--f-mono)}.rating-bars>div{display:grid;grid-template-columns:32px 1fr 30px;gap:10px;align-items:center}.rating-track{height:7px;border-radius:9px;background:var(--line);overflow:hidden}.rating-track>span{display:block;height:100%;background:var(--chili)}
+.rating-yours{display:flex;gap:16px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;background:var(--bg)}.rating-buttons{display:flex;gap:3px}.rating-buttons button{border:0;padding:0;min-width:38px;min-height:44px;font-size:2.1rem;line-height:1;background:none;color:var(--line);cursor:pointer}.rating-buttons button.selected{color:var(--chili)}
+/* Preview the whole score, including when it is below the saved rating. */
+.rating-buttons:has(button:enabled:focus-visible) button{color:var(--line)}
+.rating-buttons:has(button:enabled:focus-visible) button:focus-visible,
+.rating-buttons:has(button:enabled:focus-visible) button:has(~ button:focus-visible){color:var(--chili)}
+@media(hover:hover){
+  .rating-buttons:has(button:enabled:hover) button{color:var(--line)}
+  .rating-buttons:has(button:enabled:hover) button:hover,
+  .rating-buttons:has(button:enabled:hover) button:has(~ button:hover){color:var(--chili)}
+}
+.rating-buttons button:disabled{cursor:wait;opacity:.55}.rating-remove{border:0;background:none;text-decoration:underline;padding:5px 0;cursor:pointer;font-size:.8rem}.rating-note{font-size:.85rem;color:var(--muted)}.rating-bars{display:grid;gap:5px;max-width:360px;font:12px var(--f-mono)}.rating-bars>div{display:grid;grid-template-columns:32px 1fr 30px;gap:10px;align-items:center}.rating-track{height:7px;border-radius:9px;background:var(--line);overflow:hidden}.rating-track>span{display:block;height:100%;background:var(--chili)}
 #dRatingSummary:has(.rating-summary:empty){display:none}#dRatingSummary{margin:12px 0}
 @media(max-width:420px){.rating-yours{gap:8px;padding:12px}.rating-buttons button{min-width:36px}}
