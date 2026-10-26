@@ -24,6 +24,7 @@
     <a class="brand" href="#beranda" data-view="beranda">Oelek<b>.</b></a>
     <nav class="tabs" aria-label="Sections">
       <a href="#peta" data-view="peta">Atlas<small>peta</small></a>
+      <a href="#shelf" data-view="shelf">My shelf<small>rak sambal <span id="shelfCount"></span></small></a>
       <a href="#rempah" data-view="rempah">Spices<small>rempah</small></a>
       <a href="#padanan" data-view="padanan">Pairing<small>padanan</small></a>
       <a href="#kuis" data-view="kuis">Which sambal<small>kepribadian</small></a>
@@ -141,6 +142,16 @@
 
 <div class="kawung" aria-hidden="true"></div>
 
+<section id="shelf" hidden>
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Rak sambal · your little corner of Nusantara</p><h2>My sambal shelf</h2><p class="lede">The jars in your kitchen, the sambals on your wish list, and the flavours you remember. Saved on this device, in this browser only. No sign-in or cloud sync. Clearing this site’s browser data removes your shelf; export a backup to keep it.</p></div>
+    <div class="shelf-stats" id="shelfStats"></div>
+    <div class="shelf-bar"><div class="shelf-sort" role="group" aria-label="Arrange jars" id="shelfSort"><button type="button" data-sort="status" aria-pressed="true">By status</button><button type="button" data-sort="province" aria-pressed="false">By province</button></div><div class="shelf-io"><button type="button" id="shelfExport">Export</button><button type="button" id="shelfImport">Import</button><input id="shelfFile" type="file" accept=".json,application/json" hidden></div></div>
+    <p id="shelfMessage" class="shelf-message" role="status"></p><div id="shelfRows"></div>
+    <div class="shelf-map"><p class="eyebrow">Your flavour journey</p><h3>A taste of the archipelago</h3><p class="lede">Provinces represented by sambals on your shelf or tried before. Choose a province to explore its sambals.</p><div class="mapbox"><svg id="shelfMap" viewBox="0 0 940 380" role="group" aria-label="Your tasted provinces of Indonesia"></svg></div><div id="shelfProvinces" class="shelf-provinces"></div></div>
+  </div>
+</section>
+
 <section id="rempah">
   <div class="wrap">
     <div class="sec-head">
@@ -222,6 +233,7 @@
         <div class="meta"><span id="dReg"></span><span id="dHeat"></span></div>
       </div>
     </div>
+    <div id="shelfControls" class="shelf-controls" aria-label="Your sambal collection"></div>
     <p id="dNote"></p>
     <div class="cols">
       <div>
@@ -252,6 +264,7 @@
 <script src="js/pairing.js"></script>
 <script src="js/quiz.js"></script>
 <script src="js/share.js"></script>
+<script src="js/shelf.js"></script>
 <script src="js/app.js"></script>
 <script src="js/kampung.js"></script>
 

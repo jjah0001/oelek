@@ -68,3 +68,18 @@ npx wrangler secret put ANTHROPIC_API_KEY    # once
 ```
 
 If the URL changes, update `PAIR_PROXY` in `js/pairing.js`. To change the model, edit `ANTHROPIC_MODEL` in `worker/wrangler.toml`.
+
+### My sambal shelf
+
+Open any sambal profile to save it as **On my shelf**, **Want to try**, or
+**Tried before**. The shelf includes neutral jar illustrations, status/province
+grouping, optional grams remaining, personal ratings, tasting notes, and a
+province journey map. There are no colour categories.
+
+Collection data is stored only in this device's browser localStorage under
+`oelek.shelf.v1`. No account, server storage, or automatic device sync is used.
+Clearing site data removes the shelf. Export creates a JSON backup; Import
+merges a valid Oelek backup, updating matching entries and preserving others.
+Storage is specific to the site's origin: local previews and the deployed site
+have separate shelves. If storage is blocked, changes remain in memory and the
+interface prompts the user to export them.
