@@ -83,3 +83,46 @@ merges a valid Oelek backup, updating matching entries and preserving others.
 Storage is specific to the site's origin: local previews and the deployed site
 have separate shelves. If storage is blocked, changes remain in memory and the
 interface prompts the user to export them.
+
+## Community star ratings
+
+Each profile has five tappable stars, a public average/count, a 5-to-1 breakdown,
+and an option to change or remove your vote. Atlas cards show average ratings.
+Community stars are independent of the **private shelf rating**: shelf imports,
+notes, and private ratings are never uploaded automatically.
+
+### Activate ratings (site owner only)
+
+1. Use your existing [Supabase](https://supabase.com/dashboard) account/project
+   from Tea Time, or create a project. Oelek uses separate `oelek_*` tables and
+   does not modify Tea Time's data.
+2. In the project's **SQL Editor**, run `supabase/schema.sql`. It creates the
+   catalogue, ratings, private hourly counters, own-vote read policy, public
+   aggregate view, and voting function. Re-running it preserves existing votes.
+3. Enable **Authentication → Sign In / Providers → Allow anonymous sign-ins**.
+4. Copy the project's URL and **publishable** API key (a legacy `anon` key also
+   works). Never use a secret or `service_role` key in website configuration.
+5. In the Oelek GitHub repository, **Settings → Secrets and variables → Actions
+   → Variables**, add `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`.
+6. Re-run the **Deploy Oelek** workflow or push to `main`.
+
+Visitors don't create accounts or enter an email/password. On their first vote,
+Supabase creates an anonymous session stored in this browser. The database
+allows one vote per session per sambal and up to 60 changes/removals per hour;
+the UI also has a four-second cooldown. Clearing site data or changing browser
+creates a fresh identity, so this is not a guarantee of one vote per person.
+Existing public votes remain in the database after browser data is cleared;
+that browser can no longer manage those votes without its original session.
+
+Only public vote totals can be read by everyone. Each session can read its own
+votes and write only through the validated `oelek_rate` function. The shelf
+continues using localStorage only, without cloud sync. Unconfigured/offline
+ratings display an honest status instead of fake averages or local-only totals.
+
+For a local preview, set the same environment variables and run
+`node scripts/configure-ratings.js`, then `node build.js` for the standalone
+copy. GitHub Pages generates its config from repository variables on deployment.
+The Supabase browser SDK is loaded from a pinned CDN URL only when configured.
+
+Setup references: https://supabase.com/docs/guides/auth/auth-anonymous and
+https://supabase.com/docs/guides/getting-started/api-keys.

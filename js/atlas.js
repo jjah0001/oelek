@@ -13,6 +13,7 @@ function cardFor(s){
   if(full){ const h=el("span"); h.innerHTML=chilis(s.heat); top.append(h); }
   c.append(art.firstChild, el("h3",{text:s.name}), el("span",{class:"reg",text:full?s.region:provName(s.prov)}), top);
   if(!full && s.note) c.append(el("span",{class:"ing",text:s.note}));
+  const rating=el("span",{"data-rating-id":s.id});rating.append(ratingSummary(s.id,true));c.append(rating);
   return c;
 }
 function filtered(){

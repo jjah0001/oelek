@@ -19,6 +19,7 @@ function openSambal(id){
   const s = byId[id]; if(!s) return;
   const full = s.kind==="full";
   paintShelfControls(s);
+  paintPublicRatings(s);
   $("#dArt").innerHTML = sambalArt(s);
   $("#dStyle").textContent = full ? STYLE[s.style].label : "Listed sambal";
   $("#dName").textContent = s.name;

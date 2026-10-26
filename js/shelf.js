@@ -42,7 +42,7 @@ function paintShelfControls(s){
     for(let n=0;n<=5;n++)rating.append(el("option",{value:n,text:n?"★".repeat(n)+` · ${n}/5`:"Not rated yet"}));rating.value=entry.rating;
     rating.addEventListener("change",()=>{entry.rating=Number(rating.value);saveShelf();});
     if(entry.status==="have")fields.append(el("label",{text:"Grams left"},grams));
-    fields.append(el("label",{text:"Your rating"},rating));
+    fields.append(el("label",{text:"Private shelf rating"},rating));
     fields.append(shelfButton("Remove",()=>{delete shelfItems[s.id];saveShelf();paintShelfControls(s);$("#shelfControls button").focus();},"shelf-remove"));host.append(fields);
     const note=el("textarea",{maxlength:2000,rows:2,placeholder:"How it tasted, where you found it, what you ate it with…","aria-label":"Tasting notes"});note.value=entry.note;
     note.addEventListener("input",()=>{entry.note=note.value;saveShelf();});host.append(el("label",{text:"Tasting notes"},note));
