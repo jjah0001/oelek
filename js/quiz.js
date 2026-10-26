@@ -18,19 +18,22 @@ function renderResult(saved){
   const you = saved ? saved.p : computeProfile(answers);
   const ranked = S.map(s=>({s,c:cos(you,s.p) - Math.abs(you[0]-s.p[0])*0.03})).sort((a,b)=>b.c-a.c);
   const top=ranked[0].s;
+  const pct=Math.round(Math.max(0,cos(you,top.p))*100);
+  LAST_RESULT={top,you,pct};
   if(!saved) store.set("ulek.quiz",JSON.stringify({p:you}));
   const art=el("div"); art.innerHTML=sambalArt(top); art.firstChild.style.width="150px"; art.firstChild.style.height="150px";
   const rad=el("div"); rad.innerHTML=radar([{name:"You",p:you,cls:"s-you"},{name:top.name,p:top.p,cls:"s-cmp"}]);
   const key=el("div",{class:"keyrow"}); key.innerHTML=`<span><i style="background:var(--nila)"></i>You</span><span><i style="background:var(--chili)"></i>${top.name.replace("Sambal ","")}</span>`;
   $("#quiz").replaceChildren(el("div",{class:"result"},
     el("div",{class:"main"},
-      el("p",{class:"eyebrow",text:"You are"}), el("h3",{text:top.name}), el("p",{class:"persona",text:top.persona[0]}),
+      el("p",{class:"eyebrow",text:`You are · ${pct}% match`}), el("h3",{text:top.name}), el("p",{class:"persona",text:top.persona[0]}),
       el("p",{text:`${top.persona[1]} ${top.region}, ${STYLE[top.style].en.toLowerCase()}, heat ${top.heat} of 5.`}),
       el("p",{class:"eyebrow",text:"Close relatives"}),
       el("div",{class:"near"}, ...ranked.slice(1,4).map(r=>el("button",{class:"pill",type:"button",text:r.s.name,onclick:()=>openSambal(r.s.id)}))),
       el("div",{class:"askrow"},
         el("button",{class:"btn",type:"button",text:"Open "+top.name,onclick:()=>openSambal(top.id)}),
-        el("button",{class:"btn ghost",type:"button",text:"Take it again",onclick:()=>{qi=0;answers=[];renderQuiz();}}))),
+        el("button",{class:"btn ghost",type:"button",text:"Take it again",onclick:()=>{qi=0;answers=[];renderQuiz();}})),
+      sharePanel()),
     el("div",{class:"side"}, art.firstChild, rad.firstChild, key)
   ));
 }
