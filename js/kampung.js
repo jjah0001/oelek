@@ -394,12 +394,13 @@ function rooster(t,far){
   run1(o,t,1.6); run1(v,t,1.6);
   if(!far&&Math.random()<.6) rooster(t+rand(2,4),true); // a neighbour's rooster answers
 }
-function chirp(t){
-  const out=busFor(Math.random()<.4), base=rand(2200,3800); let s=t;
+function chirp(t){ // kutilang, emprit: short warbled notes that arch, not long swoops (those read as a laser)
+  const out=busFor(Math.random()<.4), base=rand(2600,3800); let s=t;
   for(let i=0,n=3+(Math.random()*5|0);i<n;i++){
-    const o=O("sine",base), g=Gn(), d=rand(.04,.11), f0=base*rand(.85,1.2);
-    o.frequency.setValueAtTime(f0,s); o.frequency.exponentialRampToValueAtTime(f0*rand(.7,1.5),s+d);
-    env(g.gain,s,.008,rand(.02,.045),d*.4,d*.6); chain(o,g,out); run1(o,s,d+.05); s+=d+rand(.03,.12);
+    const d=rand(.05,.12), f0=base*rand(.92,1.1), o=O("sine",f0), g=Gn(), w=O("sine",rand(35,70)), wg=Gn(f0*rand(.03,.06));
+    chain(w,wg,o.frequency);
+    o.frequency.setValueAtTime(f0*.95,s); o.frequency.linearRampToValueAtTime(f0*rand(1.03,1.1),s+d*.4); o.frequency.linearRampToValueAtTime(f0*rand(.96,1),s+d);
+    env(g.gain,s,.015,rand(.02,.04),d*.35,d*.5); chain(o,g,out); run1(o,s,d+.05); run1(w,s,d+.05); s+=d+rand(.03,.12);
   }
 }
 function dove(t){ // perkutut: "hur … ketek … kung"
@@ -437,9 +438,10 @@ function frog(t){ // kodok sawah: low "kung" and nasal "orek"
     }
   }
 }
-function syl(t,f0,f1,d,v,type,bpf,out){
-  const o=O(type,f0), g=Gn(); o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+d);
-  chain(o,Fl("bandpass",bpf,2.5),g,out); env(g.gain,t,.006,v,d*.3,d*.7); run1(o,t,d+.05);
+function syl(t,f0,f1,d,v,type,bpf,out,grit=0){ // grit pulses the voice ~70×/s for a throaty edge
+  const o=O(type,f0), g=Gn(), m=Gn(1-grit/2), q=O("square",rand(60,80)), qg=Gn(grit/2);
+  o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+d);
+  chain(q,qg,m.gain); chain(o,Fl("bandpass",bpf,1.5),m,g,out); env(g.gain,t,.015,v,d*.4,d*.6); run1(o,t,d+.05); run1(q,t,d+.05);
 }
 function tokek(t){ // a throaty warm-up, then "to-KEK" a handful of times, slowing down
   const out=busFor(Math.random()<.4), r=Nz(), ra=Gn(.5), rl=O("square",38), rlg=Gn(.5), rg=Gn();
@@ -447,8 +449,8 @@ function tokek(t){ // a throaty warm-up, then "to-KEK" a handful of times, slowi
   let s=t+1;
   for(let i=0,n=4+(Math.random()*5|0);i<n;i++){
     const v=i>n-3?.6:1;
-    syl(s,380,300,.08,.5*v,"triangle",900,out);
-    syl(s+.17,620,440,.13,.6*v,"square",1500,out);
+    syl(s,380,330,.09,.5*v,"triangle",900,out,.4);
+    syl(s+.17,560,480,.15,.6*v,"sawtooth",1200,out,.8);
     s+=1.1+i*.08;
   }
 }
@@ -467,15 +469,16 @@ function drip(t){ // the kali over the stones
   o.frequency.setValueAtTime(f,t); o.frequency.exponentialRampToValueAtTime(f*2.2,t+.04);
   chain(o,g,A.near[Math.random()<.7?0:1]); env(g.gain,t,.002,rand(.012,.03),0,.06); run1(o,t,.1);
 }
-function knock(t,v,out){ // bamboo kentongan
-  const o=O("sine",rand(470,500)), o2=O("sine",1240), g=Gn(), g2=Gn(.35), n=Nz(), gc=Gn();
-  chain(o2,g2,g); chain(o,g,out); env(g.gain,t,.003,v,0,.22);
-  chain(n,Fl("bandpass",1800,1.5),gc,out); env(gc.gain,t,.002,v*.6,0,.02);
-  run1(o,t,.3); run1(o2,t,.3); run1(n,t,.05);
+function knock(t,v,out){ // bamboo kentongan: a hollow wooden "tok"; a broadband crack in reverb sounds like a gunshot
+  const f=rand(430,470), o=O("triangle",f), o2=O("sine",f*2.3), g=Gn(), g2=Gn(.18), n=Nz(), gc=Gn();
+  o.frequency.setValueAtTime(f*1.06,t); o.frequency.exponentialRampToValueAtTime(f,t+.03);
+  chain(o2,g2,g); chain(o,Fl("lowpass",1400),g,out); env(g.gain,t,.006,v,.01,.16);
+  chain(n,Fl("bandpass",f*2,6),gc,out); env(gc.gain,t,.004,v*1.2,0,.05);
+  run1(o,t,.25); run1(o2,t,.25); run1(n,t,.08);
 }
 // The night watch strikes the hour on the kentongan; in between, a patrol passes.
 function kentongan(t,count){
-  const out=A.far[Math.random()*5|0];
+  const out=A.kent[Math.random()*A.kent.length|0];
   if(count) for(let i=0;i<count;i++) knock(t+i*1.25,.35,out);
   else for(const s of [0,.3,.6,1.6,1.9,2.2,3.4]) knock(t+s,.28,out);
 }
@@ -529,6 +532,7 @@ function initAudio(){
   A.near=[-.7,-.3,0,.3,.7].map(p=>mkBus(p,.25));
   A.far=[-.8,-.4,0,.4,.8].map(p=>mkBus(p,.9,3000));
   A.gam=mkBus(.35,1,2400);
+  A.kent=[-.6,.5].map(p=>mkBus(p,.4,2500)); // drier than A.far so the knock doesn't boom down the valley
   const bed=(f,gain,bus)=>{ const n=Nz(), g=Gn(0); chain(n,...f,g,bus); n.start(0,Math.random()*1.5); return g; };
   A.wind=bed([Fl("lowpass",450,.3)],0,A.near[2]);
   A.leaves=bed([Fl("bandpass",3500,.6)],0,A.near[4]);
