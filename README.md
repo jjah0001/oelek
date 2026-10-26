@@ -16,6 +16,7 @@ js/data/
   provinces.js             province codes and names (PROV)
   spices.js                spice primer (SPICES)
   quiz.js                  quiz questions and weights (QUIZ)
+  social-icons.js          brand marks for the share buttons (Simple Icons, CC0), as data URIs
 js/
   core.js                  helpers and the combined index (ALL, byId)
   art.js                   procedural recipe illustrations
@@ -26,6 +27,7 @@ js/
   rempah.js                spice primer page
   pairing.js               dish pairing (Claude + keyword fallback)
   quiz.js                  personality quiz
+  share.js                 share the quiz result as an image to social apps
   app.js                   hash routing and boot
   kampung.js               animated Merapi kampung backdrop and synthesised soundscape
 worker/                    Cloudflare Worker that proxies pairing requests to Claude
@@ -41,6 +43,7 @@ The scripts share globals and must load in the order listed in `index.html`: dat
 - **Dish pairing:** inside claude.ai the pairing asks Claude directly. Elsewhere, including GitHub Pages, it asks Claude through the `oelek-pair` Cloudflare Worker in `worker/`. If the Worker is busy or unavailable, the page falls back to its built-in keyword matcher.
 - **Kampung backdrop:** behind every page is a village at the foot of Merapi that follows the visitor's clock (dawn mist, egrets, midday cicadas, afternoon kites, bats at dusk, fireflies and lava glow at night, afternoon rain on some wet-season days). The moon shows its real phase. The "Kampung sounds" button plays a soundscape synthesised in Web Audio: roosters, birds, cicadas, frogs, crickets, tokek, an owl, the night watch's kentongan striking the hour, and a neighbour's gamelan in the evening. Sound never starts on its own. Preview another hour with `?jam=21.5` and rain with `?hujan=1`.
 - **Quiz results:** saved in the visitor's browser only.
+- **Sharing a quiz result:** works like Tea Time. The result becomes a 1080×1350 image (sambal, persona, match, flavour radar and site link) that fits Instagram, Facebook, WeChat and WhatsApp. "Share my result" opens the phone's share menu, which reaches any installed app; there are also Save image, Copy image and Copy link buttons. One button per app covers Instagram, Facebook, WhatsApp, WeChat, Messenger, X, Threads, Telegram, LINE, Xiaohongshu, Weibo and TikTok. On a phone, the image is copied and the app opens ready to paste. On a computer, the image is copied or saved and the app's web share page opens where it has one. Brand marks are from Simple Icons (CC0); each brand's own guidelines apply.
 - **Sources:** each sambal links to its source. Heat levels, flavour profiles, illustrations and persona texts are editorial.
 
 ## Profile coverage
