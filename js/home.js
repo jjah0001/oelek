@@ -3,22 +3,21 @@
 // ================= sambal of the day =================
 const DAY = 864e5;
 function localDayNumber(d){ return Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()) - Date.UTC(2024,0,1))/DAY); }
-let tdOffset = 0;
+let tdDay = null;
 function renderToday(){
-  const d = new Date(Date.now() + tdOffset*DAY);
-  const n = localDayNumber(d);
+  const d = new Date();
+  const n = localDayNumber(d); tdDay = n;
   const s = S[((n*11)%S.length + S.length)%S.length];
   $("#tdArt").innerHTML = sambalArt(s);
   $("#tdName").textContent = s.name;
   $("#tdReg").textContent = s.region + " · " + STYLE[s.style].en;
   $("#tdNote").textContent = s.note;
   $("#tdHeat").innerHTML = chilis(s.heat);
-  const lbl = tdOffset===0 ? "Today" : tdOffset===-1 ? "Yesterday" : tdOffset===1 ? "Tomorrow" : "";
-  $("#tdDate").textContent = (lbl? lbl+" · " : "") + d.toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"});
+  $("#tdDate").textContent = "Today · " + d.toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"});
   $("#tdOpen").onclick = () => openSambal(s.id);
 }
-$("#tdPrev").onclick=()=>{tdOffset--;renderToday();};
-$("#tdNext").onclick=()=>{tdOffset++;renderToday();};
+// a page left open past midnight moves on to the new day's sambal
+setInterval(()=>{ if(localDayNumber(new Date())!==tdDay) renderToday(); },6e4);
 
 // ================= families =================
 let fam = "raw";

@@ -80,9 +80,7 @@ section{padding-block:64px}
 .today .reg{font-size:.9rem;opacity:.8}
 .today p.note{grid-column:1/-1;margin-top:10px;font-size:.95rem;opacity:.92}
 .today .row{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
-.today .nav{display:flex;gap:6px;align-items:center}
-.today .nav button{background:#ffffff1a;border:1px solid #ffffff33;color:#F3F1E9;border-radius:999px;width:34px;height:34px;cursor:pointer}
-.today .nav button:hover{background:#ffffff33}
+.today .row.end{justify-content:flex-end}
 .today .open{background:#F3F1E9;color:#1B2140;border:0;border-radius:999px;padding:8px 16px;font-weight:600;cursor:pointer}
 .today .date{font:400 .75rem var(--f-mono);opacity:.8}
 .today .chilis .on{fill:#FF7A5C}
