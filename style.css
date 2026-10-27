@@ -132,6 +132,11 @@ section{padding-block:64px}
 .mk.raw circle{fill:var(--raw)} .mk.cooked circle{fill:var(--cooked)} .mk.fermented circle{fill:var(--fermented)}
 .mk text{font-family:var(--f-mono);font-weight:500;fill:var(--ink);paint-order:stroke;stroke:var(--sea);pointer-events:none}
 .mk:hover circle.halo,.mk:focus circle.halo{opacity:.45}
+.mk.out{opacity:.28} .mk.out:hover{opacity:.7}
+.mk.hot{opacity:1} .mk.hot circle.halo{opacity:.6}
+.mk.hot text{font-weight:700}
+.countrow{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.countrow .count{margin-bottom:0}
 .maplbl{font-family:var(--f-mono);letter-spacing:.2em;fill:var(--muted);text-transform:uppercase}
 .mapui{position:absolute;left:12px;top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;pointer-events:none}
 .mapui > *{pointer-events:auto}

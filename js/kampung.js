@@ -588,14 +588,27 @@ function setSound(on){
   A.on=on; if(btn) btn.setAttribute("aria-pressed",String(on)); pref.set(on?"1":"0");
 }
 if(btn){
-  btn.addEventListener("click",()=>setSound(!A.on));
-  // Browsers only allow audio after a gesture, so a returning listener resumes on their first tap or key.
-  if(pref.get()==="1"){
-    const wake=e=>{ removeEventListener("pointerdown",wake,true); removeEventListener("keydown",wake,true); if(!e.target.closest?.("#suara")&&!A.on) setSound(true); };
-    addEventListener("pointerdown",wake,true); addEventListener("keydown",wake,true);
+  let woke=false; // the tap that unlocked audio shouldn't also switch it off
+  btn.addEventListener("click",()=>{ if(woke){ woke=false; return; } setSound(!A.on); });
+  // Sound is on by default and starts with the page. Browsers block audio until the visitor
+  // interacts, so if the page is still silent it starts on their first tap, click or key press.
+  // Switching it off is remembered.
+  if(pref.get()!=="0"){
+    setSound(true);
+    if(A.ctx&&A.ctx.state!=="running"){
+      const evs=["pointerdown","touchend","keydown","click"];
+      const wake=e=>{
+        if(!A.on||!A.ctx){ evs.forEach(t=>removeEventListener(t,wake,true)); return; }
+        A.ctx.resume().then(()=>{ if(A.ctx.state==="running") evs.forEach(t=>removeEventListener(t,wake,true)); });
+        if(e.type==="pointerdown"&&e.target.closest?.("#suara")) woke=true;
+      };
+      evs.forEach(t=>addEventListener(t,wake,true));
+    }
   }
 }
-function caption(){ if(!cap) return; const [,id,en]=phaseOf(hourNow()); cap.textContent=id+" · "+en; }
+// The button shows only the time of day, not what can be heard.
+const TIME_OF_DAY=[[3.5,"Subuh","before dawn"],[5.3,"Fajar","sunrise"],[7.5,"Pagi","morning"],[11,"Siang","midday"],[15,"Sore","afternoon"],[17.6,"Senja","dusk"],[19.2,"Malam","night"],[23,"Tengah malam","midnight"]];
+function caption(){ if(!cap) return; const h=hourNow(); let p=TIME_OF_DAY[TIME_OF_DAY.length-1]; for(const q of TIME_OF_DAY) if(h>=q[0]) p=q; cap.textContent=p[1]+" · "+p[2]; }
 caption(); setInterval(caption,3e4);
 
 run();

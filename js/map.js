@@ -94,7 +94,7 @@ function drawMap(){
     const m=sv("g",{class:"mk "+s.style,tabindex:"-1",role:"button","aria-label":`${s.name}, ${s.region}`,"data-id":s.id,"data-x":x,"data-y":y});
     m.append(sv("circle",{class:"halo",cx:x,cy:y}), sv("circle",{class:"core",cx:x,cy:y}));
     const t=sv("text",{x,y}); t.textContent=s.name.replace("Sambal ",""); m.append(t);
-    m.addEventListener("click",()=>openSambal(s.id));
+    m.addEventListener("click",()=>{ if(zoomProv&&s.prov!==zoomProv&&PROV[s.prov]) zoomTo(s.prov); openSambal(s.id); });
     m.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();openSambal(s.id);} });
     gMk.append(m);
   }
@@ -127,15 +127,20 @@ function zoomTo(code){
   gBub.setAttribute("visibility","hidden"); gMk.setAttribute("visibility","visible");
   gMk.querySelectorAll(".mk").forEach(m=>m.setAttribute("tabindex","0"));
   $("#mapBack").hidden=false;
+  gMk.querySelectorAll(".mk").forEach(m=>m.classList.toggle("out",(byId[m.dataset.id]||{}).prov!==code));
   animateTo({x:x-w/2,y:y-h/2,w});
   renderProv(code);
+  syncGridToMap(code);
 }
 function zoomOut(){
   zoomProv=null; $("#mapBack").hidden=true;
   gMk.querySelectorAll(".mk").forEach(m=>m.setAttribute("tabindex","-1"));
   animateTo({x:0,y:0,w:VBW},()=>{ gBub.setAttribute("visibility","visible"); gMk.setAttribute("visibility","hidden"); });
   renderProv(null);
+  syncGridToMap(null);
 }
+// light up a sambal's pin while its card is hovered or focused
+function markPin(id,on){ const m=gMk&&gMk.querySelector(`.mk[data-id="${CSS.escape(id)}"]`); if(!m) return; m.classList.toggle("hot",on); m.querySelector(".halo").setAttribute("r",((on?20:11)*view.w/VBW).toFixed(2)); if(on) m.parentNode.append(m); }
 $("#mapBack").addEventListener("click",zoomOut);
 function famBar(st){
   const bar=el("div",{class:"bar2"});
@@ -151,11 +156,12 @@ function renderProv(code){
       el("div",{class:"try"},...top.map(([c])=>el("button",{class:"pill",type:"button",text:PROV[c][0],onclick:()=>{zoomTo(c); $("#peta").scrollIntoView({block:"start"});}}))));
     return;
   }
-  const st=provStats[code], full=S.filter(s=>s.prov===code), list=L.filter(l=>l[1]===code);
+  const st=provStats[code];
+  const fams=["raw","cooked","fermented"].filter(k=>st[k]).map(k=>`${st[k]} ${STYLE[k].en.toLowerCase()}`).join(", ");
   P.replaceChildren(
-    el("p",{class:"eyebrow",text:`${st.total} sambals recorded`}),
+    el("p",{class:"eyebrow",text:`${st.total} sambal${st.total===1?"":"s"} recorded`}),
     el("h3",{text:PROV[code][0]}), famBar(st),
-    full.length?el("div",{class:"try"},...full.map(s=>{ const dot=el("i"); dot.style.background=`var(--${s.style})`; return el("button",{class:"pill",type:"button",onclick:()=>openSambal(s.id)},dot,s.name); })):el("span"),
-    list.length?el("ul",{},...LISTED.filter(l=>l.prov===code).map(l=>el("li",{},el("button",{type:"button",text:l.name,onclick:()=>openSambal(l.id)}),el("span",{text:l.note||"No further detail recorded"})))):el("span")
+    el("p",{class:"lede",text:(fams?fams[0].toUpperCase()+fams.slice(1)+". ":"")+"The cards below now show only this province. Faded pins on the map belong to neighbouring provinces; tap one to move there."}),
+    el("div",{class:"try"},el("button",{class:"btn ghost small",type:"button",text:`See its ${st.total} sambal${st.total===1?"":"s"} ↓`,onclick:()=>$("#gridTitle").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"})}))
   );
 }

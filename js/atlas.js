@@ -14,6 +14,9 @@ function cardFor(s){
   c.append(art.firstChild, el("h3",{text:s.name}), el("span",{class:"reg",text:full?s.region:provName(s.prov)}), top);
   if(!full && s.note) c.append(el("span",{class:"ing",text:s.note}));
   const rating=el("span",{"data-rating-id":s.id});rating.append(ratingSummary(s.id,true));c.append(rating);
+  const hot=on=>()=>markPin(s.id,on);
+  c.addEventListener("mouseenter",hot(true)); c.addEventListener("mouseleave",hot(false));
+  c.addEventListener("focus",hot(true)); c.addEventListener("blur",hot(false));
   return c;
 }
 function filtered(){
@@ -33,7 +36,10 @@ function renderGrid(reset=true){
   if(reset) shown=PAGE;
   const list=filtered();
   $("#empty").hidden = list.length>0;
-  $("#count").textContent = `${list.length} sambal${list.length===1?"":"s"}${list.length>shown?` · showing ${shown}`:""}`;
+  const pv=$("#provSel").value, where=pv?(pv===ACROSS?" made across Indonesia":` in ${provName(pv)}`):"";
+  $("#count").textContent = `${list.length} sambal${list.length===1?"":"s"}${where}${list.length>shown?` · showing ${shown}`:""}`;
+  $("#gridTitle").textContent = pv&&pv!==ACROSS ? `Sambals of ${provName(pv)}` : "Every sambal in the atlas";
+  $("#allProv").hidden = !pv;
   $("#grid").replaceChildren(...list.slice(0,shown).map(cardFor));
   const more=$("#moreBtn"); more.hidden = list.length<=shown; more.textContent=`Show ${Math.min(PAGE,list.length-shown)} more`;
 }
@@ -44,4 +50,12 @@ document.querySelectorAll(".chip.kind").forEach(b=>b.addEventListener("click",()
 document.querySelectorAll(".chip.fam").forEach(b=>b.addEventListener("click",()=>{
   fStyle=b.dataset.f; document.querySelectorAll(".chip.fam").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); renderGrid();
 }));
-["q","heatSel","provSel"].forEach(id=>$("#"+id).addEventListener(id==="q"?"input":"change",()=>renderGrid()));
+["q","heatSel"].forEach(id=>$("#"+id).addEventListener(id==="q"?"input":"change",()=>renderGrid()));
+// the map and the grid move together: picking a province zooms the map, zooming the map filters the grid
+$("#provSel").addEventListener("change",()=>{
+  const v=$("#provSel").value;
+  if(v&&PROV[v]&&provStats[v]&&provStats[v].total) zoomTo(v);
+  else if(zoomProv) zoomOut(); else renderGrid();
+});
+$("#allProv").addEventListener("click",()=>{ if(zoomProv) zoomOut(); else { $("#provSel").value=""; renderGrid(); } });
+function syncGridToMap(code){ $("#provSel").value=code||""; renderGrid(); }

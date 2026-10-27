@@ -17,7 +17,7 @@
 <div class="veil" aria-hidden="true"></div>
 <button class="suara" id="suara" type="button" aria-pressed="false">
   <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor" stroke="none"/><path class="on" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="off" d="M17 9.5l5 5M22 9.5l-5 5"/></svg></span>
-  <span><b>Kampung sounds</b><small id="suaraJam">suara kampung</small></span>
+  <span><b>Kampung sounds</b><small id="suaraJam">Siang · midday</small></span>
 </button>
 
 <header class="bar">
@@ -94,7 +94,7 @@
     <div class="sec-head">
       <p class="eyebrow">Peta sambal · atlas</p>
       <h2>From Sabang to Merauke</h2>
-      <p class="lede">Each ring counts the sambals recorded for a province, split by family. Tap a ring to zoom in and browse every sambal recorded for that province. Individual markers appear where a location was already recorded; province-only profiles are available in the panel.</p>
+      <p class="lede">Each ring counts the sambals recorded for a province, split by family. Tap a ring to zoom in: the cards below then show only that province’s sambals. Hover a card to find it on the map. Individual markers appear where a location was already recorded; province-only profiles are available in the panel.</p>
     </div>
     <div class="mapbox">
       <div class="mapui">
@@ -111,7 +111,7 @@
     <div class="prov" id="provPanel"></div>
 
     <div class="atlas-head">
-      <h3>Every sambal in the atlas</h3>
+      <h3 id="gridTitle">Every sambal in the atlas</h3>
       <p class="lede">All 257 sambals are profiled with a description, representative ingredients, suggested pairings, sources and a flavour chart. Recipes vary between households; each profile presents one version rather than a fixed standard.</p>
     </div>
     <div class="tools" role="group" aria-label="Filter sambals">
@@ -134,7 +134,7 @@
       </select>
       <input id="q" type="search" placeholder="Search name, province or ingredient" aria-label="Search sambals">
     </div>
-    <p class="count" id="count"></p>
+    <div class="countrow"><p class="count" id="count"></p><button class="linkbtn" id="allProv" type="button" hidden>Show all of Indonesia</button></div>
     <div class="grid" id="grid"></div>
     <p class="empty" id="empty" hidden>No sambal matches. Clear a filter to see more.</p>
     <div class="more"><button class="btn ghost" id="moreBtn" type="button" hidden>Show more</button></div>
