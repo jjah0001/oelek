@@ -3,7 +3,10 @@
 // roosters and mist at dawn, egrets over the sawah by day, cicadas at noon, kites in the
 // afternoon, bats at dusk, then crickets, frogs, tokek, fireflies and Merapi's glow at night.
 // Sound is synthesised in Web Audio (no audio files) and only plays after the visitor asks.
-// Preview another hour with ?jam=21.5 and rain with ?hujan=1 (or ?hujan=0 for none).
+// Holidays bring their own kampung: flags all August, tirakatan and lomba for the 17th, sahur patrols
+// and ngabuburit in Ramadan, malam takbiran and Lebaran, the qurban animals of Idul Adha, Sekaten's
+// gamelan before Maulid and the silence of malam 1 Suro (dates in js/data/hari-besar.js).
+// Preview another hour with ?jam=21.5, another day with ?tgl=2027-03-09 and rain with ?hujan=1 (or ?hujan=0).
 (()=>{
 const cv=document.getElementById("kampung");
 if(!cv||!cv.getContext) return;
@@ -11,7 +14,45 @@ const cx=cv.getContext("2d");
 const sky=document.createElement("canvas"), land=document.createElement("canvas");
 const qs=new URLSearchParams(location.search);
 const jamQ=parseFloat(qs.get("jam")), forced=isNaN(jamQ)?null:((jamQ%24)+24)%24, boot=Date.now();
-const hourNow=()=>{ if(forced!==null) return (forced+(Date.now()-boot)/36e5)%24; const d=new Date(); return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600; };
+const tglQ=/^\d{4}-\d{2}-\d{2}$/.test(qs.get("tgl")||"")?qs.get("tgl"):null;
+// The kampung's own moment: the visitor's clock, or a previewed day and hour that then runs on in real time.
+function kNow(){
+  if(forced===null&&!tglQ) return new Date();
+  const now=new Date(), base=tglQ?new Date(tglQ+"T00:00:00"):new Date(now); base.setHours(0,0,0,0);
+  const h0=forced!==null?forced:(now.getHours()+now.getMinutes()/60+now.getSeconds()/3600)-(Date.now()-boot)/36e5;
+  return new Date(base.getTime()+(h0*36e5+(Date.now()-boot)));
+}
+const hourNow=()=>{ const d=kNow(); return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600; };
+
+// ================= hari besar =================
+const HB=(typeof HARI_BESAR!=="undefined"?HARI_BESAR:[]).map(([k,s])=>{ const [y,m,d]=s.split("-").map(Number); return [k,Date.UTC(y,m-1,d)/864e5]; });
+const dayNum=d=>Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5;
+function festAt(d){
+  const n=dayNum(d), h=d.getHours()+d.getMinutes()/60, mo=d.getMonth(), dt=d.getDate(), wd=d.getDay();
+  const off=k=>{ let b=null; for(const [t,v] of HB) if(t===k){ const x=n-v; if(b===null||Math.abs(x)<Math.abs(b)) b=x; } return b; };
+  const R=off("ramadan"), Fi=off("fitri"), Ad=off("adha"), Su=off("suro"), Ma=off("maulid"), is=(v,a,b)=>v!==null&&v>=a&&v<=b;
+  const F={h,ramadan:is(R,0,31)&&is(Fi,-31,-1)};
+  F.sahur=F.ramadan&&h>=2.5&&h<3.75;                       // patrols wake the kampung for sahur
+  F.ngabuburit=F.ramadan&&h>=15.8&&h<17.6;                 // waiting for buka: everyone out on the road
+  F.malamRamadan=F.ramadan&&h>=18.3&&h<21.5;               // kids with petasan after buka and tarawih
+  F.takbiranFitri=(Fi===-1&&h>=18.6)||(Fi===0&&h<1);
+  F.takbiranAdha=(Ad===-1&&h>=18.6)||(Ad===0&&h<1);
+  F.takbiran=F.takbiranFitri||F.takbiranAdha;
+  F.salatId=(Fi===0||Ad===0)&&h>=5.5&&h<7.7;               // the walk to the lapangan
+  F.lebaran=is(Fi,0,2)&&h>=7.7&&h<21;                      // silaturahmi: motorbikes and the odd petasan
+  F.ketupat=is(Fi,0,7);                                    // until Bakda Kupat, a week after Lebaran
+  F.ternak=is(Ad,-6,0)&&!(Ad===0&&h>=9);                   // qurban animals tethered by the houses
+  F.sate=is(Ad,0,3)&&h>=9&&h<21;                           // and the smoke of sate afterwards
+  F.sekaten=is(Ma,-7,-1)&&h>=8&&h<23.5&&!((wd===4&&h>=18)||(wd===5&&h<13)); // silent Thursday night to Friday prayer
+  F.suro=(Su===-1&&h>=18)||(Su===0&&h<4);                  // malam 1 Suro: the kampung keeps quiet
+  F.tapaBisu=F.suro&&(h>=23||h<1.5);                       // a silent walk with torches
+  F.agustus=mo===7;
+  F.tirakatan=mo===7&&dt===16&&h>=18.5;
+  F.lomba=mo===7&&dt===17&&h>=7.5&&h<17;
+  F.idDay=Fi===0||Ad===0; F.sirineDay=mo===7&&dt===17;
+  return F;
+}
+let FEST=festAt(kNow());
 
 // ================= helpers =================
 const rng=s=>()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
@@ -25,7 +66,7 @@ const TAU=Math.PI*2;
 
 // ================= time of day =================
 // Afternoon rain is likelier in the wet season (Nov–Mar); the same day always gets the same weather.
-const today=new Date(), hq=qs.get("hujan");
+const today=kNow(), hq=qs.get("hujan");
 const rainyDay=rng(today.getFullYear()*1000+today.getMonth()*40+today.getDate())()<[.7,.7,.6,.45,.2,.08,.05,.05,.1,.3,.55,.65][today.getMonth()];
 const rainAt=h=>hq==="1"?1:hq==="0"||!rainyDay?0:bump(h,13.6,14.6,16.4,17.4);
 function moods(h){
@@ -66,7 +107,7 @@ function palette(h,rain){
 }
 // Facing north towards Merapi from Yogyakarta, the sun and moon rise on the right.
 const RISE=5.6, SET=17.75, SYN=29.530588853;
-const moonAge=()=>(((Date.now()/864e5-10962.76)/SYN)%1+1)%1; // days since the 6 Jan 2000 new moon
+const moonAge=()=>(((kNow().getTime()/864e5-10962.76)/SYN)%1+1)%1; // days since the 6 Jan 2000 new moon
 function arc(hh){ const e=(hh-RISE)/(SET-RISE), up=Math.sin(Math.PI*e); return {x:W*(.93-.86*e), y:G.yH-up*(G.yH-H*.1), up}; }
 
 // ================= sprites =================
@@ -78,11 +119,12 @@ function sprite(col,core){
   g.addColorStop(1,rgb(col,0));
   c.fillStyle=g; c.fillRect(0,0,64,64); return s;
 }
-const SP={fire:sprite([214,255,120]), lava:sprite([255,110,40]), warm:sprite([255,190,90])};
+const SP={fire:sprite([214,255,120]), lava:sprite([255,110,40]), warm:sprite([255,190,90]), obor:sprite([255,170,60],.2),
+  lamp:[sprite([255,70,50],.25),sprite([255,210,70],.25),sprite([120,230,120],.25),sprite([255,140,200],.25)]};
 
 // ================= layout =================
 let W=0,H=0,dpr=1,G=null,P=null,M=null,baseH=-1;
-const ST={t:0,emit:0,clouds:[],puffs:[],lava:[],trail:[],flocks:[],bats:[],flies:[],drops:[],smoke:[],mist:[],shoot:null,flash:0};
+const ST={t:0,emit:0,fcheck:0,fw:[],pops:[],clouds:[],puffs:[],lava:[],trail:[],flocks:[],bats:[],flies:[],drops:[],smoke:[],mist:[],shoot:null,flash:0};
 function layout(){
   const w=cv.clientWidth, h=cv.clientHeight;
   if(!w||!h||(w===W&&h===H&&G)) return;
@@ -338,7 +380,9 @@ function step(dt){
   for(const p of ST.trail) p.a-=dt/7;
   ST.trail=ST.trail.filter(p=>p.a>0);
   // kitchen smoke from the pawon
-  if(m.kitchen>.1&&Math.random()<dt*2.5){ const s=G.houses[Math.random()*G.houses.length|0]; ST.smoke.push({x:s.x+s.w*.15,y:s.y-s.h-s.w*.3,r:2,a:0,vx:rand(1,3)}); }
+  if((ST.fcheck-=dt)<=0){ ST.fcheck=1; FEST=festAt(kNow()); }
+  const F=FEST;
+  if((m.kitchen>.1||F.sate)&&Math.random()<dt*(F.sate?6:2.5)){ const s=G.houses[Math.random()*G.houses.length|0]; ST.smoke.push({x:s.x+s.w*.15,y:s.y-s.h-s.w*.3,r:2,a:0,vx:rand(1,3)}); }
   for(const p of ST.smoke){ p.x+=p.vx*dt; p.y-=7*dt; p.r+=dt*1.6; p.a+=dt/10; }
   ST.smoke=ST.smoke.filter(p=>p.a<1);
   // kuntul: egrets crossing the sawah
@@ -357,8 +401,124 @@ function step(dt){
   if(m.rain>0) for(const d of ST.drops){ d.y+=d.v*dt; d.x+=d.v*.12*dt; if(d.y>H){ d.y=-d.l; d.x=rand(-W*.1,W); } }
   if(ST.shoot){ ST.shoot.life+=dt; ST.shoot.x+=ST.shoot.vx*dt; ST.shoot.y+=ST.shoot.vy*dt; if(ST.shoot.life>.9) ST.shoot=null; }
   else if(m.night>.85&&!m.rain&&Math.random()<dt/50) ST.shoot={x:W*rand(.1,.9),y:H*rand(.05,.3),vx:rand(220,380)*(Math.random()<.5?1:-1),vy:rand(80,140),life:0};
+  // kembang api over the kampung on malam takbiran
+  if(F.takbiran&&!m.rain&&ST.fw.length<5&&Math.random()<dt/2.6){ const x=W*rand(.08,.97); ST.fw.push({x,y:G.hY(x),ty:H*rand(.1,.34),t:0,c:[[255,90,70],[255,215,90],[120,230,140],[140,180,255],[255,150,220]][Math.random()*5|0],parts:null}); onFirework(0,x); }
+  for(const f of ST.fw){
+    f.t+=dt;
+    if(!f.parts&&f.t>1.1){ f.parts=Array.from({length:60},(_,i)=>{ const a=i/60*TAU+rand(-.05,.05), v=H*rand(.07,.13); return {x:f.x,y:f.ty,vx:Math.cos(a)*v,vy:Math.sin(a)*v}; }); f.bt=0; onFirework(1,f.x); }
+    if(f.parts){ f.bt+=dt; for(const q of f.parts){ q.x+=q.vx*dt; q.y+=q.vy*dt; q.vx*=1-dt*1.2; q.vy=q.vy*(1-dt*1.2)+H*.04*dt; } }
+  }
+  ST.fw=ST.fw.filter(f=>!f.parts||f.bt<2);
+  // petasan: a flash on the road, sometimes a whole renteng
+  const popR=F.takbiran?1.8:F.malamRamadan?14:F.lebaran?30:F.tirakatan?70:0;
+  if(popR&&!m.rain&&Math.random()<dt/popR){ const x=W*rand(.04,.96), n=Math.random()<.3?8+(Math.random()*16|0):1; ST.pops.push({x,y:G.hY(x)+H*rand(.01,.03),life:0,n,k:0}); onPop(n,x); }
+  for(const p of ST.pops) p.life+=dt;
+  ST.pops=ST.pops.filter(p=>p.life<p.n*.1+.3);
   ST.flash=Math.max(0,ST.flash-dt*2.5);
   if(m.rain>.6&&Math.random()<dt/28){ ST.flash=1; onLightning(rand(1,4)); }
+}
+// ================= hari besar: drawing =================
+const night=m=>Math.min(1,m.night*.85);
+function bendera(x,y,s,t,m,ph){ // a merah putih on a bamboo pole, waving
+  const dk=night(m)*.75, red=rgb(mix([206,32,41],P.hill,dk)), white=rgb(mix([246,244,236],P.hill,dk));
+  cx.strokeStyle=rgb(mix([120,96,60],P.hill,dk)); cx.lineWidth=Math.max(.8,s*.06); cx.beginPath(); cx.moveTo(x,y); cx.lineTo(x,y-s*1.6); cx.stroke();
+  const fw=s*.9, fh=s*.6, top=y-s*1.6, seg=6;
+  for(const [col,y0,y1] of [[red,0,.5],[white,.5,1]]){
+    cx.fillStyle=col; cx.beginPath();
+    for(let i=0;i<=seg;i++){ const u=i/seg, w=Math.sin(t*5+ph-u*3)*fh*.12*u; cx.lineTo(x+u*fw,top+y0*fh+w); }
+    for(let i=seg;i>=0;i--){ const u=i/seg, w=Math.sin(t*5+ph-u*3)*fh*.12*u; cx.lineTo(x+u*fw,top+y1*fh+w); }
+    cx.fill();
+  }
+}
+function umbul(x,y,hgt,t,m,i){ // umbul-umbul: a tall arched bamboo with a long cloth hanging from its tip
+  const dk=night(m)*.75, sw=Math.sin(t*.8+i)*hgt*.03, tx=x+hgt*.22+sw, ty=y-hgt;
+  cx.strokeStyle=rgb(mix([140,112,64],P.hill,dk)); cx.lineWidth=Math.max(1,hgt*.02); cx.beginPath(); cx.moveTo(x,y); cx.quadraticCurveTo(x+hgt*.02,y-hgt*.7,tx,ty); cx.stroke();
+  const cols=[[206,32,41],[246,244,236]], L=hgt*.62, wdt=hgt*.07;
+  for(let k=0;k<2;k++){ cx.fillStyle=rgb(mix(cols[k],P.hill,dk)); cx.beginPath();
+    for(let j=0;j<=8;j++){ const u=j/8, wv=Math.sin(t*3+i+u*4)*wdt*.5*u; cx.lineTo(tx+wv+(k?wdt*.5:0)-u*hgt*.04,ty+u*L); }
+    for(let j=8;j>=0;j--){ const u=j/8, wv=Math.sin(t*3+i+u*4)*wdt*.5*u; cx.lineTo(tx+wv+(k?wdt:wdt*.5)-u*hgt*.04,ty+u*L); }
+    cx.fill(); }
+}
+function ketupat(x,y,s,m,t,ph){ // ketupat of young janur hung under the eaves
+  const sw=Math.sin(t*1.5+ph)*s*.15;
+  cx.strokeStyle=rgb(mix([90,80,40],P.hill,night(m)*.7)); cx.lineWidth=.6; cx.beginPath(); cx.moveTo(x,y); cx.lineTo(x+sw,y+s*.8); cx.stroke();
+  const cy=y+s*1.3, k=x+sw; cx.fillStyle=rgb(mix([226,214,96],P.hill,night(m)*.75)); cx.beginPath();
+  cx.moveTo(k,cy-s*.5); cx.lineTo(k+s*.42,cy); cx.lineTo(k,cy+s*.5); cx.lineTo(k-s*.42,cy); cx.fill();
+  cx.strokeStyle=rgb(mix([150,140,50],P.hill,night(m)*.75)); cx.lineWidth=.7; cx.beginPath(); cx.moveTo(k-s*.21,cy-s*.25); cx.lineTo(k+s*.21,cy+s*.25); cx.moveTo(k+s*.21,cy-s*.25); cx.lineTo(k-s*.21,cy+s*.25); cx.stroke();
+  cx.beginPath(); cx.moveTo(k,cy+s*.5); cx.lineTo(k+s*.1,cy+s*.85); cx.stroke(); // the janur tail
+}
+function hewan(x,y,s,goat,col,t,ph){ // a goat or a cow tethered for qurban, grazing now and then
+  const bob=Math.max(0,Math.sin(t*.7+ph))*s*.18, L=goat?s:s*1.5, bh=goat?s*.42:s*.6;
+  cx.fillStyle=col; cx.strokeStyle=col; cx.lineWidth=Math.max(1,s*.1);
+  cx.beginPath(); cx.ellipse(x,y-s*.55,L*.5,bh*.5,0,0,TAU); cx.fill();
+  cx.beginPath(); for(const dx of [-.35,-.2,.2,.35]){ cx.moveTo(x+dx*L,y-s*.4); cx.lineTo(x+dx*L,y); } cx.stroke();
+  const hx=x+L*.55, hy=y-s*.75+bob; cx.beginPath(); cx.moveTo(x+L*.38,y-s*.62); cx.lineTo(hx,hy); cx.stroke();
+  cx.beginPath(); cx.ellipse(hx+s*.08,hy+s*.04,s*.16,s*.1,.5,0,TAU); cx.fill();
+  if(goat){ cx.beginPath(); cx.moveTo(hx,hy-s*.05); cx.quadraticCurveTo(hx-s*.1,hy-s*.3,hx-s*.25,hy-s*.25); cx.stroke(); }
+}
+function festHill(m,t){
+  const F=FEST;
+  if(F.agustus){
+    G.houses.forEach((h,i)=>bendera(h.x+h.w*.55,h.y-h.h-h.w*.2,h.w*.38,t,m,i));
+    [.03,.18,.3,.45,.58,.83,.97].forEach((u,i)=>{ const x=W*u; umbul(x,G.hY(x)+H*.014,H*.1,t,m,i); });
+  }
+  if(F.ketupat) G.houses.forEach((h,i)=>{ ketupat(h.x-h.w*.36,h.y-h.h,h.w*.24,m,t,i); ketupat(h.x+h.w*.36,h.y-h.h,h.w*.24,m,t,i+2); });
+  if(F.ternak){
+    const dk=night(m)*.8;
+    [[.34,1,[236,232,220]],[.36,1,[120,84,52]],[.41,1,[236,232,220]],[.68,0,[200,176,150]],[.7,1,[60,50,44]],[.75,1,[236,232,220]],[.86,0,[150,110,80]]].forEach(([u,goat,c],i)=>{
+      const x=W*u; hewan(x,G.hY(x)+H*.022,H*(goat?.019:.024),goat,rgb(mix(c,P.hill,dk)),t,i); });
+  }
+  if(F.lomba){ // panjat pinang in the lapangan, with the crowd around it
+    const x=W*.8, y=G.eY(5,x)+H*.01, hgt=H*.15, ink=rgb(mix(P.fg,[0,0,0],.1));
+    cx.strokeStyle=rgb(mix([150,112,70],P.field,.2)); cx.lineWidth=Math.max(2,H*.005); cx.beginPath(); cx.moveTo(x,y); cx.lineTo(x,y-hgt); cx.stroke();
+    cx.strokeStyle=rgb([120,90,50]); cx.lineWidth=Math.max(1,H*.002); cx.beginPath(); cx.ellipse(x,y-hgt*.96,hgt*.13,hgt*.03,0,0,TAU); cx.stroke();
+    const prize=[[220,40,40],[40,120,220],[240,190,40],[60,170,90],[250,250,250]];
+    for(let i=0;i<9;i++){ const a=i/9*TAU, px=x+Math.cos(a)*hgt*.13, py=y-hgt*.96+Math.sin(a)*hgt*.03, sw=Math.sin(t*2+i)*hgt*.01;
+      cx.strokeStyle=ink; cx.lineWidth=.6; cx.beginPath(); cx.moveTo(px,py); cx.lineTo(px+sw,py+hgt*.08); cx.stroke();
+      cx.fillStyle=rgb(prize[i%5]); cx.fillRect(px+sw-hgt*.012,py+hgt*.08,hgt*.024,hgt*.035); }
+    bendera(x,y-hgt*.98,hgt*.12,t,m,0);
+    // a tower of climbers, slipping and trying again
+    const climb=(Math.sin(t*.25)*.5+.5)*.35; cx.fillStyle=ink; cx.strokeStyle=ink; cx.lineWidth=Math.max(1.2,H*.003);
+    for(let k=0;k<4;k++){ const by=y-k*hgt*.15-(k===3?climb*hgt:0), bx=x+(k%2?1:-1)*hgt*.025;
+      cx.beginPath(); cx.moveTo(bx,by); cx.lineTo(bx,by-hgt*.1); cx.stroke(); cx.beginPath(); cx.arc(bx,by-hgt*.12,hgt*.02,0,TAU); cx.fill(); }
+    for(let i=0;i<26;i++){ const a=i*2.4, r=hgt*(.25+(i%5)*.07), px=x+Math.cos(a)*r*1.6, py=y+Math.sin(a)*r*.12+H*.005, jump=Math.max(0,Math.sin(t*3+i*1.7))*H*.004;
+      cx.fillStyle=rgb(mix(prize[i%5],P.fg,.45)); cx.fillRect(px-H*.003,py-H*.016-jump,H*.006,H*.011); cx.fillStyle=ink; cx.beginPath(); cx.arc(px,py-H*.019-jump,H*.003,0,TAU); cx.fill(); }
+  }
+}
+// lights and walkers moving along the road below the kampung
+function train(n,speed,dir,gap,draw1,start=.45){
+  const span=n*gap, road=x=>G.hY(x)+H*.017, L=W+span*1.2, base=((ST.t*speed+start*L)%L+L)%L; // already part-way along when the page opens
+  for(let i=0;i<n;i++){ let x=base-i*gap; x=((x%L)+L)%L-span*.6; if(dir<0) x=W-x; draw1(x,road(x),i); }
+}
+function obor(x,y,a,t,i,spr){
+  const fl=.75+.25*Math.sin(t*13+i*2.1)*Math.sin(t*7.3+i), r=Math.max(5,H*.013)*fl;
+  cx.globalAlpha=a; cx.drawImage(spr||SP.obor,x-r,y-H*.02-r,r*2,r*2);
+}
+function festRoad(m,t){
+  const F=FEST;
+  cx.globalCompositeOperation="lighter";
+  if(F.takbiran) train(30,W/90,1,W*.022,(x,y,i)=>obor(x,y,.9,t,i,i%3===0?SP.obor:SP.lamp[i%4]));
+  if(F.sahur) train(7,W/40,-1,W*.02,(x,y,i)=>obor(x,y,.85,t,i));
+  if(F.tapaBisu) train(36,W/420,1,W*.016,(x,y,i)=>obor(x,y,.5,t,i));
+  if(F.tirakatan) for(let i=0;i<18;i++){ const x=W*(i+.5)/18; obor(x,G.hY(x)+H*.017,.85,t,i); }
+  for(const p of ST.pops){ const k=Math.min(p.n-1,Math.floor(p.life/.1)), f=1-(p.life-k*.1)/.12; if(f>0){ cx.globalAlpha=f; const r=H*.012; cx.drawImage(SP.warm,p.x+k*2-r,p.y-r,r*2,r*2); } }
+  cx.globalCompositeOperation="source-over"; cx.globalAlpha=1;
+  if(F.salatId){ // the kampung walking to the lapangan in its best clothes
+    const cols=[[250,250,246],[250,250,246],[230,230,220],[60,110,90],[120,60,90],[200,170,110]];
+    train(46,W/160,1,W*.013,(x,y,i)=>{ const c=rgb(mix(cols[i%6],P.hill,.15)), s=H*.012*(i%4?1:.75), bob=Math.abs(Math.sin(t*4+i))*s*.08;
+      cx.fillStyle=c; cx.fillRect(x-s*.22,y-s-bob,s*.44,s*.8); cx.beginPath(); cx.arc(x,y-s*1.15-bob,s*.16,0,TAU); cx.fill(); });
+  }
+}
+const FWS={}; const fwSprite=c=>FWS[c]||(FWS[c]=sprite(c,.35));
+function fireworks(){
+  cx.globalCompositeOperation="lighter";
+  for(const f of ST.fw){
+    if(!f.parts){ const u=Math.min(1,f.t/1.1), y=f.y+(f.ty-f.y)*(1-Math.pow(1-u,2)); cx.globalAlpha=.9; cx.fillStyle="#ffe6b0"; cx.fillRect(f.x-1,y,2,4); cx.globalAlpha=.3; cx.fillRect(f.x-.5,y+4,1,H*.03); continue; }
+    const a=Math.max(0,1-f.bt/2), spr=fwSprite(f.c), r=Math.max(3,H*.006);
+    for(const q of f.parts){ cx.globalAlpha=a*(.55+.45*Math.random()); cx.drawImage(spr,q.x-r,q.y-r,r*2,r*2); }
+    if(f.bt<.25){ cx.globalAlpha=(1-f.bt/.25)*.5; const r=H*.06; cx.drawImage(SP.warm,f.x-r,f.ty-r,r*2,r*2); }
+  }
+  cx.globalCompositeOperation="source-over"; cx.globalAlpha=1;
 }
 function draw(){
   const h=hourNow(); if(!M||Math.abs(h-baseH)>.004) renderBase(h);
@@ -376,7 +536,9 @@ function draw(){
   cx.globalAlpha=m.rain?.9:.45+.4*m.day;
   for(let i=0,n=Math.round(4+m.rain*6);i<n;i++){ const c=ST.clouds[i]; for(const p of c.p) cx.drawImage(SP.cloud,c.x+p.dx-p.r,c.y+p.dy-p.r,p.r*2,p.r*2); }
   for(const p of ST.puffs){ cx.globalAlpha=Math.min(1,p.a*12)*(1-p.a)*.6; cx.drawImage(SP.smoke,p.x-p.r,p.y-p.r,p.r*2,p.r*2); }
+  if(ST.fw.length) fireworks();
   cx.setTransform(1,0,0,1,0,0); cx.globalAlpha=1; cx.drawImage(land,0,0); cx.setTransform(dpr,0,0,dpr,0,0);
+  festHill(m,t);
   if(m.night>.05){
     cx.globalCompositeOperation="lighter";
     const R=H*.06; cx.globalAlpha=m.night*(.5+.08*Math.sin(t*1.3)+.05*Math.sin(t*3.7));
@@ -388,6 +550,7 @@ function draw(){
   cx.globalAlpha=Math.min(1,m.dawn+m.night*.4+m.rain*.5+.12)*.5;
   for(const b of ST.mist) cx.drawImage(SP.mist,b.x,b.y-b.h/2,b.w,b.h);
   for(const p of ST.smoke){ cx.globalAlpha=Math.min(1,p.a*8)*(1-p.a)*.35; cx.drawImage(SP.smoke,p.x-p.r,p.y-p.r,p.r*2,p.r*2); }
+  festRoad(m,t);
   // layangan: kites flown from the fields after school
   if(m.sore>.02){
     for(const k of G.kites){
@@ -762,6 +925,91 @@ function thunder(t){
 }
 function onLightning(delay){ if(A.on) thunder(A.ctx.currentTime+delay); }
 
+// ================= hari besar: sound =================
+const panFor=x=>Math.max(-.9,Math.min(.9,(x/(W||1))*1.8-.9));
+const panBus=pan=>A.far[Math.max(0,Math.min(4,Math.round((pan+.8)/.4)))]; // the nearest far bus, so no nodes pile up
+function pop1(t,out,v){ // one petasan: a sharp crack with a little body
+  const n=Nz(), hp=Fl("bandpass",rand(1500,2600),.8), g=Gn(), o=O("sine",rand(90,130)), og=Gn();
+  chain(n,hp,g,out); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.002); g.gain.exponentialRampToValueAtTime(1e-4,t+.07); run1(n,t,.09);
+  o.frequency.setValueAtTime(160,t); o.frequency.exponentialRampToValueAtTime(60,t+.08); chain(o,og,out); env(og.gain,t,.002,v*.5,0,.1); run1(o,t,.14);
+}
+function onPop(n,x){
+  if(!A.on) return; const t=A.ctx.currentTime+rand(.05,.25), out=panBus(panFor(x)), v=n>1?.07:.12;
+  for(let i=0;i<n;i++) pop1(t+i*rand(.05,.13),out,v*rand(.6,1));
+}
+function onFirework(stage,x){
+  if(!A.on) return; const t=A.ctx.currentTime, out=panBus(panFor(x));
+  if(stage===0){ // the whistle of the climbing rocket
+    const o=O("sine",900), g=Gn(); o.frequency.setValueAtTime(900,t); o.frequency.exponentialRampToValueAtTime(2600,t+1.05);
+    chain(o,g,out); env(g.gain,t,.05,.012,.8,.2); run1(o,t,1.1);
+  } else { // the burst, heard a moment later, then the crackle as it falls
+    const d=t+rand(.35,.6), n=Nz(), g=Gn(), o=O("sine",70), og=Gn();
+    chain(n,Fl("lowpass",900,.7),g,out); env(g.gain,d,.004,.16,.02,.6); run1(n,d,.8);
+    o.frequency.setValueAtTime(110,d); o.frequency.exponentialRampToValueAtTime(45,d+.3); chain(o,og,out); env(og.gain,d,.004,.12,0,.4); run1(o,d,.5);
+    for(let i=0;i<18;i++){ const c=d+.25+rand(0,1.2), cn=Nz(), cg=Gn(); chain(cn,Fl("highpass",3000),cg,out); env(cg.gain,c,.001,rand(.01,.03),0,.012); run1(cn,c,.03); }
+  }
+}
+// The crowd: a murmur for tirakatan and the lomba, cheers, the referee's whistle and applause.
+function cheer(t){
+  const out=busFor(true), n=Nz(), n2=Nz(), g=Gn(), d=rand(1.4,2.6);
+  chain(n,Fl("bandpass",rand(700,900),1.1),g); chain(n2,Fl("bandpass",rand(1800,2300),1.6),g); chain(g,Fl("lowpass",3200),out);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.16,t+.18); g.gain.setValueAtTime(.14,t+d*.4); g.gain.exponentialRampToValueAtTime(1e-4,t+d); run1(n,t,d); run1(n2,t,d);
+}
+function peluit(t){
+  const out=busFor(true), f=rand(2700,3200);
+  for(const [s,d] of Math.random()<.5?[[0,.12],[.2,.12],[.42,.6]]:[[0,.5]]){
+    const o=O("sine",f), fm=O("sine",rand(26,34)), fg=Gn(f*.06), g=Gn(); chain(fm,fg,o.frequency);
+    chain(o,g,out); env(g.gain,t+s,.01,.05,d-.03,.03); run1(o,t+s,d); run1(fm,t+s,d);
+  }
+}
+function tepuk(t){
+  const out=busFor(true), d=rand(2,3.5);
+  for(let i=0;i<90;i++){ const s=t+Math.pow(Math.random(),1.6)*d, n=Nz(), g=Gn(); chain(n,Fl("bandpass",rand(1200,3500),1.2),g,out); env(g.gain,s,.001,rand(.06,.14)*(1-(s-t)/d*.6),0,.02); run1(n,s,.03); }
+}
+function sirine(t){ // 10:00 on the 17th: the siren for the moment of the Proklamasi, far off in town
+  const out=A.far[3], o=O("sawtooth",380), o2=O("sine",380), w=O("sine",.18), wg=Gn(25), g=Gn(), dur=60;
+  chain(w,wg,o.frequency); chain(w,wg,o2.frequency); chain(o,Fl("bandpass",1100,1.4),g); chain(o2,g); chain(g,Fl("lowpass",1800),out);
+  for(const x of [o,o2]){ x.frequency.setValueAtTime(380,t); x.frequency.linearRampToValueAtTime(820,t+5); x.frequency.setValueAtTime(820,t+dur-6); x.frequency.linearRampToValueAtTime(300,t+dur); }
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.035,t+5); g.gain.setValueAtTime(.035,t+dur-6); g.gain.linearRampToValueAtTime(0,t+dur);
+  run1(o,t,dur); run1(o2,t,dur); run1(w,t,dur);
+}
+// Patrol sahur: a band of kentongan, a bedug on a cart and a water galon, coming down the road and going past.
+function thump(t,f,v,out){ const o=O("sine",f), g=Gn(); o.frequency.setValueAtTime(f*1.6,t); o.frequency.exponentialRampToValueAtTime(f,t+.06); chain(o,g,out); env(g.gain,t,.004,v,.02,.3); run1(o,t,.4); }
+function sahurPatrol(t){
+  const ac=A.ctx, dur=rand(40,60), dir=Math.random()<.5?1:-1, g=Gn(0), lp=Fl("lowpass",600,.6); let out=g;
+  chain(g,lp); if(ac.createStereoPanner){ const p=ac.createStereoPanner(); lp.connect(p); p.pan.setValueAtTime(-.85*dir,t); p.pan.linearRampToValueAtTime(.85*dir,t+dur); p.connect(A.out); const w=Gn(.4); p.connect(w); w.connect(A.wet); } else lp.connect(A.out);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(1,t+dur*.5); g.gain.linearRampToValueAtTime(0,t+dur);
+  lp.frequency.setValueAtTime(500,t); lp.frequency.linearRampToValueAtTime(3500,t+dur*.5); lp.frequency.linearRampToValueAtTime(500,t+dur);
+  const step=.24, pat="K.k.Kkk.K.k.KkK.", drum="B..b..B.B..b..b.";
+  for(let s=t,i=0;s<t+dur;s+=step,i++){ const c=pat[i%16], d=drum[i%16], j=rand(-.01,.01);
+    if(c!==".") knock(s+j,c==="K"?.14:.09,out);
+    if(d==="B") thump(s+j,rand(62,70),.16,out); else if(d==="b") thump(s+j,rand(150,170),.09,out); }
+}
+// Takbiran: bedug from every langgar at once, in the quick rolling rhythm of the night before Lebaran.
+function bedugTalu(t){
+  const out=A.far[Math.random()*5|0], pats=["x.x.xxx.x.x.xxx.","x..x..x.xxxx.x..","xx.xx.x.xx.xx.x."], pat=pats[Math.random()*3|0], step=rand(.2,.26), rep=1+(Math.random()*2|0), f=rand(56,66);
+  for(let r=0;r<rep;r++) for(let i=0;i<16;i++) if(pat[i]==="x"){ const s=t+(r*16+i)*step; thump(s,f,.11,out); }
+}
+// Bedug for buka puasa: longer, and the kampung's langgar answering one another.
+function bedugBuka(t){ bedug(t); bedug(t+rand(2,4)); }
+// Sekaten: the great pelog gamelan, slow and loud, with the bedug among the instruments.
+const PELOG={1:1,2:1.105,3:1.2,4:1.4,5:1.5,6:1.6,7:1.82};
+const SEKATEN=["35323532653221265356535676532132","66536653212165323235323556532165"].map(p=>p.split(""));
+function sekaten(t){
+  if(A.gamUntil>t) return;
+  const out=A.gam, f0=230, notes=SEKATEN[Math.random()*2|0], beat=rand(1.5,1.8), rounds=2; let s=t;
+  for(let r=0;r<rounds;r++) notes.forEach((d,i)=>{
+    const f=f0*PELOG[d], nx=f0*PELOG[notes[(i+1)%notes.length]];
+    if(i===0) gong(s,out,.13);
+    bar(s,f,.05,2.6,out); bar(s,f/2,.04,3.5,out,[[1,1],[2,.25],[3,.08]]); // demung and slenthem
+    for(let k=0;k<4;k++) bar(s+k*beat/4,k%2?nx*2:f*2,.022,.9,out,[[1,1],[3.9,.12]]); // the bonang's loud pipilan
+    if(i%8===7) thump(s,rand(58,64),.12,out); // bedug in the gamelan
+    if(i%4===3) bar(s,f/2,.04,4,out,[[1,1],[2,.2]]);
+    s+=beat;
+  });
+  gong(s,out,.14); A.gamUntil=s+30;
+}
+
 const EV={
   rooster:{gap:[14,38], w:m=>m.dawn+bump(m.h,3.2,3.8,4.6,5)*.5+.05*m.day, fn:t=>rooster(t,false)},
   kutilang:{gap:[3,9], w:m=>(m.dawn*.6+bump(m.h,5.5,6.2,9.5,11)+m.day*.3+m.sore*.4)*(1-m.rain*.85), fn:kutilang},
@@ -778,14 +1026,22 @@ const EV={
   drip:   {gap:[.3,1.5], w:m=>.5+m.rain*.5, fn:drip},
   genteng:{gap:[.05,.15], w:m=>m.rain, fn:t=>{ for(let i=0,n=1+(Math.random()*3|0);i<n;i++) genteng(t+Math.random()*.2); }},
   talang: {gap:[.55,.85], w:m=>m.rain>.3?1:0, fn:talang},
-  ronda:  {gap:[400,900], w:m=>m.h>=21||m.h<3.5?1:0, fn:t=>kentongan(t,0)},
-  gamelan:{gap:[90,240], w:m=>bump(m.h,19.3,19.8,21.8,22.4)*.7*(1-m.rain), fn:gamelan},
-  sapi:   {gap:[25,70], w:m=>(m.dawn*.7+bump(m.h,6.5,7.2,10,11.5)*.6+m.sore*.35)*(1-m.rain*.7), fn:t=>sapi(t,Math.random()<.4)},
+  ronda:  {gap:[400,900], w:m=>(m.h>=21||m.h<3.5)&&!m.F.suro?1:0, fn:t=>kentongan(t,0)},
+  gamelan:{gap:[90,240], w:m=>m.F.suro||m.F.ramadan||m.F.sekaten||m.F.takbiran?0:bump(m.h,19.3,19.8,21.8,22.4)*.7*(1-m.rain), fn:gamelan},
+  sekaten:{gap:[20,90], w:m=>m.F.sekaten?.8:0, fn:sekaten},
+  sapi:   {gap:[25,70], w:m=>m.F.ternak?.9:(m.dawn*.7+bump(m.h,6.5,7.2,10,11.5)*.6+m.sore*.35)*(1-m.rain*.7), fn:t=>sapi(t,Math.random()<.4)},
   pecut:  {gap:[120,300], w:m=>bump(m.h,6.3,7,10.5,11.5)*(1-m.rain), fn:pecut},
-  kambing:{gap:[35,90], w:m=>(bump(m.h,5.6,6.5,9,10.5)*.7+m.sore*.6)*(1-m.rain*.8), fn:t=>kambing(t,Math.random()<.5)},
+  kambing2:{gap:[8,25], w:m=>m.F.ternak?.8:0, fn:t=>kambing(t,Math.random()<.5)},
+  kambing:{gap:[35,90], w:m=>m.F.ternak?1:(bump(m.h,5.6,6.5,9,10.5)*.7+m.sore*.6)*(1-m.rain*.8), fn:t=>kambing(t,Math.random()<.5)},
   sapu:   {gap:[40,110], w:m=>bump(m.h,5.4,5.9,8,9)*(1-m.rain), fn:sapu},
-  motor:  {gap:[45,140], w:m=>bump(m.h,5.5,6.5,21,22.5)*.6, fn:motor},
-  bakso:  {gap:[120,360], w:m=>bump(m.h,15.5,16.2,21,21.8)*.8, fn:bakso},
+  motor:  {gap:[45,140], w:m=>m.F.suro?0:bump(m.h,5.5,6.5,21,22.5)*.6, fn:motor},
+  motor2: {gap:[12,40], w:m=>m.F.ngabuburit||m.F.lebaran?.8:0, fn:motor},           // ngabuburit and silaturahmi
+  bakso:  {gap:[120,360], w:m=>m.F.suro?0:bump(m.h,15.5,16.2,21,21.8)*.8, fn:bakso},
+  sahur:  {gap:[90,240], w:m=>m.F.sahur?1:0, fn:sahurPatrol},
+  talu:   {gap:[2,5], w:m=>m.F.takbiran?.9:0, fn:bedugTalu},
+  cheer:  {gap:[6,20], w:m=>m.F.lomba?.9:0, fn:cheer},
+  peluit: {gap:[10,30], w:m=>m.F.lomba?.8:0, fn:peluit},
+  tepuk:  {gap:[18,45], w:m=>m.F.lomba||m.F.tirakatan?.7:0, fn:tepuk},
 };
 // Bedug from the langgar a few minutes before each prayer (times for Yogyakarta, give or take a few minutes through the year).
 const BEDUG=[3.95,11.55,14.85,17.6,18.75];
@@ -822,11 +1078,17 @@ function initAudio(){
   A.send=[[rand(170,190),-.5],[rand(225,250),.4]].map(([f,pan])=>{
     const o=O("sawtooth",f), g=Gn(0), out=A.far[pan<0?1:3]; chain(o,Fl("bandpass",f*3.2,3),g,out); const o2=O("sawtooth",f*1.01); chain(o2,Fl("bandpass",f*6.5,4),g); o.start(); o2.start(); g.f=f; g.o=[o,o2]; return g;
   });
+  // the crowd's murmur: noise through a few moving vowel formants
+  A.crowd=Gn(0); A.crowdF=[450,1150,2400].map((f,i)=>{ const n=Nz(), b=Fl("bandpass",f,1.6+i), g=Gn(.3); chain(n,b,g,A.crowd); n.start(0,Math.random()*1.5); return {b,g,f}; });
+  chain(A.crowd,Fl("lowpass",2600),A.far[2]);
   A.frogs=Array.from({length:7},(_,i)=>({type:i<4?0:1,f:i<4?rand(190,260):rand(300,420),bus:busFor(Math.random()<.7)}));
   return true;
 }
 function tick(){
   const now=A.ctx.currentTime, m=moods(hourNow()), set=(g,v,tc)=>g.gain.setTargetAtTime(v,now,tc);
+  const F=m.F=FEST;
+  set(A.crowd,F.tirakatan||F.lomba?.06:F.takbiran?.025:0,2);
+  for(const c of A.crowdF){ c.g.gain.setTargetAtTime(rand(.05,.5),now,.06); c.b.frequency.setTargetAtTime(c.f*rand(.8,1.25),now,.08); }
   if(Math.random()<.05) A.gust=rand(.3,1);
   A.rainSw=Math.max(.55,Math.min(1.35,A.rainSw+rand(-.06,.06))); // showers come in waves
   set(A.wind,(.04+.06*A.gust)*(1+m.rain),2);
@@ -841,10 +1103,13 @@ function tick(){
     A.next[k]=now+rand(...e.gap);
     const w=e.w(m); if(w>0&&Math.random()<w) e.fn(now+.05+Math.random()*.3);
   }
-  if(A.lastH!==undefined) for(const b of BEDUG) if((A.lastH<b&&m.h>=b)||(A.lastH>m.h&&(b>A.lastH||b<=m.h))) bedug(now+.5);
+  const crossed=b=>A.lastH!==undefined&&((A.lastH<b&&m.h>=b)||(A.lastH>m.h&&(b>A.lastH||b<=m.h)));
+  for(const b of BEDUG) if(crossed(b)) (F.ramadan&&b===17.6?bedugBuka:bedug)(now+.5);
+  if(F.idDay&&crossed(5.75)) bedug(now+.5); // before salat Id
+  if(F.sirineDay&&crossed(10)) sirine(now+.2);
   A.lastH=m.h;
   const hr=Math.floor(m.h);
-  if(A.hr!==undefined&&hr!==A.hr&&(hr>=20||hr<=4)) kentongan(now+1,hr%12||12);
+  if(A.hr!==undefined&&hr!==A.hr&&(hr>=20||hr<=4)&&!F.suro) kentongan(now+1,hr%12||12);
   A.hr=hr;
 }
 const btn=document.getElementById("suara");
