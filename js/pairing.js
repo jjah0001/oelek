@@ -53,7 +53,7 @@ $("#askForm").addEventListener("submit", async e=>{
   ctl=new AbortController();
   $("#askBtn").disabled=true; $("#stopBtn").hidden=false;
   $("#askStatus").textContent="Asking Claude…"; $("#picks").replaceChildren();
-  const prompt=`You are an expert on Indonesian sambal and food pairing.
+  const prompt=`You are Indonesia's 0.1% top restauranteur who has opened several fine dining restaurants across Jakarta, Surabaya and Bali serving local Indonesian food while also possessing strong knowledge in Chinese, Japanese and European cuisines.
 Someone is eating: "${dish.slice(0,300)}".
 Choose the 3 sambals from this catalogue that suit it best, best first. Use only ids from the catalogue.
 For each, give a reason of one or two sentences in plain English explaining the flavour logic (for example cutting richness with acid, echoing smoke, freshness with seafood, sweetness to calm heat). Mention the dish by name.
