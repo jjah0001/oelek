@@ -5,7 +5,8 @@
 // Sound is synthesised in Web Audio (no audio files) and only plays after the visitor asks.
 // Holidays bring their own kampung: flags all August, tirakatan and lomba for the 17th, sahur patrols
 // and ngabuburit in Ramadan, malam takbiran and Lebaran, the qurban animals of Idul Adha, Sekaten's
-// gamelan before Maulid and the silence of malam 1 Suro (dates in js/data/hari-besar.js).
+// gamelan before Maulid and the silence of malam 1 Suro; the gereja, pura and klenteng keep Natal and
+// Paskah, Nyepi and Waisak, Imlek and Cap Go Meh, and everyone sees in the new year (dates in js/data/hari-besar.js).
 // Preview another hour with ?jam=21.5, another day with ?tgl=2027-03-09 and rain with ?hujan=1 (or ?hujan=0).
 (()=>{
 const cv=document.getElementById("kampung");
@@ -25,7 +26,7 @@ function kNow(){
 const hourNow=()=>{ const d=kNow(); return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600; };
 
 // ================= hari besar =================
-const HB=(typeof HARI_BESAR!=="undefined"?HARI_BESAR:[]).map(([k,s])=>{ const [y,m,d]=s.split("-").map(Number); return [k,Date.UTC(y,m-1,d)/864e5]; });
+const HB=[...(typeof HARI_BESAR!=="undefined"?HARI_BESAR:[]),...(typeof HARI_RAYA!=="undefined"?HARI_RAYA:[])].map(([k,s])=>{ const [y,m,d]=s.split("-").map(Number); return [k,Date.UTC(y,m-1,d)/864e5]; });
 const dayNum=d=>Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5;
 function festAt(d){
   const n=dayNum(d), h=d.getHours()+d.getMinutes()/60, mo=d.getMonth(), dt=d.getDate(), wd=d.getDay();
@@ -50,6 +51,29 @@ function festAt(d){
   F.tirakatan=mo===7&&dt===16&&h>=18.5;
   F.lomba=mo===7&&dt===17&&h>=7.5&&h<17;
   F.idDay=Fi===0||Ad===0; F.sirineDay=mo===7&&dt===17;
+  // Natal: stars and lights from mid-December to Epiphany; candles to the misa on the 24th; bells.
+  const Im=off("imlek"), Ny=off("nyepi"), Pa=off("paskah"), Wa=off("waisak");
+  F.natalan=(mo===11&&dt>=15)||(mo===0&&dt<=6);
+  F.misaNatal=mo===11&&dt===24&&h>=21&&h<23.6;
+  F.natal=(mo===11&&(dt===25||(dt===24&&h>=18)));
+  // Paskah: no bells from Kamis Putih evening until the Gloria of the Easter Vigil; candles that night.
+  F.lilinPaskah=Pa===-1&&h>=19&&h<22.5;
+  F.loncengDiam=(Pa===-3&&h>=18)||Pa===-2||(Pa===-1&&h<20.3);
+  F.paskah=Pa===0;
+  // Nyepi: the ogoh-ogoh parade on the evening of Pengerupukan; on the day the Hindu houses by the pura stay dark.
+  F.ogoh=Ny===-1&&h>=18.3&&h<22.5;
+  F.nyepi=(Ny===0&&h>=6)||(Ny===1&&h<6);
+  // Waisak: lanterns rising from Borobudur, away to the west, on the full-moon night.
+  F.waisak=Wa===0&&h>=19.5;
+  F.waisakDay=Wa===0;
+  // Imlek: red lanterns for the fifteen days to Cap Go Meh; fireworks at midnight; barongsai by day.
+  F.lampion=is(Im,-1,14);
+  F.malamImlek=(Im===-1&&h>=23.3)||(Im===0&&h<.7);
+  F.barongsai=(Im===0&&h>=9&&h<17)||(Im===14&&h>=18.5&&h<22.5);
+  F.imlek=Im===0;
+  // Tahun Baru: fireworks and terompet around midnight.
+  F.tahunBaru=(mo===11&&dt===31&&h>=23.6)||(mo===0&&dt===1&&h<.7);
+  F.fireworks=F.takbiran||F.malamImlek||F.tahunBaru;
   return F;
 }
 let FEST=festAt(kNow());
@@ -67,7 +91,7 @@ const TAU=Math.PI*2;
 // ================= time of day =================
 // Afternoon rain is likelier in the wet season (Nov–Mar); the same day always gets the same weather.
 const today=kNow(), hq=qs.get("hujan");
-const rainyDay=rng(today.getFullYear()*1000+today.getMonth()*40+today.getDate())()<[.7,.7,.6,.45,.2,.08,.05,.05,.1,.3,.55,.65][today.getMonth()];
+const rainyDay=rng(today.getFullYear()*1000+today.getMonth()*40+today.getDate())()<(FEST.imlek?.9:[.7,.7,.6,.45,.2,.08,.05,.05,.1,.3,.55,.65][today.getMonth()]); // rain on Imlek brings rezeki
 const rainAt=h=>hq==="1"?1:hq==="0"||!rainyDay?0:bump(h,13.6,14.6,16.4,17.4);
 function moods(h){
   const rain=rainAt(h);
@@ -124,7 +148,7 @@ const SP={fire:sprite([214,255,120]), lava:sprite([255,110,40]), warm:sprite([25
 
 // ================= layout =================
 let W=0,H=0,dpr=1,G=null,P=null,M=null,baseH=-1;
-const ST={t:0,emit:0,fcheck:0,fw:[],pops:[],clouds:[],puffs:[],lava:[],trail:[],flocks:[],bats:[],flies:[],drops:[],smoke:[],mist:[],shoot:null,flash:0};
+const ST={t:0,emit:0,fcheck:0,fw:[],pops:[],lamp:[],clouds:[],puffs:[],lava:[],trail:[],flocks:[],bats:[],flies:[],drops:[],smoke:[],mist:[],shoot:null,flash:0};
 function layout(){
   const w=cv.clientWidth, h=cv.clientHeight;
   if(!w||!h||(w===W&&h===H&&G)) return;
@@ -156,12 +180,13 @@ function layout(){
   const mid=(i,x)=>(eY(i,x)+eY(i+1,x))/2;
   const figs={gubuk:{x:W*.7,y:mid(3,W*.7)},orang:{x:W*.6,y:mid(4,W*.6)},tani:[{x:W*.79,y:mid(4,W*.79)},{x:W*.835,y:mid(5,W*.835)}]};
   const masjid={x:W*.955,y:hY(W*.955)+H*.008,w:H*.055};
+  const gereja={x:W*.255,y:hY(W*.255)+H*.008,w:H*.046}, klenteng={x:W*.505,y:hY(W*.505)+H*.008,w:H*.042}, pura={x:W*.6,y:hY(W*.6)+H*.008,w:H*.04};
   // bamboo leaves, fixed once so they only sway
   const bam=Array.from({length:7},()=>Array.from({length:20},(_,k)=>Array.from({length:3},(_,j)=>({u:.34+k*.033+r(-.01,.01),side:(k+j)%2?1:-1,a:r(.25,.9),L:r(.055,.095)}))));
   const stars=[]; for(let i=0;i<170;i++) stars.push({x:r(0,W),y:r(0,yH*.85),r:r(.6,1.7),b:r(.3,1),w:r(.5,2.5),ph:r(0,TAU)});
   const grass=[]; for(let x=0;x<W;x+=r(3,8)) grass.push({x,h:H*r(.012,.035),ph:r(0,TAU)});
   const kites=[[[200,36,36],[250,248,240]],[[240,186,40],[240,186,40]],[[40,92,200],[250,248,240]]].map(c=>{ const gx=W*r(.2,.8); return {ax:W*r(.15,.85),ay:H*r(.1,.3),c,ph:r(0,TAU),gx,gy:hY(gx)}; });
-  G={yH,px,py,hw,mPts,bPts,mY,hY,gullies,trees,palms,houses,edges,plots,eY,figs,masjid,bam,stars,grass,kites,
+  G={yH,px,py,hw,mPts,bPts,mY,hY,gullies,trees,palms,houses,edges,plots,eY,figs,masjid,gereja,klenteng,pura,bam,stars,grass,kites,
      fgY:x=>H*.955+H*.012*Math.sin(x*.013+1.7)};
   ST.clouds=Array.from({length:10},()=>{ const s=H*rand(.03,.07); return {x:rand(-.2,1)*W,y:H*rand(.05,.38),s,v:rand(3,8),p:Array.from({length:5+(Math.random()*4|0)},()=>({dx:rand(-1.6,1.6)*s,dy:rand(-.35,.15)*s,r:s*rand(.6,1.1)}))}; });
   ST.mist=Array.from({length:12},(_,i)=>({x:rand(-.3,1)*W,y:i<7?yH+H*rand(-.05,.02):H*rand(.7,.95),w:W*rand(.3,.6),h:H*rand(.04,.09),v:rand(2,6)}));
@@ -287,6 +312,7 @@ function renderBase(h){
     if(lit){ c.globalCompositeOperation="lighter"; c.globalAlpha=lit*.55; c.drawImage(SP.warm,x-w,top-w*.5,w*2,w*1.6); c.globalAlpha=1; c.globalCompositeOperation="source-over"; }
   }
   masjid(c,G.masjid,m,nightLit);
+  drawGereja(c,G.gereja,m,nightLit); drawKlenteng(c,G.klenteng,m,nightLit); drawPura(c,G.pura,m,FEST.nyepi?0:nightLit);
   sawah(c,m);
 }
 // Sawah: plots flooded for planting (holding the sky), young rice, full green rice and a few turning gold,
@@ -352,6 +378,39 @@ function tani(c,x,y,s,col,pose){ // a farmer bent over the rice, caping on
   c.moveTo(hx-(hx-x)*.2,hy+s*.02); c.lineTo(hx+(hx-x)*.1,y-s*.12); c.stroke(); // arm reaching to the padi
   caping(c,hx+(hx-x)*.1,hy-s*.02,s*.24);
 }
+function glowAt(c,x,y,w,lit,col){ if(!lit) return; c.globalCompositeOperation="lighter"; c.globalAlpha=lit*.5; c.drawImage(col||SP.warm,x-w,y-w*.4,w*2,w*1.4); c.globalAlpha=1; c.globalCompositeOperation="source-over"; }
+function drawGereja(c,q,m,lit){ // a small kampung church: whitewashed, a steep roof and a bell tower with a cross
+  const {x,y,w}=q, h=w*.5, top=y-h, wall=rgb(mix(P.hill,[232,228,214],.5*(1-m.night*.7))), roof=rgb(mix(P.hill,[150,62,40],.45*(1-m.night*.6)));
+  c.fillStyle=wall; c.fillRect(x-w/2,top,w*.78,h);
+  c.fillStyle=roof; c.beginPath(); c.moveTo(x-w*.58,top); c.lineTo(x+w*.36,top); c.lineTo(x-w*.11,top-w*.36); c.fill();
+  const tx=x+w*.36, tw=w*.22, th=w*.95; c.fillStyle=wall; c.fillRect(tx-tw/2,y-th,tw,th);
+  c.fillStyle=roof; c.beginPath(); c.moveTo(tx-tw*.65,y-th); c.lineTo(tx+tw*.65,y-th); c.lineTo(tx,y-th-w*.3); c.fill();
+  c.strokeStyle=rgb(mix(P.hill,[246,240,220],.6*(1-m.night*.6))); c.lineWidth=Math.max(1,w*.03); c.beginPath();
+  c.moveTo(tx,y-th-w*.3); c.lineTo(tx,y-th-w*.52); c.moveTo(tx-w*.07,y-th-w*.44); c.lineTo(tx+w*.07,y-th-w*.44); c.stroke();
+  c.fillStyle=lit?rgb(mix([40,30,20],[255,214,140],lit)):rgb(mix(P.hill,[0,0,0],.4));
+  for(const dx of [-.36,-.18,0]){ c.beginPath(); c.moveTo(x+dx*w-w*.04,top+h*.75); c.lineTo(x+dx*w-w*.04,top+h*.35); c.arc(x+dx*w,top+h*.35,w*.04,Math.PI,0); c.lineTo(x+dx*w+w*.04,top+h*.75); c.fill(); }
+  glowAt(c,x-w*.1,top,w,lit);
+}
+function drawKlenteng(c,q,m,lit){ // a klenteng: red walls and pillars, a roof with swallowtail ridge ends
+  const {x,y,w}=q, h=w*.44, top=y-h, dk=1-m.night*.65;
+  c.fillStyle=rgb(mix(P.hill,[176,44,36],.55*dk)); c.fillRect(x-w/2,top,w,h);
+  c.fillStyle=rgb(mix(P.hill,[90,54,40],.5*dk)); c.beginPath();
+  c.moveTo(x-w*.62,top); c.lineTo(x+w*.62,top); c.lineTo(x+w*.5,top-w*.2); c.lineTo(x-w*.5,top-w*.2); c.fill();
+  c.strokeStyle=rgb(mix(P.hill,[200,150,60],.5*dk)); c.lineWidth=Math.max(1,w*.035); c.beginPath(); // the ridge sweeping up at both ends
+  c.moveTo(x-w*.62,top-w*.32); c.quadraticCurveTo(x-w*.48,top-w*.18,x,top-w*.21); c.quadraticCurveTo(x+w*.48,top-w*.18,x+w*.62,top-w*.32); c.stroke();
+  c.fillStyle=lit?rgb(mix([40,24,16],[255,190,110],lit)):rgb(mix(P.hill,[0,0,0],.45)); c.fillRect(x-w*.12,top+h*.35,w*.24,h*.65);
+  glowAt(c,x,top,w*.9,lit);
+}
+function drawPura(c,q,m,lit){ // a small pura: a split gate (candi bentar) and a meru shrine behind it
+  const {x,y,w}=q, dk=1-m.night*.65, stone=rgb(mix(P.hill,[120,110,100],.5*dk)), brick=rgb(mix(P.hill,[170,92,62],.45*dk));
+  c.fillStyle=rgb(mix(P.hill,[60,52,48],.5*dk)); // meru: stacked roofs
+  for(let i=0;i<5;i++){ const ww=w*(.34-i*.05), yy=y-w*.32-i*w*.13; c.beginPath(); c.moveTo(x+w*.3-ww,yy); c.lineTo(x+w*.3+ww,yy); c.lineTo(x+w*.3+ww*.6,yy-w*.1); c.lineTo(x+w*.3-ww*.6,yy-w*.1); c.fill(); }
+  c.fillRect(x+w*.28,y-w*.34,w*.04,w*.34);
+  for(const sd of [-1,1]){ const gx=x-w*.12+sd*w*.1; c.fillStyle=brick; c.beginPath(); // candi bentar halves, stepped
+    c.moveTo(gx,y); c.lineTo(gx,y-w*.75); c.lineTo(gx+sd*w*.05,y-w*.75); c.lineTo(gx+sd*w*.05,y-w*.62); c.lineTo(gx+sd*w*.12,y-w*.62); c.lineTo(gx+sd*w*.12,y-w*.45); c.lineTo(gx+sd*w*.2,y-w*.45); c.lineTo(gx+sd*w*.2,y); c.fill();
+    c.fillStyle=stone; c.fillRect(gx+(sd<0?-w*.2:0),y-w*.06,w*.2,w*.06); }
+  glowAt(c,x+w*.2,y-w*.4,w*.7,lit*.8);
+}
 function masjid(c,q,m,lit){ // a village masjid with a three-tier tajug roof and mustaka
   const {x,y,w}=q, h=w*.42, top=y-h;
   c.fillStyle=rgb(mix(P.hill,[226,222,206],.45*(1-m.night*.7))); c.fillRect(x-w/2,top,w,h);
@@ -402,7 +461,7 @@ function step(dt){
   if(ST.shoot){ ST.shoot.life+=dt; ST.shoot.x+=ST.shoot.vx*dt; ST.shoot.y+=ST.shoot.vy*dt; if(ST.shoot.life>.9) ST.shoot=null; }
   else if(m.night>.85&&!m.rain&&Math.random()<dt/50) ST.shoot={x:W*rand(.1,.9),y:H*rand(.05,.3),vx:rand(220,380)*(Math.random()<.5?1:-1),vy:rand(80,140),life:0};
   // kembang api over the kampung on malam takbiran
-  if(F.takbiran&&!m.rain&&ST.fw.length<5&&Math.random()<dt/2.6){ const x=W*rand(.08,.97); ST.fw.push({x,y:G.hY(x),ty:H*rand(.1,.34),t:0,c:[[255,90,70],[255,215,90],[120,230,140],[140,180,255],[255,150,220]][Math.random()*5|0],parts:null}); onFirework(0,x); }
+  if(F.fireworks&&!m.rain&&ST.fw.length<(F.tahunBaru?9:5)&&Math.random()<dt/(F.tahunBaru?1:2.6)){ const x=W*rand(.08,.97); ST.fw.push({x,y:G.hY(x),ty:H*rand(.1,.34),t:0,c:[[255,90,70],[255,215,90],[120,230,140],[140,180,255],[255,150,220]][Math.random()*5|0],parts:null}); onFirework(0,x); }
   for(const f of ST.fw){
     f.t+=dt;
     if(!f.parts&&f.t>1.1){ f.parts=Array.from({length:60},(_,i)=>{ const a=i/60*TAU+rand(-.05,.05), v=H*rand(.07,.13); return {x:f.x,y:f.ty,vx:Math.cos(a)*v,vy:Math.sin(a)*v}; }); f.bt=0; onFirework(1,f.x); }
@@ -410,7 +469,13 @@ function step(dt){
   }
   ST.fw=ST.fw.filter(f=>!f.parts||f.bt<2);
   // petasan: a flash on the road, sometimes a whole renteng
-  const popR=F.takbiran?1.8:F.malamRamadan?14:F.lebaran?30:F.tirakatan?70:0;
+  const popR=F.takbiran||F.malamImlek||F.tahunBaru?1.8:F.malamRamadan?14:F.lebaran?30:F.tirakatan?70:0;
+  // Waisak lanterns: released at Borobudur, beyond the hills to the west, drifting up and away
+  const newLamp=y=>({x:W*rand(-.02,.14)+(G.yH-y)*rand(.05,.25),y,vx:rand(3,10)*W/1440,vy:-rand(12,20)*H/900,ph:rand(0,TAU),s:rand(.7,1.2)});
+  if(F.waisak&&!m.rain&&!ST.lamp.length) for(let i=0;i<45;i++) ST.lamp.push(newLamp(G.yH-Math.pow(Math.random(),.8)*G.yH*.95)); // already in the sky when the page opens
+  if(F.waisak&&!m.rain&&ST.lamp.length<80&&Math.random()<dt*4) ST.lamp.push(newLamp(G.yH-H*.01));
+  for(const l of ST.lamp){ l.x+=l.vx*dt+Math.sin(ST.t*.4+l.ph)*.15; l.y+=l.vy*dt; }
+  ST.lamp=ST.lamp.filter(l=>l.y>-20);
   if(popR&&!m.rain&&Math.random()<dt/popR){ const x=W*rand(.04,.96), n=Math.random()<.3?8+(Math.random()*16|0):1; ST.pops.push({x,y:G.hY(x)+H*rand(.01,.03),life:0,n,k:0}); onPop(n,x); }
   for(const p of ST.pops) p.life+=dt;
   ST.pops=ST.pops.filter(p=>p.life<p.n*.1+.3);
@@ -456,8 +521,47 @@ function hewan(x,y,s,goat,col,t,ph){ // a goat or a cow tethered for qurban, gra
   cx.beginPath(); cx.ellipse(hx+s*.08,hy+s*.04,s*.16,s*.1,.5,0,TAU); cx.fill();
   if(goat){ cx.beginPath(); cx.moveTo(hx,hy-s*.05); cx.quadraticCurveTo(hx-s*.1,hy-s*.3,hx-s*.25,hy-s*.25); cx.stroke(); }
 }
+function lampionMerah(x,y,s,m,t,ph){ // a red lantern with a gold tassel
+  const sw=Math.sin(t*1.3+ph)*s*.12, lx=x+sw, ly=y+s*.9;
+  cx.strokeStyle=rgb(mix([60,30,20],P.hill,night(m)*.6)); cx.lineWidth=.6; cx.beginPath(); cx.moveTo(x,y); cx.lineTo(lx,ly-s*.5); cx.stroke();
+  cx.fillStyle=rgb(mix([214,30,30],P.hill,night(m)*.35)); cx.beginPath(); cx.ellipse(lx,ly,s*.5,s*.42,0,0,TAU); cx.fill();
+  cx.fillStyle=rgb([220,170,60]); cx.fillRect(lx-s*.25,ly-s*.5,s*.5,s*.1); cx.fillRect(lx-s*.25,ly+s*.4,s*.5,s*.1);
+  cx.strokeStyle=rgb([220,170,60]); cx.beginPath(); cx.moveTo(lx,ly+s*.5); cx.lineTo(lx,ly+s*.85); cx.stroke();
+  const lit=ss((m.night-.2)/.6); if(lit){ cx.globalCompositeOperation="lighter"; cx.globalAlpha=lit*.7; const r=s*1.3; cx.drawImage(SP.lamp[0],lx-r,ly-r,r*2,r*2); cx.globalCompositeOperation="source-over"; cx.globalAlpha=1; }
+}
+function bintang(x,y,r,a){ cx.beginPath(); for(let i=0;i<10;i++){ const rr=i%2?r*.42:r, an=-Math.PI/2+i*Math.PI/5; cx.lineTo(x+Math.cos(an)*rr,y+Math.sin(an)*rr); } cx.closePath(); cx.globalAlpha=a; cx.fill(); cx.globalAlpha=1; }
+function ogoh(x,y,s,t,i){ // an ogoh-ogoh: a huge raksasa with wild hair and raised arms, carried on a bamboo frame
+  const bob=Math.sin(t*3+i)*s*.05, sway=Math.sin(t*1.7+i)*.08;
+  cx.save(); cx.translate(x,y-s*.1+bob); cx.rotate(sway);
+  cx.fillStyle="#1a1014"; cx.strokeStyle="#1a1014"; cx.lineWidth=Math.max(1.2,s*.06);
+  cx.fillRect(-s*.45,-s*.12,s*.9,s*.08); // the bamboo bearers' frame
+  cx.beginPath(); cx.moveTo(-s*.28,-s*.12); cx.quadraticCurveTo(-s*.38,-s*.6,-s*.18,-s*.85); cx.lineTo(s*.18,-s*.85); cx.quadraticCurveTo(s*.38,-s*.6,s*.28,-s*.12); cx.fill(); // body
+  cx.beginPath(); cx.arc(0,-s*1,s*.2,0,TAU); cx.fill(); // head
+  for(let k=0;k<9;k++){ const a=-Math.PI+k*Math.PI/8, L=s*(.28+.06*Math.sin(k*2.3+t*2)); cx.beginPath(); cx.moveTo(0,-s); cx.lineTo(Math.cos(a)*L,-s+Math.sin(a)*L-s*.04); cx.stroke(); } // gimbal hair
+  cx.beginPath(); cx.moveTo(-s*.18,-s*.75); cx.lineTo(-s*.5,-s*1.05); cx.lineTo(-s*.46,-s*1.25); cx.moveTo(s*.18,-s*.75); cx.lineTo(s*.52,-s*.95); cx.lineTo(s*.62,-s*1.15); cx.stroke(); // arms, claws up
+  cx.fillStyle="#ff6040"; cx.beginPath(); cx.arc(-s*.07,-s*1.02,s*.035,0,TAU); cx.arc(s*.07,-s*1.02,s*.035,0,TAU); cx.fill(); // glowing eyes
+  cx.restore();
+}
 function festHill(m,t){
   const F=FEST;
+  const nl=ss((m.night-.2)/.6);
+  if(F.natalan){ // a star on the gereja and fairy lights on the houses nearby
+    const g=G.gereja, tx=g.x-g.w*.11, ty=g.y-g.w*.5-g.w*.36-g.w*.1; // on the gable over the door
+    cx.fillStyle=rgb(mix([255,226,120],P.hill,(1-nl)*.3)); bintang(tx,ty,g.w*.12,.95);
+    if(nl){ cx.globalCompositeOperation="lighter"; cx.globalAlpha=nl*.8; const r=g.w*.5; cx.drawImage(SP.warm,tx-r,ty-r,r*2,r*2); cx.globalCompositeOperation="source-over"; cx.globalAlpha=1; }
+    for(const h of G.houses.filter(h=>Math.abs(h.x-g.x)<W*.2).slice(0,4)){ // lights along the eaves, twinkling
+      for(let k=0;k<7;k++){ const lx=h.x-h.w*.55+k*h.w*.18, ly=h.y-h.h-Math.sin(k/6*Math.PI)*h.w*.04, on=.5+.5*Math.sin(t*3+k*1.7+h.x);
+        cx.globalCompositeOperation="lighter"; cx.globalAlpha=(.25+nl*.75)*on; cx.drawImage(SP.lamp[k%4],lx-3,ly-3,6,6); } }
+    cx.globalCompositeOperation="source-over"; cx.globalAlpha=1;
+  }
+  if(F.lampion){ // red lanterns at the klenteng and the Chinese houses of the kampung
+    const k=G.klenteng; for(const dx of [-.42,-.14,.14,.42]) lampionMerah(k.x+dx*k.w,k.y-k.w*.44,k.w*.14,m,t,dx*9);
+    G.houses.filter((_,i)=>i%5===2).forEach((h,i)=>lampionMerah(h.x,h.y-h.h,h.w*.16,m,t,i));
+  }
+  if(F.nyepi){ // penjor bending over the pura
+    const p=G.pura; cx.strokeStyle=rgb(mix([210,190,120],P.hill,night(m)*.7)); cx.lineWidth=Math.max(1,p.w*.04);
+    for(const dx of [-.5,.5]){ const bx=p.x-p.w*.12+dx*p.w; cx.beginPath(); cx.moveTo(bx,p.y); cx.quadraticCurveTo(bx,p.y-p.w*1.4,bx+p.w*.45,p.y-p.w*1.25); cx.stroke(); }
+  }
   if(F.agustus){
     G.houses.forEach((h,i)=>bendera(h.x+h.w*.55,h.y-h.h-h.w*.2,h.w*.38,t,m,i));
     [.03,.18,.3,.45,.58,.83,.97].forEach((u,i)=>{ const x=W*u; umbul(x,G.hY(x)+H*.014,H*.1,t,m,i); });
@@ -500,9 +604,13 @@ function festRoad(m,t){
   if(F.takbiran) train(30,W/90,1,W*.022,(x,y,i)=>obor(x,y,.9,t,i,i%3===0?SP.obor:SP.lamp[i%4]));
   if(F.sahur) train(7,W/40,-1,W*.02,(x,y,i)=>obor(x,y,.85,t,i));
   if(F.tapaBisu) train(36,W/420,1,W*.016,(x,y,i)=>obor(x,y,.5,t,i));
+  if(F.misaNatal||F.lilinPaskah){ // candles gathering at the gereja
+    const g=G.gereja; for(let i=0;i<(F.lilinPaskah?40:24);i++){ const a=i*2.39, r=g.w*(.4+(i%7)*.12); obor(g.x+Math.cos(a)*r*1.4,g.y+H*.004+Math.sin(a)*r*.12,.55,t,i,SP.warm); } }
+  if(F.ogoh) train(26,W/140,-1,W*.018,(x,y,i)=>obor(x,y,.9,t,i));
   if(F.tirakatan) for(let i=0;i<18;i++){ const x=W*(i+.5)/18; obor(x,G.hY(x)+H*.017,.85,t,i); }
   for(const p of ST.pops){ const k=Math.min(p.n-1,Math.floor(p.life/.1)), f=1-(p.life-k*.1)/.12; if(f>0){ cx.globalAlpha=f; const r=H*.012; cx.drawImage(SP.warm,p.x+k*2-r,p.y-r,r*2,r*2); } }
   cx.globalCompositeOperation="source-over"; cx.globalAlpha=1;
+  if(F.ogoh) train(26,W/140,-1,W*.018,(x,y,i)=>{ if(i%8===3) ogoh(x,y,H*.05,t,i); });
   if(F.salatId){ // the kampung walking to the lapangan in its best clothes
     const cols=[[250,250,246],[250,250,246],[230,230,220],[60,110,90],[120,60,90],[200,170,110]];
     train(46,W/160,1,W*.013,(x,y,i)=>{ const c=rgb(mix(cols[i%6],P.hill,.15)), s=H*.012*(i%4?1:.75), bob=Math.abs(Math.sin(t*4+i))*s*.08;
@@ -537,8 +645,10 @@ function draw(){
   for(let i=0,n=Math.round(4+m.rain*6);i<n;i++){ const c=ST.clouds[i]; for(const p of c.p) cx.drawImage(SP.cloud,c.x+p.dx-p.r,c.y+p.dy-p.r,p.r*2,p.r*2); }
   for(const p of ST.puffs){ cx.globalAlpha=Math.min(1,p.a*12)*(1-p.a)*.6; cx.drawImage(SP.smoke,p.x-p.r,p.y-p.r,p.r*2,p.r*2); }
   if(ST.fw.length) fireworks();
+
   cx.setTransform(1,0,0,1,0,0); cx.globalAlpha=1; cx.drawImage(land,0,0); cx.setTransform(dpr,0,0,dpr,0,0);
   festHill(m,t);
+  if(ST.lamp.length){ cx.globalCompositeOperation="lighter"; for(const l of ST.lamp){ const r=Math.max(3,H*.0055)*l.s*(1-Math.max(0,(G.yH-l.y)/G.yH)*.65), fl=.75+.25*Math.sin(ST.t*6+l.ph); cx.globalAlpha=.9*fl; cx.drawImage(SP.obor,l.x-r,l.y-r,r*2,r*2); } cx.globalCompositeOperation="source-over"; cx.globalAlpha=1; }
   if(m.night>.05){
     cx.globalCompositeOperation="lighter";
     const R=H*.06; cx.globalAlpha=m.night*(.5+.08*Math.sin(t*1.3)+.05*Math.sin(t*3.7));
@@ -992,6 +1102,53 @@ function bedugTalu(t){
 }
 // Bedug for buka puasa: longer, and the kampung's langgar answering one another.
 function bedugBuka(t){ bedug(t); bedug(t+rand(2,4)); }
+// Lonceng gereja: a bronze bell (hum, prime, minor third, fifth, nominal and the shimmer above), swung so
+// each stroke lands a little unevenly; "joyful" rings two bells against each other for a feast.
+function bell(t,f,v,out){
+  for(const [r,a,d] of [[.5,.5,7],[1,1,5],[1.19,.45,3.5],[1.5,.3,2.5],[2,.55,2.2],[2.52,.2,1.4],[3.01,.12,1]]){ const o=O("sine",f*r*rand(.998,1.002)), g=Gn(); env(g.gain,t,.003,v*a,0,d); chain(o,g,out); run1(o,t,d+.1); }
+  const n=Nz(), ng=Gn(); chain(n,Fl("bandpass",f*4,3),ng,out); env(ng.gain,t,.001,v*.25,0,.03); run1(n,t,.05); // the clapper's strike
+}
+function lonceng(t,joyful){
+  const out=A.far[1], f1=rand(330,350), f2=f1*1.26, n=joyful?34:16; let s=t;
+  for(let i=0;i<n;i++){ bell(s,i%2&&joyful?f2:f1,.045,out); s+=(joyful?1.05:1.9)*rand(.94,1.06); }
+}
+// Baleganjur for the ogoh-ogoh: kendang, ceng-ceng, reyong and a gong, marching past.
+function baleganjur(t){
+  const ac=A.ctx, dur=rand(35,50), dir=Math.random()<.5?1:-1, g=Gn(0), lp=Fl("lowpass",800,.6);
+  chain(g,lp); if(ac.createStereoPanner){ const p=ac.createStereoPanner(); lp.connect(p); p.pan.setValueAtTime(.85*dir,t); p.pan.linearRampToValueAtTime(-.85*dir,t+dur); p.connect(A.out); const w=Gn(.5); p.connect(w); w.connect(A.wet); } else lp.connect(A.out);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(1,t+dur*.5); g.gain.linearRampToValueAtTime(0,t+dur);
+  lp.frequency.setValueAtTime(600,t); lp.frequency.linearRampToValueAtTime(5000,t+dur*.5); lp.frequency.linearRampToValueAtTime(600,t+dur);
+  const step=.13, ceng="x.xx.xx.x.xx.xxx", kend="D..t.D.tD..t.Dtt", rey=[1,1.2,1.33,1.5,1.2,1.33,1,1.5];
+  for(let s=t,i=0;s<t+dur;s+=step,i++){
+    if(ceng[i%16]==="x"){ const n=Nz(), cg=Gn(); chain(n,Fl("highpass",4500),cg,g); env(cg.gain,s,.001,.05,.01,.07); run1(n,s,.1); }
+    const k=kend[i%16]; if(k==="D") thump(s,rand(85,100),.14,g); else if(k==="t") kendhang(s,g,false);
+    if(i%2===0) bar(s,520*rey[(i/2|0)%8],.03,.4,g,[[1,1],[2.4,.3]]);
+    if(i%32===0) gong(s,g,.12);
+  }
+}
+// Genta from the vihara at Borobudur on Waisak night, far to the west.
+function genta(t){
+  const out=A.far[0], f=rand(380,420);
+  for(let k=0;k<3;k++){ const s=t+k*rand(5,8); for(const [r,a] of [[1,1],[2.71,.4],[5.1,.15]]){ const o=O("sine",f*r), w=O("sine",rand(3,5)), wg=Gn(f*r*.003), g=Gn(); chain(w,wg,o.frequency); env(g.gain,s,.01,.04*a,0,9/Math.sqrt(r)); chain(o,g,out); run1(o,s,9); run1(w,s,9); } }
+}
+// Barongsai from the town for Imlek and Cap Go Meh: the big tambur, cymbals and a gong.
+function barongsai(t){
+  const out=A.far[3+(Math.random()<.5?0:1)], dur=rand(18,30), step=.16;
+  const pat=Math.random()<.5?"D.d.D.ddD.d.DdD.":"D..dD..dD.ddD.d.";
+  for(let s=t,i=0;s<t+dur;s+=step,i++){
+    const c=pat[i%16], acc=1+.25*Math.sin(i*.15);
+    if(c==="D") thump(s,rand(70,80),.14*acc,out); else if(c==="d") thump(s,rand(120,140),.08*acc,out);
+    if(i%4===0){ const n=Nz(), cg=Gn(); chain(n,Fl("bandpass",rand(5000,6500),.7),cg,out); env(cg.gain,s,.002,.05,.04,.35); run1(n,s,.45); } // cymbals
+    if(i%8===4) bar(s,rand(250,270),.035,.8,out,[[1,1],[2.2,.4],[3.1,.15]]); // gong kecil
+  }
+}
+// Terompet tahun baru: paper trumpets, buzzy and a little off pitch, blown by every kid on the road.
+function terompet(t){
+  const out=busFor(Math.random()<.6), f=rand(330,520);
+  for(let i=0,n=1+(Math.random()*3|0);i<n;i++){ const s=t+i*rand(.3,.6), d=i===n-1?rand(.6,1.4):rand(.15,.3), o=O("sawtooth",f), g=Gn();
+    o.frequency.setValueAtTime(f*.96,s); o.frequency.linearRampToValueAtTime(f*rand(1,1.03),s+.06); o.frequency.linearRampToValueAtTime(f*.97,s+d);
+    chain(o,Fl("bandpass",f*3,1.2),Fl("lowpass",3200),g,out); env(g.gain,s,.02,.08,d*.8,.05); run1(o,s,d+.1); }
+}
 // Sekaten: the great pelog gamelan, slow and loud, with the bedug among the instruments.
 const PELOG={1:1,2:1.105,3:1.2,4:1.4,5:1.5,6:1.6,7:1.82};
 const SEKATEN=["35323532653221265356535676532132","66536653212165323235323556532165"].map(p=>p.split(""));
@@ -1027,7 +1184,7 @@ const EV={
   genteng:{gap:[.05,.15], w:m=>m.rain, fn:t=>{ for(let i=0,n=1+(Math.random()*3|0);i<n;i++) genteng(t+Math.random()*.2); }},
   talang: {gap:[.55,.85], w:m=>m.rain>.3?1:0, fn:talang},
   ronda:  {gap:[400,900], w:m=>(m.h>=21||m.h<3.5)&&!m.F.suro?1:0, fn:t=>kentongan(t,0)},
-  gamelan:{gap:[90,240], w:m=>m.F.suro||m.F.ramadan||m.F.sekaten||m.F.takbiran?0:bump(m.h,19.3,19.8,21.8,22.4)*.7*(1-m.rain), fn:gamelan},
+  gamelan:{gap:[90,240], w:m=>m.F.suro||m.F.ramadan||m.F.sekaten||m.F.takbiran||m.F.ogoh||m.F.natal||m.F.waisak?0:bump(m.h,19.3,19.8,21.8,22.4)*.7*(1-m.rain), fn:gamelan},
   sekaten:{gap:[20,90], w:m=>m.F.sekaten?.8:0, fn:sekaten},
   sapi:   {gap:[25,70], w:m=>m.F.ternak?.9:(m.dawn*.7+bump(m.h,6.5,7.2,10,11.5)*.6+m.sore*.35)*(1-m.rain*.7), fn:t=>sapi(t,Math.random()<.4)},
   pecut:  {gap:[120,300], w:m=>bump(m.h,6.3,7,10.5,11.5)*(1-m.rain), fn:pecut},
@@ -1039,6 +1196,10 @@ const EV={
   bakso:  {gap:[120,360], w:m=>m.F.suro?0:bump(m.h,15.5,16.2,21,21.8)*.8, fn:bakso},
   sahur:  {gap:[90,240], w:m=>m.F.sahur?1:0, fn:sahurPatrol},
   talu:   {gap:[2,5], w:m=>m.F.takbiran?.9:0, fn:bedugTalu},
+  baleganjur:{gap:[50,120], w:m=>m.F.ogoh?1:0, fn:baleganjur},
+  genta:  {gap:[25,60], w:m=>m.F.waisak?.9:0, fn:genta},
+  barongsai:{gap:[40,100], w:m=>m.F.barongsai?.9:0, fn:barongsai},
+  terompet:{gap:[1,4], w:m=>m.F.tahunBaru?.9:0, fn:terompet},
   cheer:  {gap:[6,20], w:m=>m.F.lomba?.9:0, fn:cheer},
   peluit: {gap:[10,30], w:m=>m.F.lomba?.8:0, fn:peluit},
   tepuk:  {gap:[18,45], w:m=>m.F.lomba||m.F.tirakatan?.7:0, fn:tepuk},
@@ -1107,6 +1268,14 @@ function tick(){
   for(const b of BEDUG) if(crossed(b)) (F.ramadan&&b===17.6?bedugBuka:bedug)(now+.5);
   if(F.idDay&&crossed(5.75)) bedug(now+.5); // before salat Id
   if(F.sirineDay&&crossed(10)) sirine(now+.2);
+  // gereja bells: every Sunday before the morning misa, Christmas Eve and morning, the Easter Vigil's Gloria and Easter morning
+  const sunday=kNow().getDay()===0;
+  if(!F.loncengDiam){
+    if(sunday&&crossed(6.25)) lonceng(now+.3,F.paskah);
+    if(F.natal&&(crossed(21.85)||crossed(23.97)||crossed(6.6))) lonceng(now+.3,true);
+    if(F.paskah&&crossed(8.75)) lonceng(now+.3,true);
+    if(F.lilinPaskah&&crossed(20.32)) lonceng(now+.3,true);
+  }
   A.lastH=m.h;
   const hr=Math.floor(m.h);
   if(A.hr!==undefined&&hr!==A.hr&&(hr>=20||hr<=4)&&!F.suro) kentongan(now+1,hr%12||12);
