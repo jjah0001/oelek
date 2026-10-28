@@ -866,15 +866,23 @@ function setSound(on){
   A.on=on; if(btn) btn.setAttribute("aria-pressed",String(on)); pref.set(on?"1":"0");
 }
 if(btn){
-  btn.addEventListener("click",()=>setSound(!A.on));
-  // Sound stays off until the visitor asks for it. Someone who switched it on last time gets it back
-  // on their first tap or key press (browsers don't allow audio before that).
-  if(pref.get()==="1"){
-    const evs=["pointerdown","keydown"];
-    const wake=e=>{ evs.forEach(t=>removeEventListener(t,wake,true)); if(e.target.closest?.("#suara")) return; if(!A.on) setSound(true); };
-    evs.forEach(t=>addEventListener(t,wake,true));
+  let woke=false; // the tap that unlocked audio shouldn't also switch it off
+  btn.addEventListener("click",()=>{ if(woke){ woke=false; return; } setSound(!A.on); });
+  // Sound is on by default and starts with the page. Browsers block audio until the visitor
+  // interacts, so if the page is still silent it starts on their first tap, click or key press.
+  // Switching it off is remembered.
+  if(pref.get()!=="0"){
+    setSound(true);
+    if(A.ctx&&A.ctx.state!=="running"){
+      const evs=["pointerdown","touchend","keydown","click"];
+      const wake=e=>{
+        if(!A.on||!A.ctx){ evs.forEach(t=>removeEventListener(t,wake,true)); return; }
+        A.ctx.resume().then(()=>{ if(A.ctx.state==="running") evs.forEach(t=>removeEventListener(t,wake,true)); });
+        if(e.type==="pointerdown"&&e.target.closest?.("#suara")) woke=true;
+      };
+      evs.forEach(t=>addEventListener(t,wake,true));
+    }
   }
 }
-
 run();
 })();
