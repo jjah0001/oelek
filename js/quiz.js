@@ -20,7 +20,6 @@ function renderResult(saved){
   const top=ranked[0].s;
   const pct=Math.round(Math.max(0,cos(you,top.p))*100);
   LAST_RESULT={top,you,pct};
-  if(!saved) store.set("ulek.quiz",JSON.stringify({p:you}));
   const art=el("div"); art.innerHTML=sambalArt(top); art.firstChild.style.width="150px"; art.firstChild.style.height="150px";
   const rad=el("div"); rad.innerHTML=radar([{name:"You",p:you,cls:"s-you"},{name:top.name,p:top.p,cls:"s-cmp"}]);
   const key=el("div",{class:"keyrow"}); key.innerHTML=`<span><i style="background:var(--nila)"></i>You</span><span><i style="background:var(--chili)"></i>${top.name.replace("Sambal ","")}</span>`;

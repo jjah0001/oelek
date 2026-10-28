@@ -502,6 +502,37 @@ function gamelan(t){
   });
   gong(s,out); A.gamUntil=s+8;
 }
+// Sapi in the kandang at feeding and milking time: a low "mmm-ooo" that opens out and sags.
+// A sawtooth through a lowpass that opens (the closed "mm") then a mouth formant, with a slow wobble.
+function sapi(t,far){
+  const f0=rand(105,140), dur=rand(1.4,2.4), vol=far?.07:.13, out=busFor(far);
+  // a slow, slight waver (a fast one turns the moo into a goat's bleat) and a second lowpass so it stays dark, not buzzy
+  const o=O("sawtooth",f0), wob=O("sine",rand(2,3.5)), wg=Gn(f0*.005), lp=Fl("lowpass",300,1.2), bp=Fl("bandpass",rand(550,700),3), bg=Gn(.7), g=Gn(), dark=Fl("lowpass",1700,.5);
+  chain(wob,wg,o.frequency); chain(o,lp,g); chain(lp,bp,bg,g); chain(g,dark,out);
+  const fr=o.frequency;
+  fr.setValueAtTime(f0*.9,t); fr.linearRampToValueAtTime(f0*1.12,t+dur*.3); fr.linearRampToValueAtTime(f0*1.05,t+dur*.65); fr.exponentialRampToValueAtTime(f0*.78,t+dur);
+  lp.frequency.setValueAtTime(260,t); lp.frequency.linearRampToValueAtTime(1300,t+dur*.35); lp.frequency.setValueAtTime(1300,t+dur*.6); lp.frequency.linearRampToValueAtTime(500,t+dur);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol*.5,t+.12); g.gain.linearRampToValueAtTime(vol,t+dur*.35); g.gain.setValueAtTime(vol,t+dur*.7); g.gain.linearRampToValueAtTime(0,t+dur);
+  run1(o,t,dur); run1(wob,t,dur);
+  if(!far&&Math.random()<.35) sapi(t+dur+rand(1.5,4),true); // a cow in the next kandang answers
+}
+// Ploughing with sapi: the pecut is cracked in the air as a signal, far off across the sawah, and the cow lows back.
+function crack(t){
+  const out=busFor(true);
+  const sw=Nz(), swf=Fl("bandpass",900,1.5), swg=Gn(); chain(sw,swf,swg,out); // the swish
+  swf.frequency.setValueAtTime(600,t); swf.frequency.exponentialRampToValueAtTime(3200,t+.16);
+  swg.gain.setValueAtTime(0,t); swg.gain.linearRampToValueAtTime(.05,t+.12); swg.gain.linearRampToValueAtTime(0,t+.17); run1(sw,t,.2);
+  const c=t+.17;
+  for(const [dt,v] of [[0,.42],[.012,.18]]){ // the crack, with a quick second snap of the tip
+    const n=Nz(), hp=Fl("highpass",1600,.7), g=Gn(); chain(n,hp,g,out);
+    g.gain.setValueAtTime(0,c+dt); g.gain.linearRampToValueAtTime(v,c+dt+.001); g.gain.exponentialRampToValueAtTime(1e-4,c+dt+.045); run1(n,c+dt,.06);
+  }
+}
+function pecut(t){
+  crack(t);
+  if(Math.random()<.5) crack(t+rand(1.2,2.2)); // often cracked twice
+  if(Math.random()<.6) sapi(t+rand(2.5,4),true);
+}
 function thunder(t){
   const n=Nz(), g=Gn(), n2=Nz(), g2=Gn(), out=A.far[2];
   chain(n,Fl("lowpass",140,.7),g,out); chain(n2,Fl("bandpass",500,.8),g2,out);
@@ -521,6 +552,8 @@ const EV={
   drip:   {gap:[.3,1.5], w:m=>.5+m.rain*.5, fn:drip},
   ronda:  {gap:[400,900], w:m=>m.h>=21||m.h<3.5?1:0, fn:t=>kentongan(t,0)},
   gamelan:{gap:[60,180], w:m=>bump(m.h,19,19.5,21.8,22.4), fn:gamelan},
+  sapi:   {gap:[25,70], w:m=>(m.dawn*.7+bump(m.h,6.5,7.2,10,11.5)*.6+m.sore*.35)*(1-m.rain*.7), fn:t=>sapi(t,Math.random()<.4)},
+  pecut:  {gap:[120,300], w:m=>bump(m.h,6.3,7,10.5,11.5)*(1-m.rain), fn:pecut},
 };
 function initAudio(){
   const C=window.AudioContext||window.webkitAudioContext; if(!C) return false;

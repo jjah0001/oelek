@@ -26,5 +26,7 @@ $("#stProv").textContent=Object.values(provStats).filter(s=>s.total).length;
 $("#cAll").textContent=ALL.length; $("#cFull").textContent=S.length; $("#cList").textContent=L.length;
 $("#srcList").replaceChildren(...Object.entries(SRC).filter(([key])=>!key.startsWith("http")).map(([,s])=>el("li",{},el("a",{href:s.u,target:"_blank",rel:"noopener",text:s.t}))));
 renderToday(); renderFam(); drawMap(); renderProv(null); renderGrid();
-try{ const sv0=JSON.parse(store.get("ulek.quiz")||"null"); if(sv0&&Array.isArray(sv0.p)&&sv0.p.length===6) renderResult(sv0); else renderQuiz(); }catch(e){ renderQuiz(); }
+// The quiz always starts fresh: results are not kept between visits. Clear any result an older version saved.
+try{ localStorage.removeItem("ulek.quiz"); }catch(e){}
+renderQuiz();
 routeFromHash();
