@@ -517,6 +517,20 @@ function sapi(t,far){
   if(!far&&Math.random()<.35) sapi(t+dur+rand(1.5,4),true); // a cow in the next kandang answers
 }
 // Ploughing with sapi: the pecut is cracked in the air as a signal, far off across the sawah, and the cow lows back.
+// Kambing in the kandang behind the house, waiting for cut grass: "mbeee", with the quaver of a goat's voice.
+// A closed "m" opening into a bright "eee"; the quaver is a fast wobble in loudness and a little in pitch.
+function kambing(t,far,again=true){
+  const f0=rand(320,440), dur=rand(.55,1.05), vol=far?.045:.08, out=busFor(far);
+  const o=O("sawtooth",f0), lp=Fl("lowpass",400,1), f1=Fl("bandpass",rand(900,1100),4), f2=Fl("bandpass",rand(2200,2600),5), g1=Gn(3.2), g2=Gn(2), g=Gn(),
+    am=O("sine",rand(6.5,8.5)), ag=Gn(.45), mg=Gn(.55), pv=O("sine",rand(6.5,8.5)), pg=Gn(f0*.02);
+  chain(pv,pg,o.frequency); chain(am,ag,mg.gain);
+  chain(o,lp,f1,g1,mg); chain(lp,f2,g2,mg); chain(mg,g,out);
+  const fr=o.frequency; fr.setValueAtTime(f0*.92,t); fr.linearRampToValueAtTime(f0*1.04,t+dur*.25); fr.linearRampToValueAtTime(f0*.9,t+dur);
+  lp.frequency.setValueAtTime(400,t); lp.frequency.linearRampToValueAtTime(3200,t+.12); lp.frequency.setValueAtTime(3200,t+dur*.7); lp.frequency.linearRampToValueAtTime(1500,t+dur);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.08); g.gain.setValueAtTime(vol,t+dur*.65); g.gain.linearRampToValueAtTime(0,t+dur);
+  run1(o,t,dur); run1(am,t,dur); run1(pv,t,dur);
+  if(again&&Math.random()<.45) kambing(t+dur+rand(.4,1.2),far||Math.random()<.5,false); // one more bleat, often from another goat
+}
 function crack(t){
   const out=busFor(true);
   const sw=Nz(), swf=Fl("bandpass",900,1.5), swg=Gn(); chain(sw,swf,swg,out); // the swish
@@ -554,6 +568,7 @@ const EV={
   gamelan:{gap:[60,180], w:m=>bump(m.h,19,19.5,21.8,22.4), fn:gamelan},
   sapi:   {gap:[25,70], w:m=>(m.dawn*.7+bump(m.h,6.5,7.2,10,11.5)*.6+m.sore*.35)*(1-m.rain*.7), fn:t=>sapi(t,Math.random()<.4)},
   pecut:  {gap:[120,300], w:m=>bump(m.h,6.3,7,10.5,11.5)*(1-m.rain), fn:pecut},
+  kambing:{gap:[35,90], w:m=>(bump(m.h,5.6,6.5,9,10.5)*.7+m.sore*.6)*(1-m.rain*.8), fn:t=>kambing(t,Math.random()<.5)},
 };
 function initAudio(){
   const C=window.AudioContext||window.webkitAudioContext; if(!C) return false;
