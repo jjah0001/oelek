@@ -89,22 +89,37 @@ function layout(){
   W=w; H=h; dpr=Math.min(window.devicePixelRatio||1,1.5);
   for(const c of [cv,sky,land]){ c.width=Math.round(W*dpr); c.height=Math.round(H*dpr); }
   const R=rng(2930), r=(a,b)=>a+R()*(b-a);
-  const yH=H*.64, px=W*.62, py=H*.19, hw=Math.max(W*.42,H*.5);
+  // on wide screens the peak sits right of the hero card so Merapi's summit, plume and glow stay in view
+  const yH=H*.64, px=W*(W>900?.74:.6), py=H*.19, hw=Math.max(W*.42,H*.5);
   const profile=(cx0,peak,half,shape)=>{ const pts=[]; let n=0; for(let x=-4;x<=W+8;x+=4){ n=n*.96+(R()-.5)*1.2; const d=Math.abs(x-cx0)/half; pts.push([x,Math.min(yH+2,shape(d,x)+n*d*H*.004)]); } return pts; };
   const mPts=profile(px,py,hw,(d,x)=>d<.03?py+H*.003*Math.sin(x*.7)*(x>px?1.6:1):py+(yH-py)*Math.min(1,Math.pow((d-.03)/1.25,x<px?.6:.66)));
   const bPts=profile(W*.2,H*.29,Math.max(W*.4,H*.45),d=>H*.29+(yH-H*.29)*Math.min(1,Math.pow(d/1.15,1.25)));
   const mY=x=>{ const i=Math.max(0,Math.min(mPts.length-1,Math.round((x+4)/4))); return mPts[i][1]; };
   const hY=x=>yH-H*.03+H*.012*Math.sin(x/W*6.3+1)+H*.007*Math.sin(x/W*15+2);
-  const gullies=[]; for(let i=0;i<34;i++){ const side=R()<.5?-1:1, x0=px+side*hw*r(.01,.09), x1=px+side*hw*r(.15,.7), y1=mY(x1)+(yH-mY(x1))*r(.1,.8); gullies.push([x0,mY(x0)+2,(x0+x1)/2+side*r(-8,8),(mY(x0)+y1)/2+r(0,10),x1,y1]); }
+  // kali (lava gullies): radial but broken, each starting and ending at its own height and meandering,
+  // so the cone doesn't read as a tent held up by ropes
+  const gullies=[]; for(let i=0;i<30;i++){
+    const side=R()<.5?-1:1, b=r(.05,.9), s0=r(.04,.42), s1=Math.min(.96,s0+r(.12,.42)), ph=r(0,TAU), fq=r(5,11), pts=[];
+    for(let k=0;k<=16;k++){ const s=s0+(s1-s0)*k/16, x=px+side*hw*b*Math.pow(s,.92)+Math.sin(s*fq+ph)*hw*.014*s, y=py+(yH-py)*s; if(y>mY(x)+2) pts.push([x,y]); }
+    if(pts.length>4) gullies.push({pts,w:r(.5,1.2),side});
+  }
   const trees=[]; for(let x=0;x<W;x+=r(5,16)) trees.push({x,y:hY(x)+2,r:H*r(.006,.014)});
   const palms=[]; for(let i=0;i<9;i++){ const x=r(0,W); palms.push({x,y:hY(x)+3,h:H*r(.04,.065),lean:r(-.15,.15)}); }
-  const houses=[]; for(const c of [.12,.38,.72,.9]) for(let i=0,n=2+(R()*3|0);i<n;i++){ const x=W*c+r(-1,1)*W*.04, w=H*r(.022,.034); houses.push({x,y:hY(x)+H*.006,w,h:w*.45,joglo:R()<.35,lit:R()<.85}); }
+  const houses=[]; for(const c of [.12,.38,.72,.88]) for(let i=0,n=2+(R()*3|0);i<n;i++){ const x=W*c+r(-1,1)*W*.04, w=H*r(.026,.04); houses.push({x,y:hY(x)+H*.006,w,h:w*.45,joglo:R()<.35,lit:R()<.85}); }
   const yT=yH+H*.01, n=7, edges=[];
   for(let i=0;i<=n;i++){ const amp=H*.004*(1+i*1.2), f=r(.003,.008), ph=r(0,TAU), y0=yT+(H*.99-yT)*Math.pow(i/n,1.3), e=[]; for(let x=-8;x<=W+16;x+=8) e.push([x,y0+amp*Math.sin(x*f+ph)]); edges.push(e); }
+  // sawah plots: each terrace is split by pematang into plots at different stages of the season
+  const plots=edges.slice(0,-1).map((_,i)=>{ const row=[]; let slL=0; for(let x=-8;x<W+16;){ const w=W*r(.12,.32)*(1+i*.12), q=R(), sl=r(-1,1)*H*.012*(1+i*.3); row.push({x0:x,x1:x+w,type:q<.16?0:q<.36?1:q<.9?2:3,slL,sl}); slL=sl; x+=w; } return row; });
+  const eY=(i,x)=>{ const e=edges[i]; return e[Math.max(0,Math.min(e.length-1,Math.round((x+8)/8)))][1]; };
+  const mid=(i,x)=>(eY(i,x)+eY(i+1,x))/2;
+  const figs={gubuk:{x:W*.7,y:mid(3,W*.7)},orang:{x:W*.6,y:mid(4,W*.6)},tani:[{x:W*.79,y:mid(4,W*.79)},{x:W*.835,y:mid(5,W*.835)}]};
+  const masjid={x:W*.955,y:hY(W*.955)+H*.008,w:H*.055};
+  // bamboo leaves, fixed once so they only sway
+  const bam=Array.from({length:7},()=>Array.from({length:20},(_,k)=>Array.from({length:3},(_,j)=>({u:.34+k*.033+r(-.01,.01),side:(k+j)%2?1:-1,a:r(.25,.9),L:r(.055,.095)}))));
   const stars=[]; for(let i=0;i<170;i++) stars.push({x:r(0,W),y:r(0,yH*.85),r:r(.6,1.7),b:r(.3,1),w:r(.5,2.5),ph:r(0,TAU)});
   const grass=[]; for(let x=0;x<W;x+=r(3,8)) grass.push({x,h:H*r(.012,.035),ph:r(0,TAU)});
   const kites=[[[200,36,36],[250,248,240]],[[240,186,40],[240,186,40]],[[40,92,200],[250,248,240]]].map(c=>{ const gx=W*r(.2,.8); return {ax:W*r(.15,.85),ay:H*r(.1,.3),c,ph:r(0,TAU),gx,gy:hY(gx)}; });
-  G={yH,px,py,hw,mPts,bPts,mY,hY,gullies,trees,palms,houses,edges,stars,grass,kites,
+  G={yH,px,py,hw,mPts,bPts,mY,hY,gullies,trees,palms,houses,edges,plots,eY,figs,masjid,bam,stars,grass,kites,
      fgY:x=>H*.955+H*.012*Math.sin(x*.013+1.7)};
   ST.clouds=Array.from({length:10},()=>{ const s=H*rand(.03,.07); return {x:rand(-.2,1)*W,y:H*rand(.05,.38),s,v:rand(3,8),p:Array.from({length:5+(Math.random()*4|0)},()=>({dx:rand(-1.6,1.6)*s,dy:rand(-.35,.15)*s,r:s*rand(.6,1.1)}))}; });
   ST.mist=Array.from({length:12},(_,i)=>({x:rand(-.3,1)*W,y:i<7?yH+H*rand(-.05,.02):H*rand(.7,.95),w:W*rand(.3,.6),h:H*rand(.04,.09),v:rand(2,6)}));
@@ -126,42 +141,52 @@ function drawMoon(c,x,y,r,age,ang,a){
   c.fillStyle=`rgba(246,244,228,${a})`; c.beginPath(); c.arc(0,0,r,-Math.PI/2,Math.PI/2);
   c.ellipse(0,0,Math.max(r*Math.abs(1-2*f),.01),r,0,Math.PI/2,-Math.PI/2,f<.5); c.fill(); c.restore();
 }
-function palm(c,x,y,hgt,lean,t,col){
+function palm(c,x,y,hgt,lean,t,col,nuts){
   const tx=x+lean*hgt, ty=y-hgt;
-  c.strokeStyle=col; c.lineCap="round"; c.lineWidth=Math.max(1,hgt*.03);
+  c.strokeStyle=col; c.fillStyle=col; c.lineCap="round"; c.lineWidth=Math.max(1,hgt*.032);
   c.beginPath(); c.moveTo(x,y); c.quadraticCurveTo(x+lean*hgt*.2,y-hgt*.55,tx,ty); c.stroke();
-  c.lineWidth=Math.max(.7,hgt*.01); c.beginPath();
-  for(let i=0;i<9;i++){
-    const a=-Math.PI/2+(i-4)*.38+Math.sin(t*.9+i*1.3)*.05+Math.sin(t*.35)*.06, L=hgt*(.42+.08*Math.sin(i*2.1));
-    const qx=tx+Math.cos(a)*L*.5, qy=ty+Math.sin(a)*L*.6-L*.05, ex=tx+Math.cos(a)*L, ey=ty+Math.sin(a)*L*.6+L*.5;
+  if(nuts) for(const [dx,dy] of [[-.03,.035],[.025,.04],[0,.06]]){ c.beginPath(); c.arc(tx+dx*hgt,ty+dy*hgt,hgt*.022,0,TAU); c.fill(); }
+  const fine=hgt>60, nl=fine?20:9;
+  c.lineWidth=Math.max(.7,hgt*(fine?.006:.01)); c.beginPath();
+  for(let i=0;i<11;i++){
+    const a=-Math.PI/2+(i-5)*.33+Math.sin(t*.9+i*1.3)*.05+Math.sin(t*.35)*.06, L=hgt*(.44+.08*Math.sin(i*2.1));
+    const qx=tx+Math.cos(a)*L*.5, qy=ty+Math.sin(a)*L*.6-L*.05, ex=tx+Math.cos(a)*L, ey=ty+Math.sin(a)*L*.6+L*.55;
     c.moveTo(tx,ty); c.quadraticCurveTo(qx,qy,ex,ey);
-    for(let k=1;k<12;k++){
-      const u=k/12, v=1-u, bx=v*v*tx+2*v*u*qx+u*u*ex, by=v*v*ty+2*v*u*qy+u*u*ey;
-      const dx=2*v*(qx-tx)+2*u*(ex-qx), dy=2*v*(qy-ty)+2*u*(ey-qy), n=Math.hypot(dx,dy)||1, ll=L*.17*(1-u*.6);
-      c.moveTo(bx,by); c.lineTo(bx-dy/n*ll+dx/n*ll*.3,by+dx/n*ll+ll*.5);
-      c.moveTo(bx,by); c.lineTo(bx+dy/n*ll+dx/n*ll*.3,by-dx/n*ll+ll*.5);
+    // leaflets hang from the rib, longest in the middle of the frond, drooping more towards its tip
+    for(let k=1;k<nl;k++){
+      const u=k/nl, v=1-u, bx=v*v*tx+2*v*u*qx+u*u*ex, by=v*v*ty+2*v*u*qy+u*u*ey;
+      const dx=2*v*(qx-tx)+2*u*(ex-qx), dy=2*v*(qy-ty)+2*u*(ey-qy), n=Math.hypot(dx,dy)||1, ll=L*.2*Math.sin(Math.PI*(.15+u*.85))*(1-u*.35), dr=.6+u*.6;
+      c.moveTo(bx,by); c.quadraticCurveTo(bx-dy/n*ll*.6,by+dx/n*ll*.6,bx-dy/n*ll*.7+dx/n*ll*.25,by+dx/n*ll*.7+ll*dr);
+      c.moveTo(bx,by); c.quadraticCurveTo(bx+dy/n*ll*.6,by-dx/n*ll*.6,bx+dy/n*ll*.7+dx/n*ll*.25,by-dx/n*ll*.7+ll*dr);
     }
   }
   c.stroke();
 }
 function bamboo(c,x,y,hgt,t,col){
   c.strokeStyle=col; c.fillStyle=col; c.lineCap="round";
+  const leaves=new Path2D();
   for(let i=0;i<7;i++){
-    const bx=x+i*hgt*.014, lean=-.2+i*.09, sw=Math.sin(t*.7+i)*hgt*.015;
+    const bx=x+i*hgt*.016, lean=-.2+i*.09, sw=Math.sin(t*.7+i)*hgt*.015;
     const tx=bx+lean*hgt+sw, ty=y-hgt*(.8+.2*Math.sin(i*3.1)), qx=bx+lean*hgt*.2, qy=y-hgt*.6;
-    c.lineWidth=Math.max(1.5,hgt*.009); c.beginPath(); c.moveTo(bx,y); c.quadraticCurveTo(qx,qy,tx,ty); c.stroke();
-    c.beginPath();
-    for(let k=0;k<11;k++){
-      const u=.45+k*.05, v=1-u, lx=v*v*bx+2*v*u*qx+u*u*tx, ly=v*v*y+2*v*u*qy+u*u*ty, rx=hgt*.04;
-      const ang=(k%2?.55:Math.PI-.55)+Math.sin(t*1.3+k+i)*.12;
-      const ox=lx+Math.cos(ang)*rx, oy=ly+Math.sin(ang)*rx;
-      c.moveTo(ox+Math.cos(ang)*rx,oy+Math.sin(ang)*rx); c.ellipse(ox,oy,rx,hgt*.006,ang,0,TAU);
+    const at=u=>{ const v=1-u; return [v*v*bx+2*v*u*qx+u*u*tx, v*v*y+2*v*u*qy+u*u*ty]; };
+    c.lineWidth=Math.max(1.6,hgt*.011); c.beginPath(); c.moveTo(bx,y); c.quadraticCurveTo(qx,qy,tx,ty); c.stroke();
+    // ruas: the nodes along the culm
+    c.lineWidth=Math.max(1,hgt*.004); c.beginPath();
+    for(let k=1;k<14;k++){ const [nx,ny]=at(k/14), w=hgt*.012*(1-k/20); c.moveTo(nx-w,ny); c.lineTo(nx+w,ny); } c.stroke();
+    // narrow leaves in drooping fans from each upper node, fluttering
+    for(const node of G.bam[i]) for(const lf of node){
+      const [lx,ly]=at(lf.u), L=hgt*lf.L, ang=lf.side>0?lf.a:Math.PI-lf.a, fl=Math.sin(t*1.6+lf.u*20+i)*.14;
+      const a=ang+fl*lf.side, ex=lx+Math.cos(a)*L, ey=ly+Math.sin(a)*L*.5+L*.5, nx=-(ey-ly), ny=ex-lx, nn=Math.hypot(nx,ny)||1, w=L*.11;
+      const mx=(lx+ex)/2, my=(ly+ey)/2-L*.12;
+      leaves.moveTo(lx,ly); leaves.quadraticCurveTo(mx+nx/nn*w,my+ny/nn*w,ex,ey); leaves.quadraticCurveTo(mx-nx/nn*w,my-ny/nn*w,lx,ly);
     }
-    c.fill();
   }
+  c.fill(leaves);
 }
 function renderBase(h){
   baseH=h; const m=M=moods(h); P=palette(h,m.rain);
+  // after dark the page follows the kampung into its night colours, so a pale veil never sits over a dark sky
+  const malam=m.night>.55; if(malam!==ST.malam){ ST.malam=malam; document.documentElement.setAttribute("data-kampung",malam?"malam":"siang"); }
   const cloudCol=m.rain?mix(P.top,[150,156,166],.5):mix(mix(P.bot,P.top,.25),[255,255,255],.25+m.day*.5);
   SP.cloud=sprite(cloudCol,.45); SP.mist=sprite(P.mist); SP.smoke=sprite(mix(cloudCol,[170,170,175],.4),.3);
   // sky
@@ -188,10 +213,16 @@ function renderBase(h){
   const side=sun.x>G.px?1:-1, la=.12*m.day*(1-m.rain);
   g=c.createLinearGradient(G.px,0,G.px+side*G.hw,0); g.addColorStop(0,"rgba(255,236,210,0)"); g.addColorStop(.15,`rgba(255,236,210,${la})`); g.addColorStop(1,"rgba(255,236,210,0)");
   c.fillStyle=g; c.fillRect(0,0,W,H);
-  c.lineWidth=1; c.strokeStyle=rgb(mix(P.mtn,[0,0,0],.25),.55); c.beginPath();
-  for(const q of G.gullies){ c.moveTo(q[0],q[1]); c.quadraticCurveTo(q[2],q[3],q[4],q[5]); } c.stroke();
-  c.strokeStyle=rgb(mix(P.mtn,[255,255,255],.12),.4); c.beginPath();
-  for(const q of G.gullies){ c.moveTo(q[0]+1.5,q[1]); c.quadraticCurveTo(q[2]+1.5,q[3],q[4]+1.5,q[5]); } c.stroke();
+  // gullies fade in and out along their length; the lit lip sits on the sun's side
+  const gd=mix(P.mtn,[0,0,0],.3), gl=mix(P.mtn,[255,255,255],.14), lip=side*1.3;
+  for(const q of G.gullies){
+    const n=q.pts.length; c.lineWidth=q.w;
+    for(let k=1;k<n;k++){
+      const a=Math.sin(Math.PI*k/n), [x0,y0]=q.pts[k-1], [x1,y1]=q.pts[k];
+      c.strokeStyle=rgb(gd,.5*a); c.beginPath(); c.moveTo(x0,y0); c.lineTo(x1,y1); c.stroke();
+      c.strokeStyle=rgb(gl,.32*a*(1-m.night*.7)); c.beginPath(); c.moveTo(x0+lip,y0); c.lineTo(x1+lip,y1); c.stroke();
+    }
+  }
   c.restore();
   g=c.createLinearGradient(0,G.yH-H*.12,0,G.yH); g.addColorStop(0,rgb(P.mist,0)); g.addColorStop(1,rgb(P.mist,.45));
   c.fillStyle=g; c.fillRect(0,G.yH-H*.12,W,H*.12);
@@ -213,14 +244,82 @@ function renderBase(h){
     c.fillRect(x-w*.27,top+hh*.3,w*.14,hh*.4); c.fillRect(x+w*.13,top+hh*.3,w*.14,hh*.4);
     if(lit){ c.globalCompositeOperation="lighter"; c.globalAlpha=lit*.55; c.drawImage(SP.warm,x-w,top-w*.5,w*2,w*1.6); c.globalAlpha=1; c.globalCompositeOperation="source-over"; }
   }
-  // sawah terraces, flooded enough to hold a little of the sky
-  const E=G.edges;
+  masjid(c,G.masjid,m,nightLit);
+  sawah(c,m);
+}
+// Sawah: plots flooded for planting (holding the sky), young rice, full green rice and a few turning gold,
+// with rows of padi, pematang between the plots, a gubuk, an orang-orangan sawah and farmers in caping.
+function sawah(c,m){
+  const E=G.edges, sky=mix(P.top,P.bot,.6), dayish=1-m.night*.75;
+  const tone=[mix(P.field,sky,.38), mix(P.field,sky,.18), mix(P.field,P.bot,.06), mix(P.field,[200,170,70],.3*dayish)];
   for(let i=0;i<E.length-1;i++){
-    c.fillStyle=rgb(mix(mix(P.field,P.bot,.14+(i%2)*.1),P.fg,i/E.length*.55));
-    c.beginPath(); for(const [x,y] of E[i]) c.lineTo(x,y); for(let k=E[i+1].length-1;k>=0;k--) c.lineTo(E[i+1][k][0],E[i+1][k][1]); c.fill();
+    const depth=i/E.length*.55, path=new Path2D();
+    for(const [x,y] of E[i]) path.lineTo(x,y); for(let k=E[i+1].length-1;k>=0;k--) path.lineTo(E[i+1][k][0],E[i+1][k][1]); path.closePath();
+    c.save(); c.clip(path);
+    const top=Math.min(...E[i].map(e=>e[1]))-4, bot=Math.max(...E[i+1].map(e=>e[1]))+4, rows=2+i, sp=3+i*1.7, th=1.3+i*.95;
+    for(const pl of G.plots[i]){
+      c.fillStyle=rgb(mix(tone[pl.type],P.fg,depth)); c.beginPath(); c.moveTo(pl.x0,top); c.lineTo(pl.x1,top); c.lineTo(pl.x1+pl.sl,bot); c.lineTo(pl.x0+pl.slL,bot); c.fill();
+      if(pl.type===0){ // still water: a few streaks of reflected sky
+        c.strokeStyle=rgb(mix(sky,[255,255,255],.35),.35*dayish); c.lineWidth=1; c.beginPath();
+        for(let x=pl.x0+sp*3;x<pl.x1;x+=sp*7){ const y=G.eY(i,x)+(G.eY(i+1,x)-G.eY(i,x))*((x*.37)%1); c.moveTo(x,y); c.lineTo(x+sp*2.5,y); } c.stroke();
+        continue;
+      }
+      // rows of padi, sparser when young
+      const step=pl.type===1?sp*1.8:sp, h=pl.type===1?th*.6:th, col=pl.type===3?mix(tone[3],[120,90,20],.35):mix(tone[pl.type],[18,48,14],.32);
+      c.strokeStyle=rgb(mix(col,P.fg,depth),.55+.25*dayish); c.lineWidth=Math.max(.7,i*.28); c.beginPath();
+      for(let j=0;j<rows;j++) for(let x=pl.x0+step*.5+(j%2)*step*.5;x<pl.x1;x+=step){
+        const y0=G.eY(i,x), y=y0+(G.eY(i+1,x)-y0)*((j+.8)/(rows+.6));
+        c.moveTo(x,y); c.lineTo(x-h*.25,y-h); c.moveTo(x,y); c.lineTo(x+h*.25,y-h*.9);
+      }
+      c.stroke();
+    }
+    // pematang between plots
+    c.strokeStyle=rgb(mix(P.field,[236,226,190],.3),.4*dayish+.1); c.lineWidth=1+i*.35; c.beginPath();
+    for(const pl of G.plots[i]){ c.moveTo(pl.x1,top); c.lineTo(pl.x1+pl.sl,bot); } c.stroke();
+    c.restore();
     c.strokeStyle=rgb(mix(P.field,[255,255,230],.25),.35*(1-m.night*.6)); c.lineWidth=1+i*.4;
     c.beginPath(); for(const [x,y] of E[i]) c.lineTo(x,y); c.stroke();
   }
+  const ink=rgb(mix(mix(P.hill,P.fg,.5),[0,0,0],.15)), F=G.figs;
+  gubuk(c,F.gubuk.x,F.gubuk.y,H*.05,ink,m);
+  orang(c,F.orang.x,F.orang.y,H*.045,ink);
+  // farmers work the cool hours, not the midday heat, the rain or the dark
+  const work=(bump(m.h,6,6.8,10.6,11.4)+bump(m.h,14.6,15.2,17,17.6))*(1-m.rain);
+  if(work>.5) F.tani.forEach((f,i)=>tani(c,f.x,f.y,H*(.04+i*.008),ink,i));
+}
+function caping(c,x,y,w){ c.beginPath(); c.moveTo(x-w,y); c.lineTo(x,y-w*.55); c.lineTo(x+w,y); c.closePath(); c.fill(); }
+function gubuk(c,x,y,s,col,m){ // a hut on stilts for watching the birds off the padi
+  c.fillStyle=col; c.strokeStyle=col; c.lineWidth=Math.max(1,s*.05);
+  c.beginPath(); for(const dx of [-.42,-.14,.14,.42]){ c.moveTo(x+dx*s,y); c.lineTo(x+dx*s,y-s*.5); } c.stroke();
+  c.fillRect(x-s*.5,y-s*.52,s,s*.06);
+  c.beginPath(); c.moveTo(x-s*.7,y-s*.6); c.lineTo(x,y-s*1.05); c.lineTo(x+s*.7,y-s*.6); c.lineTo(x+s*.55,y-s*.55); c.lineTo(x-s*.55,y-s*.55); c.fill();
+  // strings of tin cans and plastic strung from the hut to scare the emprit
+  c.lineWidth=.6; c.beginPath(); c.moveTo(x+s*.5,y-s*.5); c.quadraticCurveTo(x+s*1.6,y-s*.3,x+s*2.6,y-s*.45); c.stroke();
+}
+function orang(c,x,y,s,col){ // orang-orangan sawah
+  c.strokeStyle=col; c.fillStyle=col; c.lineWidth=Math.max(1,s*.05);
+  c.beginPath(); c.moveTo(x,y); c.lineTo(x,y-s); c.moveTo(x-s*.38,y-s*.72); c.lineTo(x+s*.38,y-s*.68); c.stroke();
+  c.beginPath(); c.moveTo(x-s*.2,y-s*.78); c.lineTo(x+s*.2,y-s*.78); c.lineTo(x+s*.26,y-s*.4); c.lineTo(x-s*.26,y-s*.4); c.fill();
+  c.beginPath(); c.arc(x,y-s*.9,s*.09,0,TAU); c.fill(); caping(c,x,y-s*.96,s*.24);
+}
+function tani(c,x,y,s,col,pose){ // a farmer bent over the rice, caping on
+  c.strokeStyle=col; c.fillStyle=col; c.lineCap="round"; c.lineWidth=Math.max(1.2,s*.12);
+  const hx=x+s*(pose?-.38:.38), hy=y-s*.62;
+  c.beginPath(); c.moveTo(x-s*.12,y); c.lineTo(x,y-s*.5); c.lineTo(x+s*.12,y); // legs
+  c.moveTo(x,y-s*.5); c.quadraticCurveTo(x+(hx-x)*.4,y-s*.85,hx,hy); // back
+  c.moveTo(hx-(hx-x)*.2,hy+s*.02); c.lineTo(hx+(hx-x)*.1,y-s*.12); c.stroke(); // arm reaching to the padi
+  caping(c,hx+(hx-x)*.1,hy-s*.02,s*.24);
+}
+function masjid(c,q,m,lit){ // a village masjid with a three-tier tajug roof and mustaka
+  const {x,y,w}=q, h=w*.42, top=y-h;
+  c.fillStyle=rgb(mix(P.hill,[226,222,206],.45*(1-m.night*.7))); c.fillRect(x-w/2,top,w,h);
+  c.fillStyle=rgb(mix(P.hill,[70,82,74],.5*(1-m.night*.6)));
+  const tier=(w0,w1,y0,y1)=>{ c.beginPath(); c.moveTo(x-w0,y0); c.lineTo(x+w0,y0); c.lineTo(x+w1,y1); c.lineTo(x-w1,y1); c.fill(); };
+  tier(w*.66,w*.36,top,top-w*.2); tier(w*.4,w*.2,top-w*.24,top-w*.38); tier(w*.24,w*.02,top-w*.42,top-w*.6);
+  c.fillRect(x-w*.012,top-w*.72,w*.024,w*.13); c.beginPath(); c.arc(x,top-w*.62,w*.035,0,TAU); c.fill();
+  c.fillStyle=lit?rgb(mix([40,30,20],[255,226,150],lit)):rgb(mix(P.hill,[0,0,0],.4));
+  for(const dx of [-.3,-.1,.1,.3]) c.fillRect(x+dx*w-w*.04,top+h*.3,w*.08,h*.45);
+  if(lit){ c.globalCompositeOperation="lighter"; c.globalAlpha=lit*.5; c.drawImage(SP.warm,x-w,top-w*.4,w*2,w*1.4); c.globalAlpha=1; c.globalCompositeOperation="source-over"; }
 }
 
 // ================= animation =================
@@ -330,7 +429,7 @@ function draw(){
   cx.globalAlpha=1; const fg=rgb(P.fg);
   cx.fillStyle=fg; cx.beginPath(); cx.moveTo(-10,H+10); for(let x=-10;x<=W+10;x+=8) cx.lineTo(x,G.fgY(x)); cx.lineTo(W+10,H+10); cx.fill();
   bamboo(cx,-W*.01,H+4,Math.min(H*.6,W*.5),t,fg);
-  palm(cx,W*.9,H+6,Math.min(H*.6,W*.42),-.18,t,fg);
+  palm(cx,W*.9,H+6,Math.min(H*.6,W*.42),-.18,t,fg,true);
   cx.strokeStyle=fg; cx.lineWidth=1.4; cx.beginPath();
   const wind=Math.sin(t*.6)*.5+.5;
   for(const g of G.grass){ const by=G.fgY(g.x)+2, sw=(Math.sin(t*1.8+g.ph+g.x*.01)*.5+wind)*g.h*.35; cx.moveTo(g.x,by); cx.quadraticCurveTo(g.x+sw*.4,by-g.h*.6,g.x+sw,by-g.h); }
@@ -381,26 +480,58 @@ function mkBus(pan,wet,lp){
 }
 const busFor=far=>{ const L=far?A.far:A.near; return L[Math.random()*L.length|0]; };
 
-function rooster(t,far){
-  const o=O("sawtooth",500), f1=Fl("bandpass",1300,3), f2=Fl("bandpass",2700,4), g=Gn(), v=O("sine",9), vg=Gn(14), vol=far?.12:.22;
+// Every kampung rooster has its own voice: pitch, how long it holds the last note, how it breaks.
+const ROOSTERS=[{p:1,hold:.95,gap:.18,brk:0},{p:.86,hold:1.25,gap:.2,brk:.4},{p:1.14,hold:.7,gap:.15,brk:0},{p:.94,hold:1.1,gap:.24,brk:.7}];
+function rooster(t,far,who){
+  const R=ROOSTERS[who??(Math.random()*ROOSTERS.length|0)], k=R.p*rand(.97,1.03);
+  const o=O("sawtooth",500*k), f1=Fl("bandpass",1300*k,3), f2=Fl("bandpass",2700*k,4), g=Gn(), v=O("sine",rand(7,10)), vg=Gn(14*k), vol=(far?.1:.18)*rand(.8,1.1);
   o.connect(f1); o.connect(f2); f1.connect(g); f2.connect(g); g.connect(busFor(far)); chain(v,vg,o.frequency);
   const fr=o.frequency, gp=g.gain; gp.setValueAtTime(0,t);
-  for(const [s,d,a,b] of [[0,.12,480,620],[.18,.12,560,680],[.36,.14,620,720],[.56,.95,700,760]]){
-    fr.setValueAtTime(a,t+s);
-    if(d>.5){ fr.linearRampToValueAtTime(b+80,t+s+.22); fr.linearRampToValueAtTime(b,t+s+.6); fr.exponentialRampToValueAtTime(420,t+s+d); }
-    else fr.linearRampToValueAtTime(b,t+s+d);
+  const syl=[[0,.12,480,620],[R.gap,.12,560,680],[R.gap*2,.14,620,720],[R.gap*3+.02,R.hold,700,760]];
+  for(const [s,d,a,b] of syl){
+    fr.setValueAtTime(a*k,t+s);
+    if(d>.5){ fr.linearRampToValueAtTime((b+80)*k,t+s+.22); fr.linearRampToValueAtTime(b*k,t+s+.6);
+      if(R.brk) fr.linearRampToValueAtTime(b*k*(1+R.brk*.25),t+s+.66); // a voice that cracks on the long note
+      fr.exponentialRampToValueAtTime(420*k,t+s+d); }
+    else fr.linearRampToValueAtTime(b*k,t+s+d);
     gp.setValueAtTime(0,t+s); gp.linearRampToValueAtTime(vol,t+s+.02); gp.setValueAtTime(vol,t+s+d-.05); gp.linearRampToValueAtTime(0,t+s+d);
   }
-  run1(o,t,1.6); run1(v,t,1.6);
-  if(!far&&Math.random()<.6) rooster(t+rand(2,4),true); // a neighbour's rooster answers
+  const end=R.gap*3+R.hold+.2; run1(o,t,end); run1(v,t,end);
+  if(!far&&Math.random()<.5) rooster(t+end+rand(1.5,5),true,(ROOSTERS.indexOf(R)+1+(Math.random()*3|0))%ROOSTERS.length); // a neighbour answers
 }
-function chirp(t){ // kutilang, emprit: short warbled notes that arch, not long swoops (those read as a laser)
+// Morning birds. Kutilang: a bright, liquid phrase of a few notes that jump about.
+function kutilang(t){
+  const out=busFor(Math.random()<.35), base=rand(1500,2100); let s=t;
+  const tune=Array.from({length:3+(Math.random()*4|0)},()=>[1,1.25,1.5,1.33,1.12,1.68][Math.random()*6|0]);
+  for(const r of tune){
+    const d=rand(.07,.16), f=base*r, o=O("sine",f), o2=O("sine",f*2), g=Gn(), g2=Gn(.18);
+    o.frequency.setValueAtTime(f*.9,s); o.frequency.linearRampToValueAtTime(f*1.04,s+d*.3); o.frequency.linearRampToValueAtTime(f,s+d);
+    o2.frequency.setValueAtTime(f*1.8,s); o2.frequency.linearRampToValueAtTime(f*2.08,s+d*.3);
+    chain(o2,g2,g); env(g.gain,s,.012,rand(.045,.07),d*.4,d*.5); chain(o,g,out); run1(o,s,d+.05); run1(o2,s,d+.05); s+=d+rand(.03,.09);
+  }
+}
+// Prenjak: a fast, dry "cet-cet-cet-cet" trill, often answered.
+function prenjak(t,again=true){
+  const out=busFor(Math.random()<.5), f=rand(4200,5200), n=8+(Math.random()*14|0), gap=rand(.055,.08);
+  for(let i=0;i<n;i++){ const s=t+i*gap, o=O("triangle",f), g=Gn();
+    o.frequency.setValueAtTime(f*1.08,s); o.frequency.exponentialRampToValueAtTime(f*.86,s+.025);
+    env(g.gain,s,.003,.08*(1-i/n*.4),.005,.02); chain(o,Fl("bandpass",f,2),g,out); run1(o,s,.05); }
+  if(again&&Math.random()<.5) prenjak(t+n*gap+rand(.3,1),false);
+}
+// Burung gereja (sparrows) chattering in the eaves: loose "cip"s from a few birds at once.
+function gereja(t){
+  for(let b=0,nb=2+(Math.random()*3|0);b<nb;b++){ const out=busFor(Math.random()<.3); let s=t+rand(0,.6);
+    for(let i=0,n=3+(Math.random()*7|0);i<n;i++){ const f=rand(3200,4600), d=rand(.04,.08), o=O("sine",f), g=Gn();
+      o.frequency.setValueAtTime(f*1.1,s); o.frequency.exponentialRampToValueAtTime(f*.8,s+d);
+      env(g.gain,s,.006,rand(.025,.045),d*.2,d*.6); chain(o,g,out); run1(o,s,d+.05); s+=d+rand(.05,.35); } }
+}
+function chirp(t){ // emprit in the padi: short warbled notes that arch
   const out=busFor(Math.random()<.4), base=rand(2600,3800); let s=t;
   for(let i=0,n=3+(Math.random()*5|0);i<n;i++){
     const d=rand(.05,.12), f0=base*rand(.92,1.1), o=O("sine",f0), g=Gn(), w=O("sine",rand(35,70)), wg=Gn(f0*rand(.03,.06));
     chain(w,wg,o.frequency);
     o.frequency.setValueAtTime(f0*.95,s); o.frequency.linearRampToValueAtTime(f0*rand(1.03,1.1),s+d*.4); o.frequency.linearRampToValueAtTime(f0*rand(.96,1),s+d);
-    env(g.gain,s,.015,rand(.02,.04),d*.35,d*.5); chain(o,g,out); run1(o,s,d+.05); run1(w,s,d+.05); s+=d+rand(.03,.12);
+    env(g.gain,s,.015,rand(.06,.09),d*.35,d*.5); chain(o,g,out); run1(o,s,d+.05); run1(w,s,d+.05); s+=d+rand(.03,.12);
   }
 }
 function dove(t){ // perkutut: "hur … ketek … kung"
@@ -410,7 +541,7 @@ function dove(t){ // perkutut: "hur … ketek … kung"
     chain(o,g,Fl("lowpass",1400),out); chain(tr,tg,g.gain);
     for(const [s,d,a,b] of [[0,.16,520,560],[.42,.34,600,560],[.95,.6,640,520]]){
       o.frequency.setValueAtTime(a,s0+s); o.frequency.linearRampToValueAtTime(b,s0+s+d);
-      g.gain.setValueAtTime(0,s0+s); g.gain.linearRampToValueAtTime(.1,s0+s+.04); g.gain.setValueAtTime(.1,s0+s+d-.06); g.gain.linearRampToValueAtTime(0,s0+s+d);
+      g.gain.setValueAtTime(0,s0+s); g.gain.linearRampToValueAtTime(.06,s0+s+.04); g.gain.setValueAtTime(.06,s0+s+d-.06); g.gain.linearRampToValueAtTime(0,s0+s+d);
     }
     tg.gain.setValueAtTime(.06,s0+.42); tg.gain.setValueAtTime(0,s0+.76);
     run1(o,s0,1.6); run1(tr,s0,1.6);
@@ -461,7 +592,7 @@ function owl(t){ // burung hantu calling across the valley
   g.gain.setValueAtTime(0,t);
   for(const [s,d] of [[0,.32],[.75,.16],[1,.7]]){
     o.frequency.setValueAtTime(380,t+s); o.frequency.linearRampToValueAtTime(345,t+s+d);
-    g.gain.setValueAtTime(0,t+s); g.gain.linearRampToValueAtTime(.1,t+s+.1); g.gain.setValueAtTime(.1,t+s+d*.55); g.gain.linearRampToValueAtTime(0,t+s+d);
+    g.gain.setValueAtTime(0,t+s); g.gain.linearRampToValueAtTime(.06,t+s+.1); g.gain.setValueAtTime(.06,t+s+d*.55); g.gain.linearRampToValueAtTime(0,t+s+d);
   }
   run1(o,t,2); run1(v,t,2); run1(n,t,2);
 }
@@ -483,29 +614,105 @@ function kentongan(t,count){
   if(count) for(let i=0;i<count;i++) knock(t+i*1.25,.22,out);
   else for(const s of [0,.3,.6,1.6,1.9,2.2,3.4]) knock(t+s,.18,out);
 }
-// A neighbour's gamelan rehearsing a slendro piece; gong at the turn of each cycle.
+// A neighbour's gamelan rehearsing a slendro piece across the fields: soft and far, never the same twice.
+// The balungan is picked from a few pieces, the kendhang leads, the bonang anticipates, and the last
+// round slows down into the gong (suwuk), as a real rehearsal does.
 const SLENDRO={1:1,2:1.1487,3:1.3195,5:1.5157,6:1.7411};
-const BALUNGAN="21262126353265325653212635321216".split("");
+const PIECES=["21262126353265325653212635321216","53235321653221656532123565321653","66356532225322165352165311236532"].map(p=>p.split(""));
 function bar(t,f,v,dec,out,parts=[[1,1],[2.76,.32],[5.4,.1]]){
   for(const [r,a] of parts){ const o=O("sine",f*r), g=Gn(); env(g.gain,t,.004,v*a,0,dec/Math.sqrt(r)); chain(o,g,out); run1(o,t,dec+.1); }
 }
-function gong(t,out){ for(const [f,v] of [[62,.3],[63.3,.26],[124.5,.08],[187,.03]]){ const o=O("sine",f), g=Gn(); env(g.gain,t,.04,v,.2,7); chain(o,g,out); run1(o,t,7.5); } }
+function gong(t,out,v=.11){ for(const [f,a] of [[62,1],[63.3,.85],[124.5,.25],[187,.1]]){ const o=O("sine",f), g=Gn(); env(g.gain,t,.05,v*a,.2,7); chain(o,g,out); run1(o,t,7.5); } }
+function kendhang(t,out,low){ // "dhung" (low, the pitch falling) or "tak" (a dry slap)
+  const f=low?rand(95,110):rand(380,440), o=O("sine",f), g=Gn();
+  o.frequency.setValueAtTime(f*(low?1.5:1.1),t); o.frequency.exponentialRampToValueAtTime(f,t+(low?.07:.02));
+  env(g.gain,t,.004,low?.08:.035,.01,low?.28:.07); chain(o,g,out); run1(o,t,.4);
+}
 function gamelan(t){
   if(A.gamUntil>t) return;
-  const out=A.gam, beat=.8, f0=268; let s=t;
-  for(let r=0,rounds=2+(Math.random()*2|0);r<rounds;r++) BALUNGAN.forEach((d,i)=>{
-    const f=f0*SLENDRO[d];
-    if(i===0) gong(s,out);
-    bar(s,f,.12,1.6,out); bar(s+beat/2,f*2,.04,.8,out);
-    if(i%4===3) bar(s,f/2,.09,3,out,[[1,1],[2,.2],[3.1,.05]]);
+  const out=A.gam, f0=268*rand(.98,1.02), notes=PIECES[Math.random()*PIECES.length|0], rounds=2+(Math.random()*2|0);
+  let s=t, beat=rand(.7,.85);
+  for(let r=0;r<rounds;r++) notes.forEach((d,i)=>{
+    const last=r===rounds-1, f=f0*SLENDRO[d], j=()=>rand(-.012,.012);
+    if(last) beat*=1+.018; // slowing into the final gong
+    if(i===0) gong(s,out,r?.09:.11);
+    bar(s+j(),f,.035,1.6,out); // saron
+    if(Math.random()<.85) bar(s+beat/2+j(),f*2,.016,.8,out); // peking
+    if(i%4===3) bar(s,f/2,.04,3,out,[[1,1],[2,.2],[3.1,.05]]); // kenong on the gatra
+    if(i%4===1&&Math.random()<.6) bar(s+j(),f/2,.025,2.4,out,[[1,1],[2.1,.2]]); // kempul
+    const nx=notes[(i+1)%notes.length]; if(Math.random()<.35) bar(s+beat*.75+j(),f0*SLENDRO[nx]*2,.012,.6,out); // bonang anticipating the next note
+    if(i%2===1) kendhang(s+j(),out,i%4===3); else if(Math.random()<.3) kendhang(s+beat/2+j(),out,false);
     s+=beat;
   });
-  gong(s,out); A.gamUntil=s+8;
+  gong(s,out,.12); A.gamUntil=s+8;
+}
+// Bedug at the langgar before the call to prayer: slow strokes that quicken, then a few to close.
+function bedug(t){
+  const out=A.far[1+(Math.random()*3|0)];
+  const hits=[0,1.6,3,4.2,5.2,6,6.6,7.1,7.5,7.85,8.15,8.4,8.62,8.82,9,9.6,10.6,11.8];
+  for(const h of hits){
+    const s=t+h, f=rand(58,64), o=O("sine",f), g=Gn(), n=Nz(), ng=Gn();
+    o.frequency.setValueAtTime(f*1.35,s); o.frequency.exponentialRampToValueAtTime(f,s+.09);
+    env(g.gain,s,.006,.1,.05,1.1); chain(o,g,out); run1(o,s,1.3);
+    chain(n,Fl("lowpass",380,.7),ng,out); env(ng.gain,s,.003,.04,0,.08); run1(n,s,.15);
+  }
+}
+// Kampung life: a motorbike passing on the road, the tukang bakso's "tok-tok", the sapu lidi in the yard,
+// hens clucking, bats squeaking at dusk, and the hum of sendaren on the kites.
+function motor(t){
+  const dur=rand(7,11), f=rand(70,95), dir=Math.random()<.5?1:-1, vol=rand(.025,.04);
+  const o=O("sawtooth",f), o2=O("square",f*.5), g=Gn(), g2=Gn(.35), lp=Fl("lowpass",700,.8), pan=A.ctx.createStereoPanner?A.ctx.createStereoPanner():null;
+  chain(o2,g2,lp); chain(o,lp,g); const end=pan?(g.connect(pan),pan):g; end.connect(A.far[2]);
+  const mid=t+dur*rand(.4,.6);
+  o.frequency.setValueAtTime(f*1.06,t); o.frequency.setValueAtTime(f*1.06,mid-.4); o.frequency.linearRampToValueAtTime(f*.93,mid+.5); o.frequency.linearRampToValueAtTime(f*.9,t+dur);
+  o2.frequency.setValueAtTime(f*.53,t); o2.frequency.setValueAtTime(f*.53,mid-.4); o2.frequency.linearRampToValueAtTime(f*.465,mid+.5);
+  lp.frequency.setValueAtTime(400,t); lp.frequency.linearRampToValueAtTime(1400,mid); lp.frequency.linearRampToValueAtTime(400,t+dur);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,mid); g.gain.linearRampToValueAtTime(0,t+dur);
+  if(pan){ pan.pan.setValueAtTime(-.8*dir,t); pan.pan.linearRampToValueAtTime(.8*dir,t+dur); }
+  run1(o,t,dur); run1(o2,t,dur);
+}
+function bakso(t){ // the mangkok struck with a spoon as the cart goes by: "tok-tok ... tok-tok-tok"
+  const out=busFor(true), groups=4+(Math.random()*5|0);
+  for(let gI=0;gI<groups;gI++){ const s0=t+gI*rand(1.8,2.6), v=.08*Math.sin(Math.PI*(gI+.5)/groups);
+    for(let k=0,n=2+(Math.random()<.4?1:0);k<n;k++){ const s=s0+k*.22, f=rand(1050,1150), o=O("triangle",f), o2=O("sine",f*2.6), g=Gn(), g2=Gn(.25);
+      chain(o2,g2,g); chain(o,Fl("bandpass",f,4),g,out); env(g.gain,s,.002,v,.005,.09); run1(o,s,.15); run1(o2,s,.15); } }
+}
+function sapu(t){ // sapu lidi sweeping the yard in the cool of the morning
+  const out=A.near[Math.random()<.5?1:3], n=8+(Math.random()*10|0); let s=t;
+  for(let i=0;i<n;i++){ const d=rand(.18,.3), src=Nz(), bp=Fl("bandpass",rand(3000,4500),.8), g=Gn();
+    bp.frequency.setValueAtTime(bp.frequency.value*1.2,s); bp.frequency.linearRampToValueAtTime(bp.frequency.value*.8,s+d);
+    g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(.08,s+d*.3); g.gain.linearRampToValueAtTime(0,s+d);
+    chain(src,bp,g,out); run1(src,s,d); s+=d+rand(.3,.5); if(Math.random()<.12) s+=rand(1,2.5); }
+}
+function petok(t){ // a hen: "petok-petok-petok … petoook"
+  const out=busFor(Math.random()<.5), f=rand(420,520); let s=t;
+  for(let i=0,n=3+(Math.random()*4|0);i<=n;i++){
+    const long=i===n, d=long?rand(.3,.45):rand(.06,.09), o=O("sawtooth",f), g=Gn();
+    o.frequency.setValueAtTime(f*(long?.9:1),s); o.frequency.linearRampToValueAtTime(f*(long?1.35:1.1),s+d*.6); o.frequency.linearRampToValueAtTime(f*(long?1.2:1),s+d);
+    chain(o,Fl("bandpass",1250,3),Fl("lowpass",2600),g,out); env(g.gain,s,.008,long?.13:.11,d*.4,d*.5); run1(o,s,d+.05);
+    s+=d+(long?0:rand(.12,.25)); if(i===n-1) s+=rand(.1,.25);
+  }
+}
+function codot(t){ // bats squabbling as they leave for the fruit trees
+  const out=busFor(Math.random()<.6); let s=t;
+  for(let i=0,n=2+(Math.random()*5|0);i<n;i++){ const f=rand(2600,3800), d=rand(.03,.06), o=O("sawtooth",f), g=Gn();
+    o.frequency.setValueAtTime(f*1.2,s); o.frequency.exponentialRampToValueAtTime(f*.75,s+d);
+    chain(o,Fl("bandpass",f,5),g,out); env(g.gain,s,.003,.1,.005,d); run1(o,s,d+.05); s+=d+rand(.05,.18); }
+}
+function genteng(t){ // a drop on the roof tiles under the rain
+  const f=rand(2200,4800), o=O("sine",f), g=Gn();
+  o.frequency.setValueAtTime(f,t); o.frequency.exponentialRampToValueAtTime(f*.6,t+.02);
+  chain(o,g,A.near[Math.random()*5|0]); env(g.gain,t,.001,rand(.006,.02),0,.03); run1(o,t,.06);
+}
+function talang(t){ // water dripping off the gutter into a puddle, almost in rhythm
+  const f=rand(520,760), o=O("sine",f), g=Gn();
+  o.frequency.setValueAtTime(f,t); o.frequency.exponentialRampToValueAtTime(f*2.4,t+.05);
+  chain(o,Fl("lowpass",1800),g,A.near[3]); env(g.gain,t,.003,.05,0,.09); run1(o,t,.12);
 }
 // Sapi in the kandang at feeding and milking time: a low "mmm-ooo" that opens out and sags.
 // A sawtooth through a lowpass that opens (the closed "mm") then a mouth formant, with a slow wobble.
 function sapi(t,far){
-  const f0=rand(105,140), dur=rand(1.4,2.4), vol=far?.07:.13, out=busFor(far);
+  const f0=rand(105,140), dur=rand(1.4,2.4), vol=far?.05:.09, out=busFor(far);
   // a slow, slight waver (a fast one turns the moo into a goat's bleat) and a second lowpass so it stays dark, not buzzy
   const o=O("sawtooth",f0), wob=O("sine",rand(2,3.5)), wg=Gn(f0*.005), lp=Fl("lowpass",300,1.2), bp=Fl("bandpass",rand(550,700),3), bg=Gn(.7), g=Gn(), dark=Fl("lowpass",1700,.5);
   chain(wob,wg,o.frequency); chain(o,lp,g); chain(lp,bp,bg,g); chain(g,dark,out);
@@ -556,20 +763,32 @@ function thunder(t){
 function onLightning(delay){ if(A.on) thunder(A.ctx.currentTime+delay); }
 
 const EV={
-  rooster:{gap:[6,16], w:m=>m.dawn+.06*m.day, fn:t=>rooster(t,false)},
-  bird:   {gap:[1.5,5], w:m=>(m.dawn*.8+m.day*.6)*(1-m.rain*.8), fn:chirp},
+  rooster:{gap:[14,38], w:m=>m.dawn+bump(m.h,3.2,3.8,4.6,5)*.5+.05*m.day, fn:t=>rooster(t,false)},
+  kutilang:{gap:[3,9], w:m=>(m.dawn*.6+bump(m.h,5.5,6.2,9.5,11)+m.day*.3+m.sore*.4)*(1-m.rain*.85), fn:kutilang},
+  prenjak:{gap:[8,20], w:m=>(bump(m.h,5.5,6.2,10,11.5)*.8+m.sore*.5)*(1-m.rain*.8), fn:t=>prenjak(t)},
+  gereja: {gap:[6,16], w:m=>(m.dawn*.5+m.day*.6)*(1-m.rain*.7), fn:gereja},
+  bird:   {gap:[3,8], w:m=>(m.day*.5+m.dawn*.4)*(1-m.rain*.8), fn:chirp},
   dove:   {gap:[14,32], w:m=>(m.dawn*.6+m.day*.4)*(1-m.rain), fn:dove},
+  petok:  {gap:[25,70], w:m=>(m.day*.45+m.dusk*.8)*(1-m.rain*.6), fn:petok},
   cicada: {gap:[4,10], w:m=>Math.max(m.noon,m.sore*.7)*(1-m.rain), fn:cicada},
+  codot:  {gap:[3,9], w:m=>m.dusk*(1-m.rain), fn:codot},
   frog:   {gap:[.4,1.6], w:m=>Math.min(1,m.night*.9+m.dusk*.5+m.rain*.6), fn:frog},
   tokek:  {gap:[60,150], w:m=>m.night, fn:tokek},
   owl:    {gap:[40,90], w:m=>m.night*(1-m.rain), fn:owl},
   drip:   {gap:[.3,1.5], w:m=>.5+m.rain*.5, fn:drip},
+  genteng:{gap:[.05,.15], w:m=>m.rain, fn:t=>{ for(let i=0,n=1+(Math.random()*3|0);i<n;i++) genteng(t+Math.random()*.2); }},
+  talang: {gap:[.55,.85], w:m=>m.rain>.3?1:0, fn:talang},
   ronda:  {gap:[400,900], w:m=>m.h>=21||m.h<3.5?1:0, fn:t=>kentongan(t,0)},
-  gamelan:{gap:[60,180], w:m=>bump(m.h,19,19.5,21.8,22.4), fn:gamelan},
+  gamelan:{gap:[90,240], w:m=>bump(m.h,19.3,19.8,21.8,22.4)*.7*(1-m.rain), fn:gamelan},
   sapi:   {gap:[25,70], w:m=>(m.dawn*.7+bump(m.h,6.5,7.2,10,11.5)*.6+m.sore*.35)*(1-m.rain*.7), fn:t=>sapi(t,Math.random()<.4)},
   pecut:  {gap:[120,300], w:m=>bump(m.h,6.3,7,10.5,11.5)*(1-m.rain), fn:pecut},
   kambing:{gap:[35,90], w:m=>(bump(m.h,5.6,6.5,9,10.5)*.7+m.sore*.6)*(1-m.rain*.8), fn:t=>kambing(t,Math.random()<.5)},
+  sapu:   {gap:[40,110], w:m=>bump(m.h,5.4,5.9,8,9)*(1-m.rain), fn:sapu},
+  motor:  {gap:[45,140], w:m=>bump(m.h,5.5,6.5,21,22.5)*.6, fn:motor},
+  bakso:  {gap:[120,360], w:m=>bump(m.h,15.5,16.2,21,21.8)*.8, fn:bakso},
 };
+// Bedug from the langgar a few minutes before each prayer (times for Yogyakarta, give or take a few minutes through the year).
+const BEDUG=[3.95,11.55,14.85,17.6,18.75];
 function initAudio(){
   const C=window.AudioContext||window.webkitAudioContext; if(!C) return false;
   const ac=A.ctx=new C(), sr=ac.sampleRate;
@@ -581,7 +800,7 @@ function initAudio(){
   A.noise=ac.createBuffer(1,sr*2,sr); const nd=A.noise.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
   A.near=[-.7,-.3,0,.3,.7].map(p=>mkBus(p,.25));
   A.far=[-.8,-.4,0,.4,.8].map(p=>mkBus(p,.9,3000));
-  A.gam=mkBus(.35,1,2400);
+  A.gam=mkBus(.45,1.2,1700); // across the fields: dark and mostly reverb
   A.kent=[-.6,.5].map(p=>mkBus(p,.4,2500)); // drier than A.far so the knock doesn't boom down the valley
   const bed=(f,gain,bus)=>{ const n=Nz(), g=Gn(0); chain(n,...f,g,bus); n.start(0,Math.random()*1.5); return g; };
   A.wind=bed([Fl("lowpass",450,.3)],0,A.near[2]);
@@ -590,12 +809,18 @@ function initAudio(){
   A.bubble=bed([Fl("bandpass",1800,6)],0,A.near[0]);
   A.rainHi=bed([Fl("highpass",800),Fl("lowpass",7000)],0,A.near[2]);
   A.rainLo=bed([Fl("lowpass",300)],0,A.near[2]);
+  A.rainSw=1;
   // jangkrik: each cricket is a tone pulsed ~30×/s, gated into chirps. Hard square gates click like a machine,
-  // so the pulses are rounded and the gate low-passed; most sit out in the sawah, and each one rests now and then.
+  // so the pulses are rounded and the gate low-passed; most sit out in the sawah. Each one's pitch drifts slowly
+  // with the night air and each rests often, so the band never settles into a steady whine.
   A.crk=Array.from({length:6},(_,i)=>{
-    const o=O("sine",rand(4300,5000)), a=Gn(.5), p=O("sine",rand(26,34)), pg=Gn(.5), b=Gn(.5), c=O("square",rand(1.3,2.2)), cl=Fl("lowpass",12,.5), cg=Gn(.5), v=Gn(0);
-    chain(p,pg,a.gain); chain(c,cl,cg,b.gain); chain(o,a,b,v,i<2?A.near[i*4]:A.far[i-1]);
-    o.start(); p.start(); c.start(); v.lvl=i<2?rand(.005,.01):rand(.012,.022); v.on=Math.random()<.75; return v;
+    const o=O("sine",rand(4100,5100)), dr=O("sine",rand(.02,.07)), dg=Gn(rand(60,140)), a=Gn(.5), p=O("sine",rand(24,36)), pg=Gn(.5), b=Gn(.5), c=O("square",rand(1.1,2.6)), cl=Fl("lowpass",12,.5), cg=Gn(.5), v=Gn(0);
+    chain(dr,dg,o.frequency); chain(p,pg,a.gain); chain(c,cl,cg,b.gain); chain(o,a,b,v,i<2?A.near[i*4]:A.far[i-1]);
+    o.start(); dr.start(); p.start(); c.start(); v.lvl=i<2?rand(.004,.008):rand(.01,.018); v.on=Math.random()<.6; return v;
+  });
+  // sendaren: the bamboo hummers bound to the big kites, droning with every gust
+  A.send=[[rand(170,190),-.5],[rand(225,250),.4]].map(([f,pan])=>{
+    const o=O("sawtooth",f), g=Gn(0), out=A.far[pan<0?1:3]; chain(o,Fl("bandpass",f*3.2,3),g,out); const o2=O("sawtooth",f*1.01); chain(o2,Fl("bandpass",f*6.5,4),g); o.start(); o2.start(); g.f=f; g.o=[o,o2]; return g;
   });
   A.frogs=Array.from({length:7},(_,i)=>({type:i<4?0:1,f:i<4?rand(190,260):rand(300,420),bus:busFor(Math.random()<.7)}));
   return true;
@@ -603,22 +828,27 @@ function initAudio(){
 function tick(){
   const now=A.ctx.currentTime, m=moods(hourNow()), set=(g,v,tc)=>g.gain.setTargetAtTime(v,now,tc);
   if(Math.random()<.05) A.gust=rand(.3,1);
+  A.rainSw=Math.max(.55,Math.min(1.35,A.rainSw+rand(-.06,.06))); // showers come in waves
   set(A.wind,(.04+.06*A.gust)*(1+m.rain),2);
   set(A.leaves,.015*A.gust*(1-m.night*.5),2);
   set(A.stream,.05,3); set(A.bubble,rand(.004,.03),.05);
-  set(A.rainHi,.12*m.rain,3); set(A.rainLo,.2*m.rain,3);
-  for(const v of A.crk){ if(Math.random()<.004) v.on=!v.on; set(v,v.on*v.lvl*Math.min(1,m.night+m.dusk*.4)*(1-m.rain*.5),4); }
+  set(A.rainHi,.12*m.rain*A.rainSw,2); set(A.rainLo,.2*m.rain*A.rainSw,2);
+  for(const v of A.crk){ if(Math.random()<.012) v.on=!v.on; set(v,v.on*v.lvl*Math.min(1,m.night+m.dusk*.4)*(1-m.rain*.5),4); }
+  for(const g of A.send){ set(g,.022*m.sore*(1-m.rain)*Math.pow(A.gust,1.5),1.2); g.o.forEach((o,i)=>o.frequency.setTargetAtTime(g.f*(i?1.01:1)*(.94+.12*A.gust),now,1.5)); }
+  if(m.rain>.4&&Math.random()<m.rain*.1) frog(now+Math.random()*.2); // the frogs swell with the rain
   for(const [k,e] of Object.entries(EV)){
     if(now<A.next[k]) continue;
     A.next[k]=now+rand(...e.gap);
     const w=e.w(m); if(w>0&&Math.random()<w) e.fn(now+.05+Math.random()*.3);
   }
+  if(A.lastH!==undefined) for(const b of BEDUG) if((A.lastH<b&&m.h>=b)||(A.lastH>m.h&&(b>A.lastH||b<=m.h))) bedug(now+.5);
+  A.lastH=m.h;
   const hr=Math.floor(m.h);
   if(A.hr!==undefined&&hr!==A.hr&&(hr>=20||hr<=4)) kentongan(now+1,hr%12||12);
   A.hr=hr;
 }
-const btn=document.getElementById("suara"), cap=document.getElementById("suaraJam");
-const pref={ get(){ try{return localStorage.getItem("oelek.suara");}catch(e){return null;} }, set(v){ try{localStorage.setItem("oelek.suara",v);}catch(e){} } };
+const btn=document.getElementById("suara");
+const pref={ get(){ try{return localStorage.getItem("oelek.kampung");}catch(e){return null;} }, set(v){ try{localStorage.setItem("oelek.kampung",v);}catch(e){} } };
 function setSound(on){
   if(on){
     if(!A.ctx&&!initAudio()) return;
@@ -636,28 +866,15 @@ function setSound(on){
   A.on=on; if(btn) btn.setAttribute("aria-pressed",String(on)); pref.set(on?"1":"0");
 }
 if(btn){
-  let woke=false; // the tap that unlocked audio shouldn't also switch it off
-  btn.addEventListener("click",()=>{ if(woke){ woke=false; return; } setSound(!A.on); });
-  // Sound is on by default and starts with the page. Browsers block audio until the visitor
-  // interacts, so if the page is still silent it starts on their first tap, click or key press.
-  // Switching it off is remembered.
-  if(pref.get()!=="0"){
-    setSound(true);
-    if(A.ctx&&A.ctx.state!=="running"){
-      const evs=["pointerdown","touchend","keydown","click"];
-      const wake=e=>{
-        if(!A.on||!A.ctx){ evs.forEach(t=>removeEventListener(t,wake,true)); return; }
-        A.ctx.resume().then(()=>{ if(A.ctx.state==="running") evs.forEach(t=>removeEventListener(t,wake,true)); });
-        if(e.type==="pointerdown"&&e.target.closest?.("#suara")) woke=true;
-      };
-      evs.forEach(t=>addEventListener(t,wake,true));
-    }
+  btn.addEventListener("click",()=>setSound(!A.on));
+  // Sound stays off until the visitor asks for it. Someone who switched it on last time gets it back
+  // on their first tap or key press (browsers don't allow audio before that).
+  if(pref.get()==="1"){
+    const evs=["pointerdown","keydown"];
+    const wake=e=>{ evs.forEach(t=>removeEventListener(t,wake,true)); if(e.target.closest?.("#suara")) return; if(!A.on) setSound(true); };
+    evs.forEach(t=>addEventListener(t,wake,true));
   }
 }
-// The button shows only the time of day, not what can be heard.
-const TIME_OF_DAY=[[3.5,"Subuh","before dawn"],[5.3,"Fajar","sunrise"],[7.5,"Pagi","morning"],[11,"Siang","midday"],[15,"Sore","afternoon"],[17.6,"Senja","dusk"],[19.2,"Malam","night"],[23,"Tengah malam","midnight"]];
-function caption(){ if(!cap) return; const h=hourNow(); let p=TIME_OF_DAY[TIME_OF_DAY.length-1]; for(const q of TIME_OF_DAY) if(h>=q[0]) p=q; cap.textContent=p[1]+" · "+p[2]; }
-caption(); setInterval(caption,3e4);
 
 run();
 })();
