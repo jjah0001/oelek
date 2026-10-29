@@ -74,8 +74,28 @@ function festAt(d){
   // Tahun Baru: fireworks and terompet around midnight.
   F.tahunBaru=(mo===11&&dt===31&&h>=23.6)||(mo===0&&dt===1&&h<.7);
   F.fireworks=F.takbiran||F.malamImlek||F.tahunBaru;
+  // Labuhan Merapi: wayang at Kinahrejo the night before, the procession up to Sri Manganti from six in the morning
+  const LB=(typeof LABUHAN!=="undefined"?LABUHAN:[]).map(x=>{ const [y,m2,d2]=x.split("-").map(Number); return Date.UTC(y,m2-1,d2)/864e5; });
+  let lb=null; for(const v of LB){ const x=n-v; if(lb===null||Math.abs(x)<Math.abs(lb)) lb=x; }
+  F.labuhan=lb===0&&h>=5.8&&h<10.5;
+  F.wayangJauh=lb===-1&&h>=20.5;                           // the Kinahrejo wayang, far up the valley
+  // Merti desa after the second harvest: kirab gunungan on Saturday morning, wayang kulit all Saturday night
+  const sat=mo===6&&wd===6&&dt>=16&&dt<=22, sun=mo===6&&wd===0&&dt>=17&&dt<=23;
+  F.kirab=sat&&h>=8&&h<11.5;
+  F.wayang=(sat&&h>=20.5)||(sun&&h<4.3);
+  F.merti=sat||(sun&&h<4.3);
+  const pd=padiDays(d); F.padi=padiStage(pd); F.padiHari=pd;
   return F;
 }
+// ================= padi =================
+const MT=(typeof MUSIM_TANAM!=="undefined"?MUSIM_TANAM:["11-15","03-15","07-15"]).map(x=>x.split("-").map(Number));
+function padiDays(d){ // days since the latest crop began ploughing
+  const n=dayNum(d); let best=Infinity;
+  for(const y of [d.getFullYear()-1,d.getFullYear()]) for(const [mo,da] of MT){ const st=Date.UTC(y,mo-1,da)/864e5; if(st<=n&&n-st<best) best=n-st; }
+  return best;
+}
+const PADI=[[10,"olah"],[17,"tandur"],[40,"muda"],[90,"hijau"],[103,"kuning"],[110,"panen"],[1e9,"jerami"]];
+const padiStage=days=>PADI.find(([e])=>days<e)[1];
 let FEST=festAt(kNow());
 
 // ================= helpers =================
@@ -175,7 +195,7 @@ function layout(){
   const yT=yH+H*.01, n=7, edges=[];
   for(let i=0;i<=n;i++){ const amp=H*.004*(1+i*1.2), f=r(.003,.008), ph=r(0,TAU), y0=yT+(H*.99-yT)*Math.pow(i/n,1.3), e=[]; for(let x=-8;x<=W+16;x+=8) e.push([x,y0+amp*Math.sin(x*f+ph)]); edges.push(e); }
   // sawah plots: each terrace is split by pematang into plots at different stages of the season
-  const plots=edges.slice(0,-1).map((_,i)=>{ const row=[]; let slL=0; for(let x=-8;x<W+16;){ const w=W*r(.12,.32)*(1+i*.12), q=R(), sl=r(-1,1)*H*.012*(1+i*.3); row.push({x0:x,x1:x+w,type:q<.16?0:q<.36?1:q<.9?2:3,slL,sl}); slL=sl; x+=w; } return row; });
+  const plots=edges.slice(0,-1).map((_,i)=>{ const row=[]; let slL=0; for(let x=-8;x<W+16;){ const w=W*r(.12,.32)*(1+i*.12), q=R(), sl=r(-1,1)*H*.012*(1+i*.3); row.push({x0:x,x1:x+w,off:Math.round(r(-9,9)),slL,sl}); slL=sl; x+=w; } return row; });
   const eY=(i,x)=>{ const e=edges[i]; return e[Math.max(0,Math.min(e.length-1,Math.round((x+8)/8)))][1]; };
   const mid=(i,x)=>(eY(i,x)+eY(i+1,x))/2;
   const figs={gubuk:{x:W*.7,y:mid(3,W*.7)},orang:{x:W*.6,y:mid(4,W*.6)},tani:[{x:W*.79,y:mid(4,W*.79)},{x:W*.835,y:mid(5,W*.835)}]};
@@ -318,30 +338,44 @@ function renderBase(h){
 // Sawah: plots flooded for planting (holding the sky), young rice, full green rice and a few turning gold,
 // with rows of padi, pematang between the plots, a gubuk, an orang-orangan sawah and farmers in caping.
 function sawah(c,m){
-  const E=G.edges, sky=mix(P.top,P.bot,.6), dayish=1-m.night*.75;
-  const tone=[mix(P.field,sky,.38), mix(P.field,sky,.18), mix(P.field,P.bot,.06), mix(P.field,[200,170,70],.3*dayish)];
+  const E=G.edges, sky=mix(P.top,P.bot,.6), dayish=1-m.night*.75, now=kNow().getTime();
+  // olah (muddy water), muda, hijau, kuning, jerami (stubble), tandur (water, seedlings), panen (half cut)
+  const tone=[mix(mix(P.field,sky,.22),[120,96,60],.32*dayish), mix(P.field,sky,.18), mix(P.field,P.bot,.06), mix(P.field,[200,170,70],.42*dayish), mix(P.field,[176,146,92],.55*dayish), mix(P.field,sky,.38)];
+  const TYPE={olah:0,tandur:5,muda:1,hijau:2,kuning:3,panen:6,jerami:4};
+  const act=G.act={olah:[],tandur:[],kuning:[],panen:[],jerami:[]};
   for(let i=0;i<E.length-1;i++){
     const depth=i/E.length*.55, path=new Path2D();
     for(const [x,y] of E[i]) path.lineTo(x,y); for(let k=E[i+1].length-1;k>=0;k--) path.lineTo(E[i+1][k][0],E[i+1][k][1]); path.closePath();
     c.save(); c.clip(path);
     const top=Math.min(...E[i].map(e=>e[1]))-4, bot=Math.max(...E[i+1].map(e=>e[1]))+4, rows=2+i, sp=3+i*1.7, th=1.3+i*.95;
     for(const pl of G.plots[i]){
-      c.fillStyle=rgb(mix(tone[pl.type],P.fg,depth)); c.beginPath(); c.moveTo(pl.x0,top); c.lineTo(pl.x1,top); c.lineTo(pl.x1+pl.sl,bot); c.lineTo(pl.x0+pl.slL,bot); c.fill();
-      if(pl.type===0){ // still water: a few streaks of reflected sky
-        c.strokeStyle=rgb(mix(sky,[255,255,255],.35),.35*dayish); c.lineWidth=1; c.beginPath();
+      const days=padiDays(new Date(now-pl.off*864e5)), st=padiStage(days), type=TYPE[st];
+      pl.stage=st; pl.days=days; if(act[st]&&i>=2&&pl.x1>0&&pl.x0<W) act[st].push({i,x0:Math.max(pl.x0,0),x1:Math.min(pl.x1,W),days});
+      const quad=(col,x0,x1)=>{ c.fillStyle=rgb(mix(col,P.fg,depth)); c.beginPath(); c.moveTo(x0,top); c.lineTo(x1,top); c.lineTo(x1+pl.sl,bot); c.lineTo(x0+pl.slL,bot); c.fill(); };
+      const rowsOf=(col,step,h,x0,x1)=>{ c.strokeStyle=rgb(mix(col,P.fg,depth),.55+.25*dayish); c.lineWidth=Math.max(.7,i*.28); c.beginPath();
+        for(let j=0;j<rows;j++) for(let x=x0+step*.5+(j%2)*step*.5;x<x1;x+=step){ const y0=G.eY(i,x), y=y0+(G.eY(i+1,x)-y0)*((j+.8)/(rows+.6)); c.moveTo(x,y); c.lineTo(x-h*.25,y-h); c.moveTo(x,y); c.lineTo(x+h*.25,y-h*.9); }
+        c.stroke(); };
+      const stubble=(x0,x1)=>{ // cut stalks and, here and there, a heap of jerami
+        rowsOf(mix(tone[4],[90,70,40],.4),sp*1.2,th*.25,x0,x1);
+        c.fillStyle=rgb(mix(mix(tone[4],[210,180,110],.3),P.fg,depth)); for(let x=x0+sp*6;x<x1-sp*3;x+=sp*14){ const y=(G.eY(i,x)+G.eY(i+1,x))/2; c.beginPath(); c.ellipse(x,y,sp*1.3,sp*.55,0,Math.PI,0); c.fill(); } };
+      if(type===6){ // harvest moves across the plot over its week: cut stubble behind, gold padi ahead
+        const split=pl.x0+(pl.x1-pl.x0)*Math.min(1,Math.max(0,(days-103)/7));
+        quad(tone[4],pl.x0,pl.x1); stubble(pl.x0,split); c.save(); c.beginPath(); c.rect(split,top,pl.x1-split+20,bot-top); c.clip(); quad(tone[3],pl.x0,pl.x1); c.restore();
+        rowsOf(mix(tone[3],[120,90,20],.35),sp,th,split,pl.x1); continue;
+      }
+      quad(tone[type],pl.x0,pl.x1);
+      if(type===0||type===5){ // standing water: streaks of reflected sky; ploughed mud is darker and furrowed
+        c.strokeStyle=rgb(mix(sky,[255,255,255],.35),(type?.35:.2)*dayish); c.lineWidth=1; c.beginPath();
         for(let x=pl.x0+sp*3;x<pl.x1;x+=sp*7){ const y=G.eY(i,x)+(G.eY(i+1,x)-G.eY(i,x))*((x*.37)%1); c.moveTo(x,y); c.lineTo(x+sp*2.5,y); } c.stroke();
+        if(type===5) rowsOf(mix(tone[1],[30,80,20],.4),sp*1.7,th*.35,pl.x0,pl.x0+(pl.x1-pl.x0)*Math.min(1,(days-10)/7)); // seedlings, row by row
         continue;
       }
-      // rows of padi, sparser when young
-      const step=pl.type===1?sp*1.8:sp, h=pl.type===1?th*.6:th, col=pl.type===3?mix(tone[3],[120,90,20],.35):mix(tone[pl.type],[18,48,14],.32);
-      c.strokeStyle=rgb(mix(col,P.fg,depth),.55+.25*dayish); c.lineWidth=Math.max(.7,i*.28); c.beginPath();
-      for(let j=0;j<rows;j++) for(let x=pl.x0+step*.5+(j%2)*step*.5;x<pl.x1;x+=step){
-        const y0=G.eY(i,x), y=y0+(G.eY(i+1,x)-y0)*((j+.8)/(rows+.6));
-        c.moveTo(x,y); c.lineTo(x-h*.25,y-h); c.moveTo(x,y); c.lineTo(x+h*.25,y-h*.9);
-      }
-      c.stroke();
+      if(type===4){ stubble(pl.x0,pl.x1); continue; }
+      // rows of padi: sparse and short when young, tall and heavy later
+      const step=type===1?sp*1.8:sp, h=type===1?th*.6:days>65?th*1.15:th, col=type===3?mix(tone[3],[120,90,20],.35):mix(tone[type],[18,48,14],.32);
+      rowsOf(col,step,h,pl.x0,pl.x1);
     }
-    // pematang between plots
+  // pematang between plots
     c.strokeStyle=rgb(mix(P.field,[236,226,190],.3),.4*dayish+.1); c.lineWidth=1+i*.35; c.beginPath();
     for(const pl of G.plots[i]){ c.moveTo(pl.x1,top); c.lineTo(pl.x1+pl.sl,bot); } c.stroke();
     c.restore();
@@ -351,9 +385,9 @@ function sawah(c,m){
   const ink=rgb(mix(mix(P.hill,P.fg,.5),[0,0,0],.15)), F=G.figs;
   gubuk(c,F.gubuk.x,F.gubuk.y,H*.05,ink,m);
   orang(c,F.orang.x,F.orang.y,H*.045,ink);
-  // farmers work the cool hours, not the midday heat, the rain or the dark
+  // farmers weed the growing padi in the cool hours, not in the midday heat, the rain or the dark
   const work=(bump(m.h,6,6.8,10.6,11.4)+bump(m.h,14.6,15.2,17,17.6))*(1-m.rain);
-  if(work>.5) F.tani.forEach((f,i)=>tani(c,f.x,f.y,H*(.04+i*.008),ink,i));
+  if(work>.5&&(FEST.padi==="muda"||FEST.padi==="hijau")) F.tani.forEach((f,i)=>tani(c,f.x,f.y,H*(.04+i*.008),ink,i));
 }
 function caping(c,x,y,w){ c.beginPath(); c.moveTo(x-w,y); c.lineTo(x,y-w*.55); c.lineTo(x+w,y); c.closePath(); c.fill(); }
 function gubuk(c,x,y,s,col,m){ // a hut on stilts for watching the birds off the padi
@@ -583,6 +617,74 @@ function liongDraw(t,m){
   // the pearl the dragon chases, on its own pole
   const px=hx+s*4.5, py=hy-s*.8+Math.sin(t*2.5)*s*.6; cx.globalCompositeOperation="lighter"; cx.globalAlpha=.9; cx.drawImage(SP.warm,px-s*1.4,py-s*1.4,s*2.8,s*2.8); cx.globalCompositeOperation="source-over"; cx.globalAlpha=1;
 }
+// ================= padi: people at work =================
+function bentFig(x,y,s,col,ph,t,reach){ // a farmer bent over the sawah, caping on; reach animates the arm
+  cx.strokeStyle=col; cx.fillStyle=col; cx.lineCap="round"; cx.lineWidth=Math.max(1.2,s*.12);
+  const hx=x+s*.38, hy=y-s*.62, arm=Math.sin(t*reach+ph)*s*.1;
+  cx.beginPath(); cx.moveTo(x-s*.12,y); cx.lineTo(x,y-s*.5); cx.lineTo(x+s*.12,y); cx.moveTo(x,y-s*.5); cx.quadraticCurveTo(x+s*.15,y-s*.85,hx,hy);
+  cx.moveTo(hx-s*.08,hy+s*.02); cx.lineTo(hx+s*.05+arm,y-s*.1); cx.stroke(); caping(cx,hx+s*.04,hy-s*.02,s*.24);
+}
+function padiLife(m,t){
+  const A2=G.act; if(!A2) return;
+  const work=(bump(m.h,6,6.8,10.6,11.4)+bump(m.h,14.6,15.2,17,17.6))*(1-m.rain)>.5, ink=rgb(mix(mix(P.hill,P.fg,.5),[0,0,0],.15));
+  const yOf=(p,u)=>{ const x=p.x0+(p.x1-p.x0)*u; return [x,(G.eY(p.i,x)+G.eY(p.i+1,x))/2+H*.006]; };
+  // the work happens on a plot in the middle rows, right of the hero text and below the card
+  const score=p=>Math.abs(p.i-4)*W*.25+Math.abs((p.x0+p.x1)/2-W*.68)-Math.min(p.x1-p.x0,W*.12);
+  const pick=list=>list.length?list.reduce((a,b)=>score(b)<score(a)?b:a):null;
+  if(work){
+    const o=pick(A2.olah); if(o){ // traktor tangan ploughing the mud, back and forth, the driver walking behind
+      const u=.15+.7*(Math.sin(t*.12)*.5+.5), dir=Math.cos(t*.12)>=0?1:-1, [x,y]=yOf(o,u), s=H*(.018+o.i*.004);
+      cx.fillStyle=ink; cx.strokeStyle=ink; cx.lineWidth=Math.max(1,s*.12);
+      cx.fillRect(x-s*.5,y-s*.7,s,s*.45); cx.beginPath(); cx.arc(x+dir*s*.25,y-s*.25,s*.28,0,TAU); cx.stroke(); // engine and wheel
+      cx.beginPath(); cx.moveTo(x-dir*s*.4,y-s*.6); cx.lineTo(x-dir*s*1.2,y-s*.9); cx.stroke(); // handles
+      const wx=x-dir*s*1.4, step=Math.sin(t*6)*s*.12; cx.beginPath(); cx.moveTo(wx-step,y); cx.lineTo(wx,y-s*.55); cx.lineTo(wx+step,y); cx.moveTo(wx,y-s*.55); cx.lineTo(wx,y-s*1.05); cx.stroke(); caping(cx,wx,y-s*1.1,s*.28);
+      cx.fillStyle=rgb(mix(P.field,[120,96,60],.5),.6); for(let k=0;k<3;k++){ const a=t*8+k*2; cx.beginPath(); cx.arc(x+dir*s*.25+Math.cos(a)*s*.4,y-s*.1-Math.abs(Math.sin(a))*s*.3,s*.06,0,TAU); cx.fill(); } // mud flying
+    }
+    const tp=pick(A2.tandur); if(tp){ // tandur: a line of planters stepping backwards across the plot
+      const prog=Math.min(1,(tp.days-10)/7); for(let k=0;k<5;k++){ const [x,y]=yOf(tp,Math.min(.95,prog*.6+.1+k*.06)); bentFig(x,y+k*H*.002,H*(.03+tp.i*.004),ink,k,t,3); }
+    }
+    const pn=pick(A2.panen); if(pn){ // panen: cutters at the edge of the standing padi, and the gebyok frame where it is threshed
+      const prog=Math.min(1,Math.max(0,(pn.days-103)/7)); for(let k=0;k<3;k++){ const [x,y]=yOf(pn,Math.min(.95,prog+.02+k*.04)); bentFig(x,y,H*(.03+pn.i*.004),ink,k*2,t,4); }
+      const [gx,gy]=yOf(pn,Math.max(.05,prog-.12)), s=H*(.028+pn.i*.004), lift=Math.max(0,Math.sin(t*2.6))*s*.5;
+      cx.strokeStyle=ink; cx.fillStyle=ink; cx.lineWidth=Math.max(1,s*.1); cx.beginPath(); cx.moveTo(gx-s*.5,gy); cx.lineTo(gx-s*.2,gy-s*.5); cx.lineTo(gx+s*.2,gy-s*.5); cx.lineTo(gx+s*.5,gy); cx.stroke(); // the frame
+      const px=gx-s*.8; cx.beginPath(); cx.moveTo(px,gy); cx.lineTo(px,gy-s*.6); cx.lineTo(px,gy-s*1.1); cx.moveTo(px,gy-s*.9); cx.lineTo(gx-s*.2,gy-s*.7-lift); cx.stroke(); caping(cx,px,gy-s*1.15,s*.26); // the thresher swings the sheaf
+      cx.fillStyle=rgb(mix(P.field,[214,178,74],.6)); cx.beginPath(); cx.ellipse(gx-s*.15,gy-s*.72-lift,s*.2,s*.08,-.6,0,TAU); cx.fill();
+      cx.fillStyle=rgb([236,230,214]); for(let k=0;k<3;k++) cx.fillRect(gx+s*(.6+k*.32),gy-s*.32,s*.26,s*.32); // karung of gabah
+    }
+  }
+  // jerami burnt on the stubble in the late afternoon
+  if(A2.jerami.length&&m.h>=15&&m.h<18.3&&!m.rain&&Math.random()<.25){ const j=A2.jerami[(t*7|0)%A2.jerami.length]; const [x,y]=yOf(j,.5); ST.smoke.push({x,y,r:3,a:0,vx:rand(2,5)}); if(Math.random()<.4){ cx.globalCompositeOperation="lighter"; cx.globalAlpha=.6; cx.drawImage(SP.obor,x-6,y-8,12,12); cx.globalCompositeOperation="source-over"; cx.globalAlpha=1; } }
+}
+// ================= merti desa and Labuhan Merapi =================
+function gunungan(x,y,s,t,i){ // a cone of hasil bumi carried on a bamboo frame
+  const bob=Math.abs(Math.sin(t*3+i))*s*.06;
+  cx.fillStyle="#5a4630"; cx.fillRect(x-s*.6,y-s*.35-bob,s*1.2,s*.08);
+  cx.fillStyle="#3f7d3a"; cx.beginPath(); cx.moveTo(x-s*.45,y-s*.35-bob); cx.lineTo(x,y-s*1.5-bob); cx.lineTo(x+s*.45,y-s*.35-bob); cx.fill();
+  const cols=["#e0b030","#c83a2a","#e8e0c8","#7a3d8c","#f08030"]; for(let k=0;k<14;k++){ const u=(k%7)/7, side=k<7?-1:1, yy=y-s*.4-u*s*1.05-bob, xx=x+side*(1-u)*s*.4*((k*.37)%1); cx.fillStyle=cols[k%5]; cx.beginPath(); cx.arc(xx,yy,s*.07,0,TAU); cx.fill(); }
+  cx.strokeStyle="#2a2018"; cx.lineWidth=Math.max(1,s*.08); cx.beginPath(); for(const dx of [-.5,-.2,.2,.5]){ cx.moveTo(x+dx*s,y-s*.3-bob); cx.lineTo(x+dx*s,y); } cx.stroke();
+}
+function wayangTent(m,t){ // a tarub in the lapangan: the kelir lit by the blencong, the gamelan and the crowd in front
+  const x=W*.7, y=G.eY(5,x)+H*.012, w=H*.16, h=H*.075;
+  cx.fillStyle=rgb(mix([40,34,30],P.hill,.3)); cx.beginPath(); cx.moveTo(x-w*.6,y-h); cx.lineTo(x,y-h*1.35); cx.lineTo(x+w*.6,y-h); cx.fill(); // roof
+  cx.strokeStyle=rgb([40,34,30]); cx.lineWidth=2; cx.beginPath(); for(const dx of [-.55,-.2,.2,.55]){ cx.moveTo(x+dx*w,y); cx.lineTo(x+dx*w,y-h); } cx.stroke();
+  cx.globalCompositeOperation="lighter"; cx.globalAlpha=.75+.1*Math.sin(t*9)*Math.sin(t*5.3); cx.drawImage(SP.warm,x-w*.7,y-h*1.25,w*1.4,h*1.4); cx.globalCompositeOperation="source-over";
+  cx.globalAlpha=1; cx.fillStyle="#f4e8c8"; cx.fillRect(x-w*.35,y-h*.85,w*.7,h*.45); // the kelir
+  cx.fillStyle="#1c140e"; for(const [dx,ph] of [[-.15,0],[.12,2]]){ const sx=x+dx*w+Math.sin(t*.7+ph)*w*.04, sy=y-h*.45; cx.beginPath(); cx.moveTo(sx,sy); cx.lineTo(sx-w*.03,sy-h*.32); cx.lineTo(sx+w*.035,sy-h*.36); cx.lineTo(sx+w*.03,sy); cx.fill(); } // two shadow puppets
+  for(let k=0;k<28;k++){ const px=x+(k-14)*w*.05+(k%2)*w*.02, py=y+H*.012+(k%3)*H*.004; cx.fillStyle="#120e10"; cx.beginPath(); cx.arc(px,py-H*.012,H*.0035,0,TAU); cx.fill(); cx.fillRect(px-H*.003,py-H*.009,H*.006,H*.009); }
+}
+function labuhanPath(){ // from Kinahrejo on the lower slope up towards Sri Manganti, zigzagging
+  const pts=[]; for(let k=0;k<=24;k++){ const u=k/24, x=G.px-G.hw*(.42-.26*u)+Math.sin(u*9)*G.hw*.035, y=G.yH-H*.02-(G.yH-H*.02-(G.py+(G.yH-G.py)*.5))*u; pts.push([x,Math.max(y,G.mY(x)+3)]); } return pts; // up the western flank, clear of the palm
+}
+function labuhanDraw(m,t){
+  const pts=G.lbPath||(G.lbPath=labuhanPath());
+  cx.strokeStyle=rgb(mix(P.mtn,[230,220,200],.35),.5); cx.lineWidth=1; cx.setLineDash([2,3]); cx.beginPath(); for(const [x,y] of pts) cx.lineTo(x,y); cx.stroke(); cx.setLineDash([]);
+  const [sx,sy]=pts[pts.length-1]; cx.fillStyle=rgb(mix(P.mtn,[90,70,50],.5)); cx.fillRect(sx-5,sy-5,10,4); cx.fillRect(sx-4,sy-2,1.5,3); cx.fillRect(sx+2.5,sy-2,1.5,3); // Bangsal Sri Manganti
+  const prog=Math.min(1,Math.max(0,(m.h-6)/2.5)); // up by half past eight, then the rite, then back down
+  const back=m.h>9.3?Math.min(1,(m.h-9.3)/1.1):0, head=prog-back;
+  for(let k=0;k<22;k++){ const u=head-k*.012; if(u<0) continue; const f=u*(pts.length-1), i0=Math.floor(f), fr=f-i0, [x0,y0]=pts[Math.min(i0,pts.length-1)], [x1,y1]=pts[Math.min(i0+1,pts.length-1)], x=x0+(x1-x0)*fr, y=y0+(y1-y0)*fr;
+    const fh=Math.max(4,H*.008); cx.fillStyle=k%3===1?"#f6f2e6":"#232a40"; cx.fillRect(x-fh*.25,y-fh,fh*.5,fh); cx.beginPath(); cx.arc(x,y-fh*1.15,fh*.18,0,TAU); cx.fill();
+    if(k%6===0){ cx.fillStyle="#e0b030"; cx.beginPath(); cx.ellipse(x,y-fh*1.5,fh*.75,fh*.32,0,Math.PI,0); cx.fill(); cx.fillRect(x-.5,y-fh*1.5,1,fh*.5); } } // gold payung over the uba rampe
+}
 function festHill(m,t){
   const F=FEST;
   const nl=ss((m.night-.2)/.6);
@@ -660,6 +762,10 @@ function festRoad(m,t){
   for(const p of ST.pops){ const k=Math.min(p.n-1,Math.floor(p.life/.1)), f=1-(p.life-k*.1)/.12; if(f>0){ cx.globalAlpha=f; const r=H*.012; cx.drawImage(SP.warm,p.x+k*2-r,p.y-r,r*2,r*2); } }
   cx.globalCompositeOperation="source-over"; cx.globalAlpha=1;
   if(F.ogoh) train(26,W/140,-1,W*.018,(x,y,i)=>{ if(i%8===3) ogoh(x,y,H*.05,t,i); });
+  if(F.kirab){ // kirab gunungan: the kampung carries its harvest along the road, umbul-umbul of janur ahead
+    const cols=[[250,250,246],[60,110,90],[200,170,110],[120,60,90],[40,40,40]];
+    train(40,W/120,1,W*.014,(x,y,i)=>{ if(i%13===6) gunungan(x,y,H*.03,t,i); else { const s=H*.012, bob=Math.abs(Math.sin(t*4+i))*s*.08; cx.fillStyle=rgb(mix(cols[i%5],P.hill,.15)); cx.fillRect(x-s*.22,y-s-bob,s*.44,s*.8); cx.beginPath(); cx.arc(x,y-s*1.15-bob,s*.16,0,TAU); cx.fill(); if(i%9===2){ cx.strokeStyle="#c8c070"; cx.lineWidth=1; cx.beginPath(); cx.moveTo(x,y-s); cx.quadraticCurveTo(x+s*.3,y-s*3,x+s*.9,y-s*2.6); cx.stroke(); } } });
+  }
   if(F.barongsai&&m.night>.3) liongDraw(t,m); // Cap Go Meh night: the liong along the road
   if(F.salatId){ // the kampung walking to the lapangan in its best clothes
     const cols=[[250,250,246],[250,250,246],[230,230,220],[60,110,90],[120,60,90],[200,170,110]];
@@ -697,7 +803,10 @@ function draw(){
   if(ST.fw.length) fireworks();
 
   cx.setTransform(1,0,0,1,0,0); cx.globalAlpha=1; cx.drawImage(land,0,0); cx.setTransform(dpr,0,0,dpr,0,0);
+  padiLife(m,t);
   festHill(m,t);
+  if(FEST.labuhan) labuhanDraw(m,t);
+  if(FEST.wayang&&m.night>.4) wayangTent(m,t);
   if(ST.lamp.length){ cx.globalCompositeOperation="lighter"; for(const l of ST.lamp){ const r=Math.max(3,H*.0055)*l.s*(1-Math.max(0,(G.yH-l.y)/G.yH)*.65), fl=.75+.25*Math.sin(ST.t*6+l.ph); cx.globalAlpha=.9*fl; cx.drawImage(SP.obor,l.x-r,l.y-r,r*2,r*2); } cx.globalCompositeOperation="source-over"; cx.globalAlpha=1; }
   if(m.night>.05){
     cx.globalCompositeOperation="lighter";
@@ -1199,6 +1308,42 @@ function terompet(t){
     o.frequency.setValueAtTime(f*.96,s); o.frequency.linearRampToValueAtTime(f*rand(1,1.03),s+.06); o.frequency.linearRampToValueAtTime(f*.97,s+d);
     chain(o,Fl("bandpass",f*3,1.2),Fl("lowpass",3200),g,out); env(g.gain,s,.02,.08,d*.8,.05); run1(o,s,d+.1); }
 }
+// ================= padi, merti desa, labuhan: sound =================
+// Traktor tangan: a single-cylinder diesel thudding across the mud, revving as it turns at the end of the plot.
+function traktor(t){
+  const out=busFor(true), dur=rand(14,24), o=O("sawtooth",rand(26,30)), lp=Fl("lowpass",380,1.5), g=Gn(), n=Nz(), ng=Gn(.04);
+  chain(o,lp,g,out); chain(n,Fl("bandpass",900,1),ng,g);
+  const f=o.frequency; f.setValueAtTime(f.value,t); for(let s=t+rand(3,6);s<t+dur-2;s+=rand(4,7)){ f.linearRampToValueAtTime(f.value*1.35,s+.6); f.linearRampToValueAtTime(f.value,s+1.6); }
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.06,t+1.5); g.gain.setValueAtTime(.06,t+dur-2); g.gain.linearRampToValueAtTime(0,t+dur);
+  run1(o,t,dur); run1(n,t,dur);
+}
+// Gebyok: sheaves beaten on the threshing frame, a dull wooden thud with the patter of grain.
+function gebyok(t){
+  const out=busFor(true); let s=t;
+  for(let k=0,n=8+(Math.random()*8|0);k<n;k++){ thump(s,rand(95,120),.1,out); const nz=Nz(), g=Gn(); chain(nz,Fl("bandpass",rand(2500,3500),.9),g,out); env(g.gain,s+.02,.004,.035,.02,.18); run1(nz,s,.25); s+=rand(1,1.3); }
+}
+// Kaleng: the strings of tins strung from the gubuk, yanked to scare the emprit off the ripening padi.
+function kaleng(t){
+  const out=busFor(Math.random()<.5); let s=t;
+  for(let k=0,n=4+(Math.random()*6|0);k<n;k++){ for(let j=0;j<3;j++){ const nz=Nz(), g=Gn(), f=rand(1800,3200); chain(nz,Fl("bandpass",f,6),g,out); env(g.gain,s+j*.03,.002,.1,0,.08); run1(nz,s+j*.03,.12); const o=O("triangle",f*.5), og=Gn(); chain(o,og,out); env(og.gain,s+j*.03,.002,.03,0,.1); run1(o,s+j*.03,.12); } s+=rand(.15,.3); }
+}
+// Wayang kulit: the slendro gamelan with the dalang's keprak rattling against the kotak and the kendhang leading.
+function keprak(t,out,n){ for(let k=0;k<n;k++){ const s=t+k*.09, nz=Nz(), g=Gn(); chain(nz,Fl("bandpass",rand(3800,4600),3),g,out); env(g.gain,s,.001,.06,.005,.06); run1(nz,s,.09); const o=O("square",rand(1900,2100)), og=Gn(); chain(o,Fl("bandpass",2000,8),og,out); env(og.gain,s,.001,.02,0,.05); run1(o,s,.07); } }
+function wayang(t,far){
+  if(A.gamUntil>t) return;
+  const out=far?A.far[1]:A.gam, f0=268*rand(.98,1.02), notes=PIECES[Math.random()*PIECES.length|0], v=far?.6:1; let s=t, beat=rand(.55,.7);
+  notes.forEach((d,i)=>{ const f=f0*SLENDRO[d];
+    if(i===0) gong(s,out,.1*v);
+    bar(s,f,.03*v,1.4,out); if(Math.random()<.8) bar(s+beat/2,f*2,.012*v,.7,out);
+    if(i%4===3) bar(s,f/2,.035*v,3,out,[[1,1],[2,.2],[3.1,.05]]);
+    if(i%2===1) kendhang(s,out,i%4===3); else kendhang(s+beat/2,out,false);
+    if(i%8===7) keprak(s+beat*.25,out,3+(Math.random()*3|0));
+    s+=beat; if(i===notes.length/2) beat*=.92; // the dalang hurries the gamelan for a fight
+  });
+  gong(s,out,.11*v); A.gamUntil=s+rand(6,15);
+}
+// Bende: the small gong struck as the Labuhan procession moves off and again at Sri Manganti.
+function bende(t){ const out=A.far[2]; for(let k=0;k<3;k++){ const s=t+k*2.2; for(const [r,a] of [[1,1],[2.4,.3],[3.9,.12]]){ const o=O("sine",rand(300,310)*r), g=Gn(); env(g.gain,s,.004,.05*a,.05,3/Math.sqrt(r)); chain(o,g,out); run1(o,s,3.2); } } }
 // Sekaten: the great pelog gamelan, slow and loud, with the bedug among the instruments.
 const PELOG={1:1,2:1.105,3:1.2,4:1.4,5:1.5,6:1.6,7:1.82};
 const SEKATEN=["35323532653221265356535676532132","66536653212165323235323556532165"].map(p=>p.split(""));
@@ -1217,6 +1362,7 @@ function sekaten(t){
   gong(s,out,.14); A.gamUntil=s+30;
 }
 
+const kerja=m=>(bump(m.h,6,6.8,10.6,11.4)+bump(m.h,14.6,15.2,17,17.6))*(1-m.rain)>.5;
 const EV={
   rooster:{gap:[14,38], w:m=>m.dawn+bump(m.h,3.2,3.8,4.6,5)*.5+.05*m.day, fn:t=>rooster(t,false)},
   kutilang:{gap:[3,9], w:m=>(m.dawn*.6+bump(m.h,5.5,6.2,9.5,11)+m.day*.3+m.sore*.4)*(1-m.rain*.85), fn:kutilang},
@@ -1234,7 +1380,7 @@ const EV={
   genteng:{gap:[.05,.15], w:m=>m.rain, fn:t=>{ for(let i=0,n=1+(Math.random()*3|0);i<n;i++) genteng(t+Math.random()*.2); }},
   talang: {gap:[.55,.85], w:m=>m.rain>.3?1:0, fn:talang},
   ronda:  {gap:[400,900], w:m=>(m.h>=21||m.h<3.5)&&!m.F.suro?1:0, fn:t=>kentongan(t,0)},
-  gamelan:{gap:[90,240], w:m=>m.F.suro||m.F.ramadan||m.F.sekaten||m.F.takbiran||m.F.ogoh||m.F.natal||m.F.waisak?0:bump(m.h,19.3,19.8,21.8,22.4)*.7*(1-m.rain), fn:gamelan},
+  gamelan:{gap:[90,240], w:m=>m.F.suro||m.F.ramadan||m.F.sekaten||m.F.takbiran||m.F.ogoh||m.F.natal||m.F.waisak||m.F.wayang||m.F.wayangJauh?0:bump(m.h,19.3,19.8,21.8,22.4)*.7*(1-m.rain), fn:gamelan},
   sekaten:{gap:[20,90], w:m=>m.F.sekaten?.8:0, fn:sekaten},
   sapi:   {gap:[25,70], w:m=>m.F.ternak?.9:(m.dawn*.7+bump(m.h,6.5,7.2,10,11.5)*.6+m.sore*.35)*(1-m.rain*.7), fn:t=>sapi(t,Math.random()<.4)},
   pecut:  {gap:[120,300], w:m=>bump(m.h,6.3,7,10.5,11.5)*(1-m.rain), fn:pecut},
@@ -1247,6 +1393,13 @@ const EV={
   sahur:  {gap:[90,240], w:m=>m.F.sahur?1:0, fn:sahurPatrol},
   talu:   {gap:[2,5], w:m=>m.F.takbiran?.9:0, fn:bedugTalu},
   baleganjur:{gap:[50,120], w:m=>m.F.ogoh?1:0, fn:baleganjur},
+  wayang: {gap:[3,6], w:m=>m.F.wayang?1:0, fn:t=>wayang(t,false)},
+  wayangJauh:{gap:[3,6], w:m=>m.F.wayangJauh?1:0, fn:t=>wayang(t,true)},
+  traktor:{gap:[20,40], w:m=>m.F.padi==="olah"&&kerja(m)?1:0, fn:traktor},
+  gebyok: {gap:[10,25], w:m=>m.F.padi==="panen"&&kerja(m)?1:0, fn:gebyok},
+  kaleng: {gap:[8,25], w:m=>m.F.padi==="kuning"&&m.day>.5&&!m.rain?.9:0, fn:kaleng},
+  emprit: {gap:[2,5], w:m=>m.F.padi==="kuning"?m.day*(1-m.rain):0, fn:chirp},
+  kendangKirab:{gap:[20,40], w:m=>m.F.kirab?1:0, fn:t=>{ const out=A.far[2]; for(let k=0;k<64;k++) kendhang(t+k*.25+rand(-.01,.01),out,k%4===0); }},
   genta:  {gap:[25,60], w:m=>m.F.waisak?.9:0, fn:genta},
   barongsai:{gap:[26,34], w:m=>m.F.barongsai?1:0, fn:barongsai},
   terompet:{gap:[1,4], w:m=>m.F.tahunBaru?.9:0, fn:terompet},
@@ -1321,6 +1474,7 @@ function tick(){
     for(const b of BEDUG) at("bedug",true,b,.06,()=>(F.ramadan&&b===17.6?bedugBuka:bedug)(now+.5));
     at("id",F.idDay,5.75,.08,()=>bedug(now+.5)); // before salat Id
     at("sirine",F.sirineDay,10,.03,()=>sirine(now+.2));
+    at("labuhan",F.labuhan,6,.1,()=>bende(now+.3)); at("labuhan",F.labuhan,8.5,.1,()=>bende(now+.3));
     // gereja bells: every Sunday before the morning misa, Christmas Eve, midnight and morning, the Easter Vigil's Gloria and Easter morning
     if(!F.loncengDiam){
       const sunday=kNow().getDay()===0;

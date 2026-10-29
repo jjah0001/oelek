@@ -29,3 +29,12 @@ const HARI_RAYA=[
   ["imlek","2031-01-23"],["nyepi","2031-03-23"],["paskah","2031-04-13"],["waisak","2031-05-07"],
   ["imlek","2032-02-11"],["nyepi","2032-03-12"],["paskah","2032-03-28"],["waisak","2032-05-25"],
 ];
+
+// Labuhan Merapi: the Kraton's offerings are carried up from Kinahrejo to Sri Manganti on 30 Rejeb (Javanese
+// calendar), the day after the anniversary of the Sultan's coronation; the evening before there is wayang.
+// Estimated as the day after 29 Rajab (Umm al-Qura), which matched 30 Jan 2025 and was a day early for 12 Feb 2024.
+const LABUHAN=["2027-01-08","2027-12-28","2028-12-17","2029-12-06","2030-11-26","2031-11-15","2032-11-04"];
+// Padi: three crops a year on the irrigated slopes of Merapi. Each crop starts with ploughing on these days
+// (month-day): ploughing 10 days, tandur, young padi from day 17, ripening from day 90, harvest days 103–110, then stubble; each plot runs up to nine days ahead or behind. Merti desa follows the harvest of the second crop,
+// on the first Saturday from 16 July.
+const MUSIM_TANAM=["11-15","03-15","07-15"];
