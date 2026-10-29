@@ -737,7 +737,7 @@ still.addEventListener?.("change",run);
 
 // ================= sound =================
 // Everything below is synthesised: oscillators and filtered noise through a valley-sized reverb.
-const A={ctx:null,on:false,next:{},gust:.5};
+const A={ctx:null,on:false,next:{},gust:.5,rung:{}};
 const O=(type,f)=>{ const o=A.ctx.createOscillator(); o.type=type; o.frequency.value=f; return o; };
 const Fl=(type,f,q=1)=>{ const b=A.ctx.createBiquadFilter(); b.type=type; b.frequency.value=f; b.Q.value=q; return b; };
 const Gn=(v=0)=>{ const g=A.ctx.createGain(); g.gain.value=v; return g; };
@@ -1110,7 +1110,7 @@ function bell(t,f,v,out){
 }
 function lonceng(t,joyful){
   const out=A.far[1], f1=rand(330,350), f2=f1*1.26, n=joyful?34:16; let s=t;
-  for(let i=0;i<n;i++){ bell(s,i%2&&joyful?f2:f1,.045,out); s+=(joyful?1.05:1.9)*rand(.94,1.06); }
+  for(let i=0;i<n;i++){ bell(s,i%2&&joyful?f2:f1,.065,out); s+=(joyful?1.05:1.9)*rand(.94,1.06); }
 }
 // Baleganjur for the ogoh-ogoh: kendang, ceng-ceng, reyong and a gong, marching past.
 function baleganjur(t){
@@ -1264,22 +1264,26 @@ function tick(){
     A.next[k]=now+rand(...e.gap);
     const w=e.w(m); if(w>0&&Math.random()<w) e.fn(now+.05+Math.random()*.3);
   }
-  const crossed=b=>A.lastH!==undefined&&((A.lastH<b&&m.h>=b)||(A.lastH>m.h&&(b>A.lastH||b<=m.h)));
-  for(const b of BEDUG) if(crossed(b)) (F.ramadan&&b===17.6?bedugBuka:bedug)(now+.5);
-  if(F.idDay&&crossed(5.75)) bedug(now+.5); // before salat Id
-  if(F.sirineDay&&crossed(10)) sirine(now+.2);
-  // gereja bells: every Sunday before the morning misa, Christmas Eve and morning, the Easter Vigil's Gloria and Easter morning
-  const sunday=kNow().getDay()===0;
-  if(!F.loncengDiam){
-    if(sunday&&crossed(6.25)) lonceng(now+.3,F.paskah);
-    if(F.natal&&(crossed(21.85)||crossed(23.97)||crossed(6.6))) lonceng(now+.3,true);
-    if(F.paskah&&crossed(8.75)) lonceng(now+.3,true);
-    if(F.lilinPaskah&&crossed(20.32)) lonceng(now+.3,true);
+  // Timed sounds (bedug, sirene, lonceng, kentongan) ring once in a short window that opens at their time,
+  // so they also ring for someone who arrives, or switches the sound on, a few minutes in.
+  if(A.ctx.state==="running"){
+    const day=dayNum(kNow()), at=(key,ok,from,len,fn)=>{ if(!ok||m.h<from||m.h>=from+len) return; const k=day+":"+key+":"+from; if(A.rung[k]) return; A.rung[k]=1; fn(); };
+    for(const b of BEDUG) at("bedug",true,b,.06,()=>(F.ramadan&&b===17.6?bedugBuka:bedug)(now+.5));
+    at("id",F.idDay,5.75,.08,()=>bedug(now+.5)); // before salat Id
+    at("sirine",F.sirineDay,10,.03,()=>sirine(now+.2));
+    // gereja bells: every Sunday before the morning misa, Christmas Eve, midnight and morning, the Easter Vigil's Gloria and Easter morning
+    if(!F.loncengDiam){
+      const sunday=kNow().getDay()===0;
+      at("minggu",sunday,6.1,.25,()=>lonceng(now+.3,F.paskah));
+      at("natal",F.natal,21.75,.2,()=>lonceng(now+.3,true));
+      at("natal",F.natal,23.92,.08,()=>lonceng(now+.3,true));
+      at("natal",F.natal&&!sunday,6.5,.25,()=>lonceng(now+.3,true));
+      at("gloria",F.lilinPaskah,20.3,.2,()=>lonceng(now+.3,true));
+      at("paskah",F.paskah,8.6,.25,()=>lonceng(now+.3,true));
+    }
+    // the night watch strikes the hour on the kentongan
+    const hr=Math.floor(m.h); if((hr>=20||hr<=4)&&!F.suro) at("jam",true,hr,.04,()=>kentongan(now+1,hr%12||12));
   }
-  A.lastH=m.h;
-  const hr=Math.floor(m.h);
-  if(A.hr!==undefined&&hr!==A.hr&&(hr>=20||hr<=4)&&!F.suro) kentongan(now+1,hr%12||12);
-  A.hr=hr;
 }
 const btn=document.getElementById("suara");
 const pref={ get(){ try{return localStorage.getItem("oelek.kampung");}catch(e){return null;} }, set(v){ try{localStorage.setItem("oelek.kampung",v);}catch(e){} } };
