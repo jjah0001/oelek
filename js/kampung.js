@@ -542,6 +542,47 @@ function ogoh(x,y,s,t,i){ // an ogoh-ogoh: a huge raksasa with wild hair and rai
   cx.fillStyle="#ff6040"; cx.beginPath(); cx.arc(-s*.07,-s*1.02,s*.035,0,TAU); cx.arc(s*.07,-s*1.02,s*.035,0,TAU); cx.fill(); // glowing eyes
   cx.restore();
 }
+// Barongsai: two dancers under one lion, the front one working the big head. It prowls in front of the
+// klenteng, shakes its head, blinks, and now and then rears up as the front dancer is lifted.
+function barongsaiDraw(x,y,s,t,dir,m){
+  const dk=night(m)*.45, red=rgb(mix([214,36,30],P.hill,dk)), gold=rgb(mix([244,190,50],P.hill,dk)), pants=rgb(mix([240,200,60],P.hill,dk+.1)), dark=rgb(mix([30,20,20],P.hill,dk));
+  const cyc=t%9, rear=cyc>6.2&&cyc<8.2?Math.sin(Math.PI*(cyc-6.2)/2):0, step=Math.sin(t*7), shake=Math.sin(t*9)*.12*(1-rear);
+  cx.save(); cx.translate(x,y); cx.scale(dir,1);
+  const hx=s*.62, hy=-s*.55-rear*s*.75, bx=-s*.45, by=-s*.48;
+  // legs: back dancer, front dancer (the front one stands on the back one's thighs when it rears)
+  cx.strokeStyle=pants; cx.lineWidth=Math.max(1.5,s*.09); cx.lineCap="round"; cx.beginPath();
+  for(const [lx,ph] of [[-s*.55,0],[-s*.32,Math.PI]]){ cx.moveTo(lx,-s*.25); cx.lineTo(lx+step*s*.06*(ph?-1:1),0); }
+  if(rear<.2) for(const [lx,ph] of [[s*.25,Math.PI],[s*.48,0]]){ cx.moveTo(lx,-s*.25); cx.lineTo(lx+step*s*.06*(ph?-1:1),0); }
+  else { cx.moveTo(s*.2,-s*.3-rear*s*.4); cx.lineTo(s*.05,-s*.28); cx.moveTo(s*.32,-s*.3-rear*s*.4); cx.lineTo(s*.18,-s*.3); }
+  cx.stroke();
+  // body cloth: a humped red back with a gold fringe, flowing from the head to the tail
+  cx.fillStyle=red; cx.beginPath(); cx.moveTo(-s*.8,-s*.3); cx.quadraticCurveTo(bx,by-s*.35-Math.abs(step)*s*.04,hx*.5,hy+s*.05); cx.lineTo(hx*.5,hy+s*.32); cx.quadraticCurveTo(0,-s*.18,-s*.75,-s*.18); cx.closePath(); cx.fill();
+  cx.strokeStyle=gold; cx.lineWidth=Math.max(1,s*.04); cx.beginPath(); cx.moveTo(-s*.78,-s*.2); cx.quadraticCurveTo(0,-s*.16,hx*.5,hy+s*.32); cx.stroke();
+  cx.fillStyle=gold; cx.beginPath(); cx.moveTo(-s*.8,-s*.3); cx.lineTo(-s*.98,-s*.42+Math.sin(t*6)*s*.06); cx.lineTo(-s*.84,-s*.2); cx.fill(); // tail
+  // head: a big round mask with a horn, mirror, eyes that blink and a jaw that snaps
+  cx.save(); cx.translate(hx,hy); cx.rotate(shake-rear*.35);
+  cx.fillStyle=red; cx.beginPath(); cx.ellipse(0,0,s*.3,s*.26,0,0,TAU); cx.fill();
+  cx.fillStyle=gold; cx.beginPath(); cx.ellipse(-s*.02,-s*.24,s*.07,s*.05,0,0,TAU); cx.fill(); // the mirror on the brow
+  cx.beginPath(); cx.moveTo(-s*.05,-s*.28); cx.lineTo(0,-s*.42); cx.lineTo(s*.05,-s*.28); cx.fill(); // horn
+  const blink=(t%3.7)<.12?.15:1; cx.fillStyle="#fff"; cx.beginPath(); cx.ellipse(s*.12,-s*.08,s*.07,s*.06*blink,0,0,TAU); cx.fill();
+  cx.fillStyle=dark; cx.beginPath(); cx.arc(s*.14,-s*.08,s*.03*blink,0,TAU); cx.fill();
+  const jaw=Math.max(0,Math.sin(t*5))*s*.08; cx.fillStyle=gold; cx.fillRect(s*.02,s*.12+jaw,s*.28,s*.06);
+  cx.strokeStyle="#fff"; cx.lineWidth=Math.max(1,s*.025); cx.beginPath(); for(let k=0;k<5;k++){ cx.moveTo(-s*.25+k*s*.05,s*.18); cx.lineTo(-s*.3+k*s*.04,s*.34+Math.sin(t*4+k)*s*.03); } cx.stroke(); // white beard
+  cx.restore(); cx.restore();
+}
+// Liong: a long dragon of cloth hoops, each held up on a pole, swimming along the road on Cap Go Meh night.
+function liongDraw(t,m){
+  const n=16, gap=W*.011, L=W*1.4, head=((t*W/22+L*.55)%L)-W*.2, s=H*.016, dk=night(m)*.3;
+  const pts=[]; for(let i=0;i<n;i++){ const x=head-i*gap, y=G.hY(x)+H*.017; pts.push([x,y-H*.035-Math.sin(t*3-i*.55)*H*.014]); }
+  cx.strokeStyle=rgb(mix([40,30,30],P.hill,dk)); cx.lineWidth=Math.max(1,s*.12); cx.beginPath();
+  pts.forEach(([x,y],i)=>{ const gy=G.hY(x)+H*.017; cx.moveTo(x,y); cx.lineTo(x,gy); }); cx.stroke(); // poles and bearers
+  cx.globalCompositeOperation="lighter"; pts.forEach(([x,y],i)=>{ cx.globalAlpha=.55; const r=s*1.6; cx.drawImage(i%2?SP.warm:SP.lamp[1],x-r,y-r,r*2,r*2); }); cx.globalCompositeOperation="source-over"; cx.globalAlpha=1;
+  for(let i=n-1;i>=0;i--){ const [x,y]=pts[i]; cx.fillStyle=rgb(mix(i%2?[40,160,80]:[230,190,50],P.hill,dk)); cx.beginPath(); cx.arc(x,y,s*(i?1-i/n*.45:1.35),0,TAU); cx.fill(); }
+  const [hx,hy]=pts[0]; cx.fillStyle=rgb(mix([214,36,30],P.hill,dk)); cx.beginPath(); cx.moveTo(hx+s*2,hy); cx.lineTo(hx,hy-s*1.2); cx.lineTo(hx-s*.4,hy+s); cx.fill();
+  cx.strokeStyle=rgb([250,230,160]); cx.lineWidth=1; cx.beginPath(); cx.moveTo(hx+s*1.6,hy-s*.2); cx.quadraticCurveTo(hx+s*2.6,hy-s*1.2+Math.sin(t*4)*s*.3,hx+s*3.2,hy-s*.6); cx.stroke(); // whisker
+  // the pearl the dragon chases, on its own pole
+  const px=hx+s*4.5, py=hy-s*.8+Math.sin(t*2.5)*s*.6; cx.globalCompositeOperation="lighter"; cx.globalAlpha=.9; cx.drawImage(SP.warm,px-s*1.4,py-s*1.4,s*2.8,s*2.8); cx.globalCompositeOperation="source-over"; cx.globalAlpha=1;
+}
 function festHill(m,t){
   const F=FEST;
   const nl=ss((m.night-.2)/.6);
@@ -557,6 +598,14 @@ function festHill(m,t){
   if(F.lampion){ // red lanterns at the klenteng and the Chinese houses of the kampung
     const k=G.klenteng; for(const dx of [-.42,-.14,.14,.42]) lampionMerah(k.x+dx*k.w,k.y-k.w*.44,k.w*.14,m,t,dx*9);
     G.houses.filter((_,i)=>i%5===2).forEach((h,i)=>lampionMerah(h.x,h.y-h.h,h.w*.16,m,t,i));
+  }
+  if(F.barongsai){ // the barongsai performs in the lapangan below the kampung, a ring of people watching
+    const cx0=W*.7, roam=Math.sin(t*.25), x=cx0+roam*W*.05, dir=Math.cos(t*.25)>=0?1:-1, y=G.eY(5,x)+H*.012;
+    const ink=rgb(mix(P.fg,[0,0,0],.1)), cols=[[214,36,30],[250,250,246],[40,110,200],[244,190,50],[60,170,90]], sz=H*.013;
+    const person=(px,py,i)=>{ const jump=Math.max(0,Math.sin(t*2.5+i*1.3))*sz*.15; cx.fillStyle=rgb(mix(cols[i%5],P.fg,.35+night(m)*.4)); cx.fillRect(px-sz*.3,py-sz-jump,sz*.6,sz*.8); cx.fillStyle=ink; cx.beginPath(); cx.arc(px,py-sz*1.15-jump,sz*.22,0,TAU); cx.fill(); };
+    for(let i=0;i<16;i++){ const a=Math.PI+i/15*Math.PI, px=cx0+Math.cos(a)*W*.1, py=G.eY(5,px)+H*.01+Math.sin(a)*H*.012; person(px,py,i); } // the back of the ring
+    barongsaiDraw(x,y,H*.055,t,dir,m);
+    for(let i=0;i<12;i++){ const a=i/11*Math.PI, px=cx0+Math.cos(a)*W*.1, py=G.eY(5,px)+H*.03+Math.sin(a)*H*.012; person(px,py,i+3); } // the front
   }
   if(F.nyepi){ // penjor bending over the pura
     const p=G.pura; cx.strokeStyle=rgb(mix([210,190,120],P.hill,night(m)*.7)); cx.lineWidth=Math.max(1,p.w*.04);
@@ -611,6 +660,7 @@ function festRoad(m,t){
   for(const p of ST.pops){ const k=Math.min(p.n-1,Math.floor(p.life/.1)), f=1-(p.life-k*.1)/.12; if(f>0){ cx.globalAlpha=f; const r=H*.012; cx.drawImage(SP.warm,p.x+k*2-r,p.y-r,r*2,r*2); } }
   cx.globalCompositeOperation="source-over"; cx.globalAlpha=1;
   if(F.ogoh) train(26,W/140,-1,W*.018,(x,y,i)=>{ if(i%8===3) ogoh(x,y,H*.05,t,i); });
+  if(F.barongsai&&m.night>.3) liongDraw(t,m); // Cap Go Meh night: the liong along the road
   if(F.salatId){ // the kampung walking to the lapangan in its best clothes
     const cols=[[250,250,246],[250,250,246],[230,230,220],[60,110,90],[120,60,90],[200,170,110]];
     train(46,W/160,1,W*.013,(x,y,i)=>{ const c=rgb(mix(cols[i%6],P.hill,.15)), s=H*.012*(i%4?1:.75), bob=Math.abs(Math.sin(t*4+i))*s*.08;
@@ -1133,7 +1183,7 @@ function genta(t){
 }
 // Barongsai from the town for Imlek and Cap Go Meh: the big tambur, cymbals and a gong.
 function barongsai(t){
-  const out=A.far[3+(Math.random()<.5?0:1)], dur=rand(18,30), step=.16;
+  const out=A.far[2], dur=rand(24,32), step=.16; // from the klenteng yard, in the middle of the view
   const pat=Math.random()<.5?"D.d.D.ddD.d.DdD.":"D..dD..dD.ddD.d.";
   for(let s=t,i=0;s<t+dur;s+=step,i++){
     const c=pat[i%16], acc=1+.25*Math.sin(i*.15);
@@ -1198,7 +1248,7 @@ const EV={
   talu:   {gap:[2,5], w:m=>m.F.takbiran?.9:0, fn:bedugTalu},
   baleganjur:{gap:[50,120], w:m=>m.F.ogoh?1:0, fn:baleganjur},
   genta:  {gap:[25,60], w:m=>m.F.waisak?.9:0, fn:genta},
-  barongsai:{gap:[40,100], w:m=>m.F.barongsai?.9:0, fn:barongsai},
+  barongsai:{gap:[26,34], w:m=>m.F.barongsai?1:0, fn:barongsai},
   terompet:{gap:[1,4], w:m=>m.F.tahunBaru?.9:0, fn:terompet},
   cheer:  {gap:[6,20], w:m=>m.F.lomba?.9:0, fn:cheer},
   peluit: {gap:[10,30], w:m=>m.F.lomba?.8:0, fn:peluit},
