@@ -92,12 +92,12 @@
     <div class="sec-head">
       <p class="eyebrow">Peta sambal · atlas</p>
       <h2>From Sabang to Merauke</h2>
-      <p class="lede">Each ring counts the sambals recorded for a province, split by family. Tap a ring to zoom in: the cards below then show only that province’s sambals. Hover a card to find it on the map. Individual markers appear where a location was already recorded; province-only profiles are available in the panel.</p>
+      <p class="lede">Each ring counts the sambals recorded for a province. Tap a ring to zoom in and see them by family: the cards below then show only that province’s sambals. Hover a card to find it on the map. Individual markers appear where a location was already recorded; province-only profiles are available in the panel.</p>
     </div>
     <div class="mapbox">
       <div class="mapui">
         <button class="backbtn" id="mapBack" hidden>‹ All of Indonesia</button>
-        <div class="legend" aria-label="Legend">
+        <div class="legend" aria-label="Legend" hidden>
           <span><i style="background:var(--raw)"></i>Raw</span>
           <span><i style="background:var(--cooked)"></i>Cooked</span>
           <span><i style="background:var(--fermented)"></i>Fermented</span>
@@ -105,7 +105,7 @@
       </div>
       <svg id="map" viewBox="0 0 940 380" role="img" aria-label="Map of Indonesia with sambal counts by province"></svg>
     </div>
-    <p class="mapnote">Stylised map; island outlines are simplified. Scroll sideways on small screens. Rings show each province’s profiled sambals by family.</p>
+    <p class="mapnote">Stylised map; island outlines are simplified. Scroll sideways on small screens. Each ring shows how many sambals a province has; tap it to see them by family.</p>
     <div class="prov" id="provPanel"></div>
 
     <div class="atlas-head">

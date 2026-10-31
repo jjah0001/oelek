@@ -76,10 +76,8 @@ function drawMap(){
     const grp=sv("g",{class:"bub",tabindex:"0",role:"button","aria-label":`${b.name}: ${st.total} sambals`});
     const tt=sv("title"); tt.textContent=`${b.name} · ${st.total} sambals`; grp.append(tt);
     if(Math.hypot(b.x-b.ox,b.y-b.oy)>3){ grp.append(sv("line",{x1:b.ox,y1:b.oy,x2:b.x,y2:b.y,class:"lead"})); grp.append(sv("circle",{cx:b.ox,cy:b.oy,r:1.8,fill:"var(--muted)"})); }
-    let a=-Math.PI/2; const tot=st.total;
-    for(const k of ["raw","cooked","fermented","unknown"]){ if(!st[k]) continue; const a1=a+st[k]/tot*Math.PI*2;
-      const at={d:arc(b.x,b.y,b.r,b.r-4,a,a1)}; if(k==="unknown") at.fill="var(--muted)"; else at.class="seg-"+k;
-      const seg=sv("path",at); if(k==="unknown") seg.setAttribute("opacity",".35"); grp.append(seg); a=a1; }
+    // one colour for every province ring: the number is the count, the family split is in the province panel
+    grp.append(sv("circle",{cx:b.x,cy:b.y,r:b.r-2,class:"ring"}));
     grp.append(sv("circle",{cx:b.x,cy:b.y,r:b.r-4,class:"hole"}));
     const tx=sv("text",{x:b.x,y:b.y}); tx.textContent=st.total; grp.append(tx);
     grp.addEventListener("click",()=>zoomTo(b.c));
@@ -126,14 +124,14 @@ function zoomTo(code){
   zoomProv=code; const [,lon,lat,w]=PROV[code]; const [x,y]=px(lon,lat); const h=w*VBH/VBW;
   gBub.setAttribute("visibility","hidden"); gMk.setAttribute("visibility","visible");
   gMk.querySelectorAll(".mk").forEach(m=>m.setAttribute("tabindex","0"));
-  $("#mapBack").hidden=false;
+  $("#mapBack").hidden=false; $(".mapui .legend").hidden=false; // the family colours only apply to the pins
   gMk.querySelectorAll(".mk").forEach(m=>m.classList.toggle("out",(byId[m.dataset.id]||{}).prov!==code));
   animateTo({x:x-w/2,y:y-h/2,w});
   renderProv(code);
   syncGridToMap(code);
 }
 function zoomOut(){
-  zoomProv=null; $("#mapBack").hidden=true;
+  zoomProv=null; $("#mapBack").hidden=true; $(".mapui .legend").hidden=true;
   gMk.querySelectorAll(".mk").forEach(m=>m.setAttribute("tabindex","-1"));
   animateTo({x:0,y:0,w:VBW},()=>{ gBub.setAttribute("visibility","visible"); gMk.setAttribute("visibility","hidden"); });
   renderProv(null);
