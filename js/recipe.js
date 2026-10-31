@@ -5,8 +5,8 @@
 const RECIPE_PROXY = typeof PAIR_PROXY==="string" && PAIR_PROXY ? PAIR_PROXY.replace(/\/pair$/,"/recipe") : "";
 let recipeCtl=null, recipeFor=null;
 const recipeStore={
-  get(id){ try{ return JSON.parse(localStorage.getItem("oelek.recipe5."+id)||"null"); }catch(e){ return null; } },
-  set(id,v){ try{ localStorage.setItem("oelek.recipe5."+id,JSON.stringify(v)); }catch(e){} }
+  get(id){ try{ return JSON.parse(localStorage.getItem("oelek.recipe6."+id)||"null"); }catch(e){ return null; } },
+  set(id,v){ try{ localStorage.setItem("oelek.recipe6."+id,JSON.stringify(v)); }catch(e){} }
 };
 // The visitor's country, for the claude.ai view where the Worker can't see it: the browser's region, else none.
 function visitorCountry(){
@@ -45,8 +45,14 @@ Aturan:
 - 6 sampai 12 bahan, masing-masing dengan takarannya; tuliskan nama Indonesianya di "note" bila membantu (misalnya "terasi").
 - 4 sampai 8 langkah, masing-masing satu atau dua kalimat, sesuai urutan memasak: menyiapkan bahan, membakar atau
   menggoreng, mengulek di cobek, membumbui, mendiamkan.
-- 2 atau 3 tips: cara mengatur tingkat pedas, bahan pengganti yang mudah dicari di ${negara} dan di mana mencari bahan
-  Indonesianya di sana (misalnya toko Asia), cara menyajikan. Jika cucunya tinggal di Indonesia, cukup sebutkan pasar.
+- 2 atau 3 tips: cara mengatur tingkat pedas, bahan pengganti, cara menyajikan.
+- Bahan pengganti: anggaplah cucu Anda tinggal di kota kecil di ${negara} yang tidak punya toko Asia. Utamakan bahan yang
+  benar-benar ada di supermarket umum di sana, dan sebutkan nama supermarketnya bila Anda yakin (misalnya Coles dan
+  Woolworths di Australia, FairPrice di Singapura, Tesco atau Sainsbury's di Inggris, Walmart atau Kroger di Amerika
+  Serikat, Albert Heijn di Belanda, REWE atau Edeka di Jerman). Jelaskan bagaimana pengganti itu dipakai agar rasanya
+  tetap mendekati aslinya (misalnya ikan teri asin atau saus ikan untuk terasi, kulit jeruk nipis untuk daun jeruk).
+  Toko Asia atau belanja online boleh disebut, tetapi hanya sebagai pilihan tambahan, bukan jalan keluar utama.
+  Jika cucunya tinggal di Indonesia, cukup sebutkan pasar.
 - "keeps": berapa lama sambal ini tahan dan cara menyimpannya, dinilai dari cara pembuatannya (sambal mentah dan segar
   jauh lebih cepat basi daripada sambal yang ditumis sampai minyaknya keluar; sambal fermentasi biasanya paling awet).
   Isi "room" (di suhu ruang, tertutup), "fridge" (di toples bersih yang kedap udara) dan "freezer" (atau

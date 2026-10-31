@@ -129,8 +129,14 @@ Aturan:
 - 6 sampai 12 bahan, masing-masing dengan takarannya; tuliskan nama Indonesianya di "note" bila membantu (misalnya "terasi").
 - 4 sampai 8 langkah, masing-masing satu atau dua kalimat, sesuai urutan memasak: menyiapkan bahan, membakar atau
   menggoreng, mengulek di cobek, membumbui, mendiamkan.
-- 2 atau 3 tips: cara mengatur tingkat pedas, bahan pengganti yang mudah dicari di ${negara} dan di mana mencari bahan
-  Indonesianya di sana (misalnya toko Asia), cara menyajikan. Jika cucunya tinggal di Indonesia, cukup sebutkan pasar.
+- 2 atau 3 tips: cara mengatur tingkat pedas, bahan pengganti, cara menyajikan.
+- Bahan pengganti: anggaplah cucu Anda tinggal di kota kecil di ${negara} yang tidak punya toko Asia. Utamakan bahan yang
+  benar-benar ada di supermarket umum di sana, dan sebutkan nama supermarketnya bila Anda yakin (misalnya Coles dan
+  Woolworths di Australia, FairPrice di Singapura, Tesco atau Sainsbury's di Inggris, Walmart atau Kroger di Amerika
+  Serikat, Albert Heijn di Belanda, REWE atau Edeka di Jerman). Jelaskan bagaimana pengganti itu dipakai agar rasanya
+  tetap mendekati aslinya (misalnya ikan teri asin atau saus ikan untuk terasi, kulit jeruk nipis untuk daun jeruk).
+  Toko Asia atau belanja online boleh disebut, tetapi hanya sebagai pilihan tambahan, bukan jalan keluar utama.
+  Jika cucunya tinggal di Indonesia, cukup sebutkan pasar.
 - "keeps": berapa lama sambal ini tahan dan cara menyimpannya, dinilai dari cara pembuatannya (sambal mentah dan segar
   jauh lebih cepat basi daripada sambal yang ditumis sampai minyaknya keluar; sambal fermentasi biasanya paling awet).
   Isi "room" (di suhu ruang, tertutup), "fridge" (di toples bersih yang kedap udara) dan "freezer" (atau
@@ -153,7 +159,7 @@ async function recipe(body, req, env, okOrigin) {
   const cc = /^[A-Z]{2}$/.test(req.cf?.country || "") ? req.cf.country : "";
   const name = (lang) => { try { return cc ? new Intl.DisplayNames([lang], { type: "region" }).of(cc) || "" : ""; } catch { return ""; } };
   const negara = name("id") || "luar negeri", country = name("en");
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v5\n" + (cc || "XX") + "\n" + info));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v6\n" + (cc || "XX") + "\n" + info));
   const hash = [...new Uint8Array(digest)].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
   const key = new Request(`https://oelek-recipe.cache/${id}/${hash}`);
   const cache = caches.default;
