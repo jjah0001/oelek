@@ -34,6 +34,7 @@ function openSambal(id){
   $("#dArtNote").firstChild.textContent = full ? "Illustration drawn from the recipe, not a photograph. " : "Illustration drawn from the recorded ingredient, not a photograph. ";
   $("#dPhoto").href = "https://commons.wikimedia.org/w/index.php?search="+encodeURIComponent(s.name)+"&title=Special:MediaSearch&type=image";
   $("#dRadarBox").hidden = !full; $("#dRadar").innerHTML = full ? radar([{name:s.name,p:s.p,cls:"s-sambal"}]) : "";
+  if (typeof paintRecipe === "function") paintRecipe(s);
   if (typeof dlg.showModal === "function") { try{ if(!dlg.open) dlg.showModal(); }catch(e){ dlg.setAttribute("open",""); } } else dlg.setAttribute("open","");
 }
 $("#dClose").addEventListener("click",()=>dlg.close());

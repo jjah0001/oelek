@@ -229,7 +229,7 @@
       <div>
         <p class="eyebrow" id="dStyle"></p>
         <h3 id="dName"></h3>
-        <div class="meta"><span id="dReg"></span><span id="dHeat"></span></div>
+        <div class="meta"><span id="dReg"></span><span id="dHeat"></span><button class="recipe-jump" id="dRecipeJump" type="button">✦ Recipe</button></div>
       </div>
     </div>
     <div id="shelfControls" class="shelf-controls" aria-label="Your sambal collection"></div>
@@ -245,6 +245,10 @@
       </div>
       <div id="dRadarBox"><h4>Flavour profile</h4><div id="dRadar"></div></div>
     </div>
+    <section class="recipe" id="dRecipe" aria-label="Recipe">
+      <div class="recipe-head"><h4>Recipe</h4><button class="btn" id="dRecipeBtn" type="button">✦ Write me a recipe</button><span class="recipe-status" id="dRecipeStatus" role="status"></span></div>
+      <div id="dRecipeBody"></div>
+    </section>
   </div>
 </dialog>
 
@@ -265,6 +269,7 @@
 <script src="js/atlas.js"></script>
 <script src="js/rempah.js"></script>
 <script src="js/pairing.js"></script>
+<script src="js/recipe.js"></script>
 <script src="js/quiz.js"></script>
 <script src="js/share.js"></script>
 <script src="js/shelf.js"></script>
