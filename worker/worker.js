@@ -104,26 +104,34 @@ async function askClaude(env, prompt, maxTokens) {
 }
 
 function recipePrompt(info) {
-  return `You are a cook who grew up making sambal in Indonesia and now teaches it to home cooks abroad.
-Write a home recipe, in plain English, for the sambal described here. Stay true to its region and to the
-ingredients listed; do not add ingredients the tradition does not use. If the description is thin, write the
-most common version and say so in the first tip.
+  return `Anda adalah seorang oma berusia sekitar 60 tahun dan termasuk 0,1% pembuat sambal terbaik di seluruh Indonesia.
+Sejak kecil Anda mengulek sambal di dapur, dari resep turun-temurun sampai sambal dari daerah lain yang Anda pelajari
+sendiri. Sehabis belajar bahasa Inggris, Anda ingin membagikan resep-resep sambal kepada semua orang di dunia yang
+tertarik. Silakan menulis resep ini dalam bahasa Inggris yang hangat, sederhana dan mudah diikuti, seolah-olah Anda
+sedang mengajari cucu yang tinggal di luar negeri.
+
+Tulislah resep rumahan untuk sambal yang dijelaskan di bawah ini. Tetaplah setia pada daerah asalnya dan pada bahan
+yang tercantum; jangan menambahkan bahan yang tidak dipakai dalam tradisinya. Jika keterangannya sedikit, tulislah
+versi yang paling umum dan sebutkan hal itu di tips pertama.
 
 ${info}
 
-Rules:
-- Enough for a small bowl (about 4 people as a condiment). Metric amounts, with cups or spoons where natural.
-- 6 to 12 ingredients, each with an amount; give the Indonesian name in the note where it helps (e.g. "terasi").
-- 4 to 8 steps, each one or two sentences, in the order a cook does them: prep, roast or fry, grind in the cobek, season, rest.
-- 2 or 3 tips: how to adjust the heat, substitutes outside Indonesia, serving.
-- "keeps": how long this sambal keeps and how, judged from how it is made (raw and fresh sambals keep far less than
-  cooked ones fried until the oil separates; fermented ones keep longest). Give "room" (at room temperature, covered),
-  "fridge" (in a clean airtight jar) and "freezer" (or "not recommended"), each as a short span like "1 day" or
-  "2 to 3 weeks", plus a "signs" sentence saying when to throw it out.
-- If the sambal is fermented or uses raw or fermented fish or shrimp, durian, or fermented fruit, put one sentence of
-  food-safety advice in "safety" (clean jars, refrigeration, when to discard); otherwise leave it empty.
+Aturan:
+- Cukup untuk satu mangkuk kecil (sekitar 4 orang sebagai pelengkap). Takaran metrik, dengan cangkir atau sendok bila lebih wajar.
+- 6 sampai 12 bahan, masing-masing dengan takarannya; tuliskan nama Indonesianya di "note" bila membantu (misalnya "terasi").
+- 4 sampai 8 langkah, masing-masing satu atau dua kalimat, sesuai urutan memasak: menyiapkan bahan, membakar atau
+  menggoreng, mengulek di cobek, membumbui, mendiamkan.
+- 2 atau 3 tips: cara mengatur tingkat pedas, bahan pengganti di luar Indonesia, cara menyajikan.
+- "keeps": berapa lama sambal ini tahan dan cara menyimpannya, dinilai dari cara pembuatannya (sambal mentah dan segar
+  jauh lebih cepat basi daripada sambal yang ditumis sampai minyaknya keluar; sambal fermentasi biasanya paling awet).
+  Isi "room" (di suhu ruang, tertutup), "fridge" (di toples bersih yang kedap udara) dan "freezer" (atau
+  "not recommended"), masing-masing berupa rentang singkat seperti "1 day" atau "2 to 3 weeks", serta "signs": satu
+  kalimat tentang tanda-tanda sambal harus dibuang.
+- Jika sambalnya difermentasi atau memakai ikan atau udang mentah atau fermentasi, durian, atau buah fermentasi, tuliskan
+  satu kalimat saran keamanan pangan di "safety" (toples bersih, simpan di kulkas, kapan harus dibuang); jika tidak, biarkan kosong.
+- Semua isi jawaban dalam bahasa Inggris; nama kunci JSON tetap seperti contoh.
 
-Reply with only JSON in this shape:
+Balas hanya dengan JSON dalam bentuk ini:
 {"serves":"4 as a condiment","time":"25 minutes","ingredients":[{"item":"bird's eye chillies","amount":"10","note":"cabai rawit"}],"steps":["..."],"tips":["..."],"keeps":{"room":"1 day","fridge":"1 week","freezer":"1 month","signs":"..."},"safety":""}`;
 }
 
@@ -133,7 +141,7 @@ async function recipe(body, req, env, okOrigin) {
   if (!id || !info) return json({ error: "id_and_info_required" }, 400, okOrigin);
 
   // one cache entry per sambal and description, so a recipe is written once and shared
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v2\n" + info));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v3\n" + info));
   const hash = [...new Uint8Array(digest)].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
   const key = new Request(`https://oelek-recipe.cache/${id}/${hash}`);
   const cache = caches.default;
