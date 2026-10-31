@@ -131,9 +131,7 @@ Aturan:
   menggoreng, mengulek di cobek, membumbui, mendiamkan.
 - 2 atau 3 tips: cara mengatur tingkat pedas, bahan pengganti, cara menyajikan.
 - Bahan pengganti: anggaplah cucu Anda tinggal di kota kecil di ${negara} yang tidak punya toko Asia. Utamakan bahan yang
-  benar-benar ada di supermarket umum di sana, dan sebutkan nama supermarketnya bila Anda yakin (misalnya Coles dan
-  Woolworths di Australia, FairPrice di Singapura, Tesco atau Sainsbury's di Inggris, Walmart atau Kroger di Amerika
-  Serikat, Albert Heijn di Belanda, REWE atau Edeka di Jerman). Jelaskan bagaimana pengganti itu dipakai agar rasanya
+  benar-benar ada di supermarket umum di sana, dan sebutkan nama supermarket setempat bila Anda yakin. Jelaskan bagaimana pengganti itu dipakai agar rasanya
   tetap mendekati aslinya (misalnya ikan teri asin atau saus ikan untuk terasi, kulit jeruk nipis untuk daun jeruk).
   Toko Asia atau belanja online boleh disebut, tetapi hanya sebagai pilihan tambahan, bukan jalan keluar utama.
   Jika cucunya tinggal di Indonesia, cukup sebutkan pasar.
@@ -159,7 +157,7 @@ async function recipe(body, req, env, okOrigin) {
   const cc = /^[A-Z]{2}$/.test(req.cf?.country || "") ? req.cf.country : "";
   const name = (lang) => { try { return cc ? new Intl.DisplayNames([lang], { type: "region" }).of(cc) || "" : ""; } catch { return ""; } };
   const negara = name("id") || "luar negeri", country = name("en");
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v6\n" + (cc || "XX") + "\n" + info));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v7\n" + (cc || "XX") + "\n" + info));
   const hash = [...new Uint8Array(digest)].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
   const key = new Request(`https://oelek-recipe.cache/${id}/${hash}`);
   const cache = caches.default;

@@ -5,8 +5,8 @@
 const RECIPE_PROXY = typeof PAIR_PROXY==="string" && PAIR_PROXY ? PAIR_PROXY.replace(/\/pair$/,"/recipe") : "";
 let recipeCtl=null, recipeFor=null;
 const recipeStore={
-  get(id){ try{ return JSON.parse(localStorage.getItem("oelek.recipe6."+id)||"null"); }catch(e){ return null; } },
-  set(id,v){ try{ localStorage.setItem("oelek.recipe6."+id,JSON.stringify(v)); }catch(e){} }
+  get(id){ try{ return JSON.parse(localStorage.getItem("oelek.recipe7."+id)||"null"); }catch(e){ return null; } },
+  set(id,v){ try{ localStorage.setItem("oelek.recipe7."+id,JSON.stringify(v)); }catch(e){} }
 };
 // The visitor's country, for the claude.ai view where the Worker can't see it: the browser's region, else none.
 function visitorCountry(){
@@ -47,9 +47,7 @@ Aturan:
   menggoreng, mengulek di cobek, membumbui, mendiamkan.
 - 2 atau 3 tips: cara mengatur tingkat pedas, bahan pengganti, cara menyajikan.
 - Bahan pengganti: anggaplah cucu Anda tinggal di kota kecil di ${negara} yang tidak punya toko Asia. Utamakan bahan yang
-  benar-benar ada di supermarket umum di sana, dan sebutkan nama supermarketnya bila Anda yakin (misalnya Coles dan
-  Woolworths di Australia, FairPrice di Singapura, Tesco atau Sainsbury's di Inggris, Walmart atau Kroger di Amerika
-  Serikat, Albert Heijn di Belanda, REWE atau Edeka di Jerman). Jelaskan bagaimana pengganti itu dipakai agar rasanya
+  benar-benar ada di supermarket umum di sana, dan sebutkan nama supermarket setempat bila Anda yakin. Jelaskan bagaimana pengganti itu dipakai agar rasanya
   tetap mendekati aslinya (misalnya ikan teri asin atau saus ikan untuk terasi, kulit jeruk nipis untuk daun jeruk).
   Toko Asia atau belanja online boleh disebut, tetapi hanya sebagai pilihan tambahan, bukan jalan keluar utama.
   Jika cucunya tinggal di Indonesia, cukup sebutkan pasar.
