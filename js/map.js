@@ -36,7 +36,9 @@ function smoothPath(pts){
 }
 // per-province counts by family (listed entries have unknown family)
 const provStats = {};
-for(const c of Object.keys(PROV)) provStats[c]={raw:0,cooked:0,fermented:0,unknown:0,total:0};
+for(const c of [...Object.keys(PROV),ACROSS]) provStats[c]={raw:0,cooked:0,fermented:0,unknown:0,total:0};
+// sambals made all over Indonesia get their own ring out in the Indian Ocean, west of Sumatra
+const ACROSS_AT=[97.2,-6.6];
 for(const s of S){ if(!provStats[s.prov]) continue; provStats[s.prov][s.style]++; provStats[s.prov].total++; }
 for(const l of L){ if(!provStats[l[1]]) continue; provStats[l[1]].unknown++; provStats[l[1]].total++; }
 
@@ -61,7 +63,7 @@ function drawMap(){
   });
   // bubbles with simple collision relaxation
   gBub=sv("g"); mapSvg.append(gBub);
-  const B=Object.entries(PROV).filter(([c])=>provStats[c].total>0).map(([c,[name,lon,lat]])=>{
+  const B=[...Object.entries(PROV),[ACROSS,["Across Indonesia",...ACROSS_AT]]].filter(([c])=>provStats[c].total>0).map(([c,[name,lon,lat]])=>{
     const [x,y]=px(lon,lat); const t=provStats[c].total; return {c,name,ox:x,oy:y,x,y,r:6+2.6*Math.sqrt(t)};
   });
   for(let it=0;it<200;it++){
@@ -80,16 +82,28 @@ function drawMap(){
     grp.append(sv("circle",{cx:b.x,cy:b.y,r:b.r-2,class:"ring"}));
     grp.append(sv("circle",{cx:b.x,cy:b.y,r:b.r-4,class:"hole"}));
     const tx=sv("text",{x:b.x,y:b.y}); tx.textContent=st.total; grp.append(tx);
+    if(b.c===ACROSS){ grp.classList.add("across"); const lb=sv("text",{x:b.x,y:b.y+b.r+10,class:"acrosslbl"}); lb.textContent="Across Indonesia"; grp.append(lb); }
     grp.addEventListener("click",()=>zoomTo(b.c));
     grp.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();zoomTo(b.c);} });
     gBub.append(grp);
   }
   // markers for profiled sambals (shown when zoomed)
   gMk=sv("g",{visibility:"hidden"}); mapSvg.append(gMk);
+  // Sambals with a recorded place get a solid pin there. The rest are only recorded by province: they get a hollow pin,
+  // laid out in a tidy block at the province's centre, so every sambal is on the map without inventing a location.
+  const approx={};
+  for(const s of S) if(PROV[s.prov]&&!(Number.isFinite(s.lon)&&Number.isFinite(s.lat))) (approx[s.prov]=approx[s.prov]||[]).push(s);
+  const spot={};
+  for(const [c,list] of Object.entries(approx)){
+    const [,lon,lat,w]=PROV[c], [cx0,cy0]=px(lon,lat), h=w*VBH/VBW, n=list.length, cols=n>12?3:n>4?2:1, rows=Math.ceil(n/cols);
+    const colW=w*.3, rowH=Math.min(h*.11,h*.8/Math.max(1,rows-1));
+    list.forEach((s,i)=>{ const col=i%cols, row=Math.floor(i/cols); spot[s.id]=[cx0+(col-(cols-1)/2)*colW-colW*.25, cy0+(row-(rows-1)/2)*rowH]; });
+  }
   for(const s of S){
-    if(!Number.isFinite(s.lon) || !Number.isFinite(s.lat)) continue;
-    const [x,y]=px(s.lon,s.lat);
-    const m=sv("g",{class:"mk "+s.style,tabindex:"-1",role:"button","aria-label":`${s.name}, ${s.region}`,"data-id":s.id,"data-x":x,"data-y":y});
+    const exact=Number.isFinite(s.lon)&&Number.isFinite(s.lat);
+    if(!exact&&!spot[s.id]) continue; // made across Indonesia: listed under its own ring
+    const [x,y]=exact?px(s.lon,s.lat):spot[s.id];
+    const m=sv("g",{class:"mk "+s.style+(exact?"":" approx"),tabindex:"-1",role:"button","aria-label":`${s.name}, ${exact?s.region:provName(s.prov)}`,"data-id":s.id,"data-x":x,"data-y":y});
     m.append(sv("circle",{class:"halo",cx:x,cy:y}), sv("circle",{class:"core",cx:x,cy:y}));
     const t=sv("text",{x,y}); t.textContent=s.name.replace("Sambal ",""); m.append(t);
     m.addEventListener("click",()=>{ if(zoomProv&&s.prov!==zoomProv&&PROV[s.prov]) zoomTo(s.prov); openSambal(s.id); });
@@ -121,16 +135,23 @@ function animateTo(target, after){
   anim=requestAnimationFrame(step);
 }
 function zoomTo(code){
+  if(code===ACROSS){ // no single place: keep the whole map, show the list
+    if(zoomProv) zoomOut();
+    gBub.querySelectorAll(".bub").forEach(b=>b.classList.toggle("sel",b.classList.contains("across")));
+    renderProv(ACROSS); syncGridToMap(ACROSS); return;
+  }
+  gBub.querySelectorAll(".bub.sel").forEach(b=>b.classList.remove("sel"));
   zoomProv=code; const [,lon,lat,w]=PROV[code]; const [x,y]=px(lon,lat); const h=w*VBH/VBW;
   gBub.setAttribute("visibility","hidden"); gMk.setAttribute("visibility","visible");
   gMk.querySelectorAll(".mk").forEach(m=>m.setAttribute("tabindex","0"));
   $("#mapBack").hidden=false; $(".mapui .legend").hidden=false; // the family colours only apply to the pins
-  gMk.querySelectorAll(".mk").forEach(m=>m.classList.toggle("out",(byId[m.dataset.id]||{}).prov!==code));
+  gMk.querySelectorAll(".mk").forEach(m=>{ const other=(byId[m.dataset.id]||{}).prov!==code; m.classList.toggle("out",other); m.classList.toggle("gone",other&&m.classList.contains("approx")); });
   animateTo({x:x-w/2,y:y-h/2,w});
   renderProv(code);
   syncGridToMap(code);
 }
 function zoomOut(){
+  gBub.querySelectorAll(".bub.sel").forEach(b=>b.classList.remove("sel"));
   zoomProv=null; $("#mapBack").hidden=true; $(".mapui .legend").hidden=true;
   gMk.querySelectorAll(".mk").forEach(m=>m.setAttribute("tabindex","-1"));
   animateTo({x:0,y:0,w:VBW},()=>{ gBub.setAttribute("visibility","visible"); gMk.setAttribute("visibility","hidden"); });
@@ -150,11 +171,18 @@ function renderProv(code){
   if(!code){
     const top=Object.entries(provStats).sort((a,b)=>b[1].total-a[1].total).slice(0,6);
     P.replaceChildren(el("p",{class:"eyebrow",text:"Tap a ring to explore a province"}),
-      el("p",{class:"lede",text:`Most recorded: ${top.map(([c,s])=>`${PROV[c][0]} (${s.total})`).join(", ")}. Java and Sumatra lead, as both surveys found.`}),
-      el("div",{class:"try"},...top.map(([c])=>el("button",{class:"pill",type:"button",text:PROV[c][0],onclick:()=>{zoomTo(c); $("#peta").scrollIntoView({block:"start"});}}))));
+      el("p",{class:"lede",text:`Most recorded: ${top.map(([c,s])=>`${provName(c)} (${s.total})`).join(", ")}. Java and Sumatra lead, as both surveys found.`}),
+      el("div",{class:"try"},...top.map(([c])=>el("button",{class:"pill",type:"button",text:provName(c),onclick:()=>{zoomTo(c); $("#peta").scrollIntoView({block:"start"});}}))));
     return;
   }
   const st=provStats[code];
+  if(code===ACROSS){
+    P.replaceChildren(el("p",{class:"eyebrow",text:`${st.total} sambals recorded`}), el("h3",{text:"Across Indonesia"}), famBar(st),
+      el("p",{class:"lede",text:"These sambals have no single home province: they are made all over the archipelago. The cards below now show only them."}),
+      el("div",{class:"try"},el("button",{class:"btn ghost small",type:"button",text:`See all ${st.total} ↓`,onclick:()=>$("#gridTitle").scrollIntoView({behavior:"smooth",block:"start"})}),
+        el("button",{class:"btn ghost small",type:"button",text:"All of Indonesia",onclick:()=>{ gBub.querySelectorAll(".bub.sel").forEach(b=>b.classList.remove("sel")); renderProv(null); syncGridToMap(null); }})));
+    return;
+  }
   const fams=["raw","cooked","fermented"].filter(k=>st[k]).map(k=>`${st[k]} ${STYLE[k].en.toLowerCase()}`).join(", ");
   P.replaceChildren(
     el("p",{class:"eyebrow",text:`${st.total} sambal${st.total===1?"":"s"} recorded`}),

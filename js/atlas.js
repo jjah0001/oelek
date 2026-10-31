@@ -54,7 +54,7 @@ document.querySelectorAll(".chip.fam").forEach(b=>b.addEventListener("click",()=
 // the map and the grid move together: picking a province zooms the map, zooming the map filters the grid
 $("#provSel").addEventListener("change",()=>{
   const v=$("#provSel").value;
-  if(v&&PROV[v]&&provStats[v]&&provStats[v].total) zoomTo(v);
+  if(v&&(PROV[v]||v===ACROSS)&&provStats[v]&&provStats[v].total) zoomTo(v);
   else if(zoomProv) zoomOut(); else renderGrid();
 });
 $("#allProv").addEventListener("click",()=>{ if(zoomProv) zoomOut(); else { $("#provSel").value=""; renderGrid(); } });

@@ -133,6 +133,11 @@ section{padding-block:64px}
 .mk.out{opacity:.28} .mk.out:hover{opacity:.7}
 .mk.hot{opacity:1} .mk.hot circle.halo{opacity:.6}
 .mk.hot text{font-weight:700}
+.mk.approx circle.core{fill:var(--sea)!important} .mk.approx.raw circle.core{stroke:var(--raw)} .mk.approx.cooked circle.core{stroke:var(--cooked)} .mk.approx.fermented circle.core{stroke:var(--fermented)}
+.mk.gone{display:none}
+.bub.across .ring{stroke-dasharray:3 2}
+.bub .acrosslbl{font:500 9px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;fill:var(--muted);text-anchor:middle;dominant-baseline:hanging;pointer-events:none}
+.bub.sel .hole{fill:var(--chili-soft)}
 .countrow{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:10px}
 .countrow .count{margin-bottom:0}
 .maplbl{font-family:var(--f-mono);letter-spacing:.2em;fill:var(--muted);text-transform:uppercase}
@@ -401,3 +406,4 @@ footer{background:color-mix(in srgb,var(--bg) 90%,transparent)}
 .recipe-keeps span{font:500 .7rem/1.2 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--soga)}
 .recipe-keeps b{font-size:.98rem}
 .recipe-signs{font-size:.88rem;color:var(--muted);margin:0}
+.legend i.hollow{background:transparent!important;border:2px solid var(--muted);box-sizing:border-box}

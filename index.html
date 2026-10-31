@@ -92,7 +92,7 @@
     <div class="sec-head">
       <p class="eyebrow">Peta sambal · atlas</p>
       <h2>From Sabang to Merauke</h2>
-      <p class="lede">Each ring counts the sambals recorded for a province. Tap a ring to zoom in and see them by family: the cards below then show only that province’s sambals. Hover a card to find it on the map. Individual markers appear where a location was already recorded; province-only profiles are available in the panel.</p>
+      <p class="lede">Each ring counts the sambals recorded for a province. Tap a ring to zoom in and see them by family: the cards below then show only that province’s sambals. Hover a card to find it on the map. Every sambal has a pin: solid where a place was recorded, hollow where only the province is known.</p>
     </div>
     <div class="mapbox">
       <div class="mapui">
@@ -101,11 +101,12 @@
           <span><i style="background:var(--raw)"></i>Raw</span>
           <span><i style="background:var(--cooked)"></i>Cooked</span>
           <span><i style="background:var(--fermented)"></i>Fermented</span>
+          <span><i class="hollow"></i>Province only</span>
         </div>
       </div>
       <svg id="map" viewBox="0 0 940 380" role="img" aria-label="Map of Indonesia with sambal counts by province"></svg>
     </div>
-    <p class="mapnote">Stylised map; island outlines are simplified. Scroll sideways on small screens. Each ring shows how many sambals a province has; tap it to see them by family.</p>
+    <p class="mapnote">Stylised map; island outlines are simplified. Scroll sideways on small screens. Each ring shows how many sambals a province has; tap it to see them by family. Solid pins mark a recorded place; hollow pins are only recorded by province and are grouped at its centre. Sambals made all over Indonesia have their own ring west of Sumatra.</p>
     <div class="prov" id="provPanel"></div>
 
     <div class="atlas-head">
@@ -215,7 +216,7 @@
 
 <footer>
   <div class="wrap">
-    <p><b>Sources and notes.</b> Names, regional associations and defining ingredients come from the surveys and linked regional accounts. Profiles are source-informed editorial descriptions of representative versions: supporting seasonings may be reconstructed where a survey gives only the defining ingredient. Serving suggestions, heat levels, flavour scores, illustrations and persona texts are editorial, not measurements or claims of a single traditional recipe. Province-only records are not assigned precise map coordinates. Most sambals are now made across Indonesia; the map is a simplified drawing.</p>
+    <p><b>Sources and notes.</b> Names, regional associations and defining ingredients come from the surveys and linked regional accounts. Profiles are source-informed editorial descriptions of representative versions: supporting seasonings may be reconstructed where a survey gives only the defining ingredient. Serving suggestions, heat levels, flavour scores, illustrations and persona texts are editorial, not measurements or claims of a single traditional recipe. Province-only records are not assigned precise map coordinates: they appear as hollow pins grouped at the province centre. Most sambals are now made across Indonesia; the map is a simplified drawing.</p>
     <ul id="srcList"></ul>
     <p>Selamat makan.</p>
   </div>
