@@ -1,7 +1,8 @@
 // Sambal pairing and recipe proxy for the GitHub Pages build.
 // POST /pair { dish, catalogue } -> { picks:[{id,reason}], tip } | { error }
 // POST /recipe { id, info } -> { serves, time, ingredients:[{item,amount,note}], steps:[], tips:[], keeps:{room,fridge,freezer,signs}, safety } | { error }
-//   Recipes are cached at the edge for 30 days per sambal and description, so each one is written once.
+//   Recipes are written for the visitor's country (Cloudflare's request.cf.country; nothing finer is used or kept)
+//   and cached at the edge for 30 days per sambal, description and country, so each one is written once.
 // Per-IP rate limited via env.PAIR_RL (Cloudflare rate-limit binding).
 // Secret: ANTHROPIC_API_KEY. Optional vars: ANTHROPIC_MODEL, ALLOWED_ORIGINS.
 
@@ -103,12 +104,12 @@ async function askClaude(env, prompt, maxTokens) {
   try { return m ? JSON.parse(m[0]) : null; } catch { return null; }
 }
 
-function recipePrompt(info) {
+function recipePrompt(info, negara) {
   return `Anda adalah seorang oma berusia sekitar 60 tahun dan termasuk 0,1% pembuat sambal terbaik di seluruh Indonesia.
 Sejak kecil Anda mengulek sambal di dapur, dari resep turun-temurun sampai sambal dari daerah lain yang Anda pelajari
 sendiri. Sehabis belajar bahasa Inggris, Anda ingin membagikan resep-resep sambal kepada semua orang di dunia yang
 tertarik. Silakan menulis resep ini dalam bahasa Inggris yang hangat, sederhana dan mudah diikuti, seolah-olah Anda
-sedang mengajari cucu yang tinggal di luar negeri.
+sedang mengajari cucu yang tinggal di ${negara}.
 
 Tulislah resep rumahan untuk sambal yang dijelaskan di bawah ini. Tetaplah setia pada daerah asalnya dan pada bahan
 yang tercantum; jangan menambahkan bahan yang tidak dipakai dalam tradisinya. Jika keterangannya sedikit, tulislah
@@ -117,11 +118,14 @@ versi yang paling umum dan sebutkan hal itu di tips pertama.
 ${info}
 
 Aturan:
-- Cukup untuk satu mangkuk kecil (sekitar 4 orang sebagai pelengkap). Takaran metrik, dengan cangkir atau sendok bila lebih wajar.
+- Cukup untuk satu mangkuk kecil (sekitar 4 orang sebagai pelengkap). Pakailah satuan yang lazim di ${negara}
+  (misalnya cups dan ounces di Amerika Serikat, dengan gram di dalam kurung); di negara lain takaran metrik, dengan
+  cangkir atau sendok bila lebih wajar.
 - 6 sampai 12 bahan, masing-masing dengan takarannya; tuliskan nama Indonesianya di "note" bila membantu (misalnya "terasi").
 - 4 sampai 8 langkah, masing-masing satu atau dua kalimat, sesuai urutan memasak: menyiapkan bahan, membakar atau
   menggoreng, mengulek di cobek, membumbui, mendiamkan.
-- 2 atau 3 tips: cara mengatur tingkat pedas, bahan pengganti di luar Indonesia, cara menyajikan.
+- 2 atau 3 tips: cara mengatur tingkat pedas, bahan pengganti yang mudah dicari di ${negara} dan di mana mencari bahan
+  Indonesianya di sana (misalnya toko Asia), cara menyajikan. Jika cucunya tinggal di Indonesia, cukup sebutkan pasar.
 - "keeps": berapa lama sambal ini tahan dan cara menyimpannya, dinilai dari cara pembuatannya (sambal mentah dan segar
   jauh lebih cepat basi daripada sambal yang ditumis sampai minyaknya keluar; sambal fermentasi biasanya paling awet).
   Isi "room" (di suhu ruang, tertutup), "fridge" (di toples bersih yang kedap udara) dan "freezer" (atau
@@ -141,7 +145,10 @@ async function recipe(body, req, env, okOrigin) {
   if (!id || !info) return json({ error: "id_and_info_required" }, 400, okOrigin);
 
   // one cache entry per sambal and description, so a recipe is written once and shared
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v3\n" + info));
+  const cc = /^[A-Z]{2}$/.test(req.cf?.country || "") ? req.cf.country : "";
+  const name = (lang) => { try { return cc ? new Intl.DisplayNames([lang], { type: "region" }).of(cc) || "" : ""; } catch { return ""; } };
+  const negara = name("id") || "luar negeri", country = name("en");
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v4\n" + (cc || "XX") + "\n" + info));
   const hash = [...new Uint8Array(digest)].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
   const key = new Request(`https://oelek-recipe.cache/${id}/${hash}`);
   const cache = caches.default;
@@ -153,7 +160,7 @@ async function recipe(body, req, env, okOrigin) {
     const { success } = await env.PAIR_RL.limit({ key: ip });
     if (!success) return json({ error: "rate_limited" }, 429, okOrigin);
   }
-  const out = await askClaude(env, recipePrompt(info), 2500);
+  const out = await askClaude(env, recipePrompt(info, negara), 2500);
   if (out?.error) return json(out, 502, okOrigin);
   if (!out || !Array.isArray(out.ingredients) || !Array.isArray(out.steps) || !out.steps.length) return json({ error: "unparsed" }, 502, okOrigin);
   const clean = {
@@ -162,6 +169,7 @@ async function recipe(body, req, env, okOrigin) {
     steps: out.steps.slice(0, 10).map((x) => String(x).slice(0, 500)),
     tips: (out.tips || []).slice(0, 4).map((x) => String(x).slice(0, 400)),
     safety: String(out.safety || "").slice(0, 400),
+    country,
     keeps: out.keeps && typeof out.keeps === "object" ? Object.fromEntries(["room", "fridge", "freezer", "signs"].map((k) => [k, String(out.keeps[k] || "").slice(0, k === "signs" ? 300 : 60)])) : null,
   };
   await cache.put(key, new Response(JSON.stringify(clean), { headers: { "content-type": "application/json", "cache-control": "public, max-age=2592000" } }));
