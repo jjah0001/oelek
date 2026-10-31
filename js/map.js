@@ -93,11 +93,21 @@ function drawMap(){
   // laid out in a tidy block at the province's centre, so every sambal is on the map without inventing a location.
   const approx={};
   for(const s of S) if(PROV[s.prov]&&!(Number.isFinite(s.lon)&&Number.isFinite(s.lat))) (approx[s.prov]=approx[s.prov]||[]).push(s);
-  const spot={};
+  const spot={}, exactAt=S.filter(s=>Number.isFinite(s.lon)&&Number.isFinite(s.lat)).map(s=>px(s.lon,s.lat));
   for(const [c,list] of Object.entries(approx)){
-    const [,lon,lat,w]=PROV[c], [cx0,cy0]=px(lon,lat), h=w*VBH/VBW, n=list.length, cols=n>12?3:n>4?2:1, rows=Math.ceil(n/cols);
-    const colW=w*.3, rowH=Math.min(h*.11,h*.8/Math.max(1,rows-1));
-    list.forEach((s,i)=>{ const col=i%cols, row=Math.floor(i/cols); spot[s.id]=[cx0+(col-(cols-1)/2)*colW-colW*.25, cy0+(row-(rows-1)/2)*rowH]; });
+    const [,lon,lat,w]=PROV[c], [cx0,cy0]=px(lon,lat), h=w*VBH/VBW, n=list.length, cols=n>12?3:n>4?2:1;
+    const colW=w*.3, rowH=h*.1;
+    // fill a grid row by row, skipping any slot that would sit on a pin with a recorded place, then centre the block
+    // on the province (twice, since skipped slots make the block taller)
+    let top=cy0-(Math.ceil(n/cols)-1)*rowH/2, slots=[];
+    for(let pass=0;pass<3;pass++){
+      slots=[]; for(let row=0;slots.length<n&&row<40;row++) for(let col=0;col<cols&&slots.length<n;col++){
+        const x=cx0+(col-(cols-1)/2)*colW-colW*.25, y=row*rowH;
+        if(!exactAt.some(([ex,ey])=>ex>x-colW*.25&&ex<x+colW*.85&&Math.abs(ey-(top+y))<rowH*.75)) slots.push([x,y]);
+      }
+      top=cy0-slots[slots.length-1][1]/2;
+    }
+    list.forEach((s,i)=>{ spot[s.id]=[slots[i][0],top+slots[i][1]]; });
   }
   for(const s of S){
     const exact=Number.isFinite(s.lon)&&Number.isFinite(s.lat);
@@ -144,7 +154,7 @@ function zoomTo(code){
   zoomProv=code; const [,lon,lat,w]=PROV[code]; const [x,y]=px(lon,lat); const h=w*VBH/VBW;
   gBub.setAttribute("visibility","hidden"); gMk.setAttribute("visibility","visible");
   gMk.querySelectorAll(".mk").forEach(m=>m.setAttribute("tabindex","0"));
-  $("#mapBack").hidden=false; $(".mapui .legend").hidden=false; // the family colours only apply to the pins
+  $("#mapBack").hidden=false; $(".mapui .legend").hidden=false; $("#mapHint").hidden=true; // the family colours only apply to the pins
   gMk.querySelectorAll(".mk").forEach(m=>{ const other=(byId[m.dataset.id]||{}).prov!==code; m.classList.toggle("out",other); m.classList.toggle("gone",other&&m.classList.contains("approx")); });
   animateTo({x:x-w/2,y:y-h/2,w});
   renderProv(code);
@@ -152,7 +162,7 @@ function zoomTo(code){
 }
 function zoomOut(){
   gBub.querySelectorAll(".bub.sel").forEach(b=>b.classList.remove("sel"));
-  zoomProv=null; $("#mapBack").hidden=true; $(".mapui .legend").hidden=true;
+  zoomProv=null; $("#mapBack").hidden=true; $(".mapui .legend").hidden=true; $("#mapHint").hidden=false;
   gMk.querySelectorAll(".mk").forEach(m=>m.setAttribute("tabindex","-1"));
   animateTo({x:0,y:0,w:VBW},()=>{ gBub.setAttribute("visibility","visible"); gMk.setAttribute("visibility","hidden"); });
   renderProv(null);
