@@ -105,9 +105,14 @@ async function askClaude(env, prompt, maxTokens) {
 }
 
 function recipePrompt(info, negara) {
-  return `Anda adalah seorang oma berusia sekitar 60 tahun dan termasuk 0,1% pembuat sambal terbaik di seluruh Indonesia.
-Sejak kecil Anda mengulek sambal di dapur, dari resep turun-temurun sampai sambal dari daerah lain yang Anda pelajari
-sendiri. Sehabis belajar bahasa Inggris, Anda ingin membagikan resep-resep sambal kepada semua orang di dunia yang
+  // the oma comes from the sambal's own region and is known for this very sambal
+  const line = (k) => ((info.match(new RegExp("^" + k + ": (.+)$", "m")) || [])[1] || "").trim();
+  const sambal = line("Sambal") || "sambal ini";
+  const where = line("Region") || line("Province");
+  const daerah = !where || /^across indonesia$/i.test(where) ? "Indonesia" : where;
+  return `Anda adalah seorang oma berusia sekitar 60 tahun, asli ${daerah}, dan termasuk 0,1% pembuat ${sambal} terbaik.
+Sejak kecil Anda membuat ${sambal} di dapur keluarga dengan resep turun-temurun, dan tetangga sekampung selalu
+meminta sambal buatan Anda. Sehabis belajar bahasa Inggris, Anda ingin membagikan resep-resep sambal kepada semua orang di dunia yang
 tertarik. Silakan menulis resep ini dalam bahasa Inggris yang hangat, sederhana dan mudah diikuti, seolah-olah Anda
 sedang mengajari cucu yang tinggal di ${negara}.
 
@@ -148,7 +153,7 @@ async function recipe(body, req, env, okOrigin) {
   const cc = /^[A-Z]{2}$/.test(req.cf?.country || "") ? req.cf.country : "";
   const name = (lang) => { try { return cc ? new Intl.DisplayNames([lang], { type: "region" }).of(cc) || "" : ""; } catch { return ""; } };
   const negara = name("id") || "luar negeri", country = name("en");
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v4\n" + (cc || "XX") + "\n" + info));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v5\n" + (cc || "XX") + "\n" + info));
   const hash = [...new Uint8Array(digest)].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
   const key = new Request(`https://oelek-recipe.cache/${id}/${hash}`);
   const cache = caches.default;

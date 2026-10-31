@@ -5,8 +5,8 @@
 const RECIPE_PROXY = typeof PAIR_PROXY==="string" && PAIR_PROXY ? PAIR_PROXY.replace(/\/pair$/,"/recipe") : "";
 let recipeCtl=null, recipeFor=null;
 const recipeStore={
-  get(id){ try{ return JSON.parse(localStorage.getItem("oelek.recipe4."+id)||"null"); }catch(e){ return null; } },
-  set(id,v){ try{ localStorage.setItem("oelek.recipe4."+id,JSON.stringify(v)); }catch(e){} }
+  get(id){ try{ return JSON.parse(localStorage.getItem("oelek.recipe5."+id)||"null"); }catch(e){ return null; } },
+  set(id,v){ try{ localStorage.setItem("oelek.recipe5."+id,JSON.stringify(v)); }catch(e){} }
 };
 // The visitor's country, for the claude.ai view where the Worker can't see it: the browser's region, else none.
 function visitorCountry(){
@@ -21,9 +21,14 @@ function recipeInfo(s){
   return [`Sambal: ${s.name}`, `Province: ${provName(s.prov)}`, `What is recorded about it: ${describeListed(s)}`].join("\n");
 }
 function recipePrompt(info,negara){
-  return `Anda adalah seorang oma berusia sekitar 60 tahun dan termasuk 0,1% pembuat sambal terbaik di seluruh Indonesia.
-Sejak kecil Anda mengulek sambal di dapur, dari resep turun-temurun sampai sambal dari daerah lain yang Anda pelajari
-sendiri. Sehabis belajar bahasa Inggris, Anda ingin membagikan resep-resep sambal kepada semua orang di dunia yang
+  // the oma comes from the sambal's own region and is known for this very sambal
+  const line = (k) => ((info.match(new RegExp("^" + k + ": (.+)$", "m")) || [])[1] || "").trim();
+  const sambal = line("Sambal") || "sambal ini";
+  const where = line("Region") || line("Province");
+  const daerah = !where || /^across indonesia$/i.test(where) ? "Indonesia" : where;
+  return `Anda adalah seorang oma berusia sekitar 60 tahun, asli ${daerah}, dan termasuk 0,1% pembuat ${sambal} terbaik.
+Sejak kecil Anda membuat ${sambal} di dapur keluarga dengan resep turun-temurun, dan tetangga sekampung selalu
+meminta sambal buatan Anda. Sehabis belajar bahasa Inggris, Anda ingin membagikan resep-resep sambal kepada semua orang di dunia yang
 tertarik. Silakan menulis resep ini dalam bahasa Inggris yang hangat, sederhana dan mudah diikuti, seolah-olah Anda
 sedang mengajari cucu yang tinggal di ${negara}.
 
