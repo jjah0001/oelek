@@ -1,6 +1,6 @@
 // Sambal pairing and recipe proxy for the GitHub Pages build.
 // POST /pair { dish, catalogue } -> { picks:[{id,reason}], tip } | { error }
-// POST /recipe { id, info } -> { serves, time, ingredients:[{item,amount,note}], steps:[], tips:[], safety } | { error }
+// POST /recipe { id, info } -> { serves, time, ingredients:[{item,amount,note}], steps:[], tips:[], keeps:{room,fridge,freezer,signs}, safety } | { error }
 //   Recipes are cached at the edge for 30 days per sambal and description, so each one is written once.
 // Per-IP rate limited via env.PAIR_RL (Cloudflare rate-limit binding).
 // Secret: ANTHROPIC_API_KEY. Optional vars: ANTHROPIC_MODEL, ALLOWED_ORIGINS.
@@ -115,12 +115,16 @@ Rules:
 - Enough for a small bowl (about 4 people as a condiment). Metric amounts, with cups or spoons where natural.
 - 6 to 12 ingredients, each with an amount; give the Indonesian name in the note where it helps (e.g. "terasi").
 - 4 to 8 steps, each one or two sentences, in the order a cook does them: prep, roast or fry, grind in the cobek, season, rest.
-- 2 or 3 tips: how to adjust the heat, substitutes outside Indonesia, how long it keeps and how to store it.
+- 2 or 3 tips: how to adjust the heat, substitutes outside Indonesia, serving.
+- "keeps": how long this sambal keeps and how, judged from how it is made (raw and fresh sambals keep far less than
+  cooked ones fried until the oil separates; fermented ones keep longest). Give "room" (at room temperature, covered),
+  "fridge" (in a clean airtight jar) and "freezer" (or "not recommended"), each as a short span like "1 day" or
+  "2 to 3 weeks", plus a "signs" sentence saying when to throw it out.
 - If the sambal is fermented or uses raw or fermented fish or shrimp, durian, or fermented fruit, put one sentence of
   food-safety advice in "safety" (clean jars, refrigeration, when to discard); otherwise leave it empty.
 
 Reply with only JSON in this shape:
-{"serves":"4 as a condiment","time":"25 minutes","ingredients":[{"item":"bird's eye chillies","amount":"10","note":"cabai rawit"}],"steps":["..."],"tips":["..."],"safety":""}`;
+{"serves":"4 as a condiment","time":"25 minutes","ingredients":[{"item":"bird's eye chillies","amount":"10","note":"cabai rawit"}],"steps":["..."],"tips":["..."],"keeps":{"room":"1 day","fridge":"1 week","freezer":"1 month","signs":"..."},"safety":""}`;
 }
 
 async function recipe(body, req, env, okOrigin) {
@@ -129,7 +133,7 @@ async function recipe(body, req, env, okOrigin) {
   if (!id || !info) return json({ error: "id_and_info_required" }, 400, okOrigin);
 
   // one cache entry per sambal and description, so a recipe is written once and shared
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(info));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v2\n" + info));
   const hash = [...new Uint8Array(digest)].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
   const key = new Request(`https://oelek-recipe.cache/${id}/${hash}`);
   const cache = caches.default;
@@ -150,6 +154,7 @@ async function recipe(body, req, env, okOrigin) {
     steps: out.steps.slice(0, 10).map((x) => String(x).slice(0, 500)),
     tips: (out.tips || []).slice(0, 4).map((x) => String(x).slice(0, 400)),
     safety: String(out.safety || "").slice(0, 400),
+    keeps: out.keeps && typeof out.keeps === "object" ? Object.fromEntries(["room", "fridge", "freezer", "signs"].map((k) => [k, String(out.keeps[k] || "").slice(0, k === "signs" ? 300 : 60)])) : null,
   };
   await cache.put(key, new Response(JSON.stringify(clean), { headers: { "content-type": "application/json", "cache-control": "public, max-age=2592000" } }));
   return json(clean, 200, okOrigin);

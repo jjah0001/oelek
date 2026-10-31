@@ -5,8 +5,8 @@
 const RECIPE_PROXY = typeof PAIR_PROXY==="string" && PAIR_PROXY ? PAIR_PROXY.replace(/\/pair$/,"/recipe") : "";
 let recipeCtl=null, recipeFor=null;
 const recipeStore={
-  get(id){ try{ return JSON.parse(localStorage.getItem("oelek.recipe."+id)||"null"); }catch(e){ return null; } },
-  set(id,v){ try{ localStorage.setItem("oelek.recipe."+id,JSON.stringify(v)); }catch(e){} }
+  get(id){ try{ return JSON.parse(localStorage.getItem("oelek.recipe2."+id)||"null"); }catch(e){ return null; } },
+  set(id,v){ try{ localStorage.setItem("oelek.recipe2."+id,JSON.stringify(v)); }catch(e){} }
 };
 function recipeInfo(s){
   if(s.kind==="full") return [
@@ -27,12 +27,16 @@ Rules:
 - Enough for a small bowl (about 4 people as a condiment). Metric amounts, with cups or spoons where natural.
 - 6 to 12 ingredients, each with an amount; give the Indonesian name in the note where it helps (e.g. "terasi").
 - 4 to 8 steps, each one or two sentences, in the order a cook does them: prep, roast or fry, grind in the cobek, season, rest.
-- 2 or 3 tips: how to adjust the heat, substitutes outside Indonesia, how long it keeps and how to store it.
+- 2 or 3 tips: how to adjust the heat, substitutes outside Indonesia, serving.
+- "keeps": how long this sambal keeps and how, judged from how it is made (raw and fresh sambals keep far less than
+  cooked ones fried until the oil separates; fermented ones keep longest). Give "room" (at room temperature, covered),
+  "fridge" (in a clean airtight jar) and "freezer" (or "not recommended"), each as a short span like "1 day" or
+  "2 to 3 weeks", plus a "signs" sentence saying when to throw it out.
 - If the sambal is fermented or uses raw or fermented fish or shrimp, durian, or fermented fruit, put one sentence of
   food-safety advice in "safety" (clean jars, refrigeration, when to discard); otherwise leave it empty.
 
 Reply with only JSON in this shape:
-{"serves":"4 as a condiment","time":"25 minutes","ingredients":[{"item":"bird's eye chillies","amount":"10","note":"cabai rawit"}],"steps":["..."],"tips":["..."],"safety":""}`;
+{"serves":"4 as a condiment","time":"25 minutes","ingredients":[{"item":"bird's eye chillies","amount":"10","note":"cabai rawit"}],"steps":["..."],"tips":["..."],"keeps":{"room":"1 day","fridge":"1 week","freezer":"1 month","signs":"..."},"safety":""}`;
 }
 function renderRecipe(r){
   const box=$("#dRecipeBody");
@@ -43,6 +47,12 @@ function renderRecipe(r){
   if(meta) kids.push(el("p",{class:"recipe-meta",text:meta}));
   kids.push(el("h5",{text:"You need"}),ing,el("h5",{text:"Method"}),steps);
   if(r.tips&&r.tips.length) kids.push(el("h5",{text:"Tips"}),el("ul",{class:"recipe-tips"},...r.tips.map(t=>el("li",{text:String(t)}))));
+  const k=r.keeps;
+  if(k&&(k.room||k.fridge||k.freezer)){ // how long it keeps
+    const row=(lab,v)=>v?el("div",{},el("span",{text:lab}),el("b",{text:String(v)})):null;
+    kids.push(el("h5",{text:"How long it keeps"}),el("div",{class:"recipe-keeps"},...[row("Room temperature",k.room),row("Fridge",k.fridge),row("Freezer",k.freezer)].filter(Boolean)));
+    if(k.signs) kids.push(el("p",{class:"recipe-signs",text:String(k.signs)}));
+  }
   if(r.safety) kids.push(el("p",{class:"tip recipe-safety",text:String(r.safety)}));
   kids.push(el("p",{class:"recipe-note",text:"Written by Claude from this card’s ingredients and notes. It is a starting point, not a tested family recipe: taste as you go."}));
   box.replaceChildren(...kids);

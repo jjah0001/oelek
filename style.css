@@ -396,3 +396,8 @@ footer{background:color-mix(in srgb,var(--bg) 90%,transparent)}
 .recipe-note{font-size:.78rem;color:var(--muted);margin:0}
 .recipe-jump{border:1px solid var(--chili);color:var(--chili);background:transparent;border-radius:999px;padding:3px 10px;font:600 .78rem var(--f-body);cursor:pointer}
 .recipe-jump:hover{background:var(--chili-soft)}
+.recipe-keeps{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.recipe-keeps div{display:grid;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
+.recipe-keeps span{font:500 .7rem/1.2 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--soga)}
+.recipe-keeps b{font-size:.98rem}
+.recipe-signs{font-size:.88rem;color:var(--muted);margin:0}
