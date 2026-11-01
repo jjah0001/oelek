@@ -76,7 +76,7 @@ function shelfJar(s,e){
     (e.status==="tried"?'<circle cx="80" cy="39" r="10" fill="#f4eddc" stroke="#817967"/><path d="m75 39 3 3 6-7" fill="none" stroke="#716b60" stroke-width="2"/>':"")+`</svg>`;
   // under the jar: only what the visitor recorded (weight or stars); the row heading already says the status
   const detail=e.status==="have"&&e.grams!==null?`${e.grams} g`:e.rating?"★".repeat(e.rating):"";
-  jar.append(el("span",{class:"shelf-jar-name",text:s.name.replace(/^Sambal\s+/i,"")}),...(detail?[el("span",{class:"shelf-jar-detail",text:detail})]:[]));return jar;
+  jar.append(el("span",{class:"shelf-jar-name",text:s.name.replace(/^Sambal\s+/i,"")}),el("span",{class:"shelf-jar-detail",text:detail||"\u00a0"})); /* an empty line keeps every jar level on the shelf */ return jar;
 }
 function renderShelf(){
   const entries=Object.entries(shelfItems).map(([id,e])=>({s:byId[id],e}));
