@@ -419,3 +419,6 @@ footer{background:color-mix(in srgb,var(--bg) 90%,transparent)}
 .about-try a{padding:4px 12px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--bg)}
 .about-try a:hover{border-color:var(--chili)}
 @media (max-width:760px){.about-grid{grid-template-columns:1fr;gap:24px}.about-block{padding:18px}}
+.about-sources p{font-size:.9rem;color:var(--muted)}
+.about-sources ul{margin:6px 0 0;padding-left:18px;display:grid;gap:5px;font-size:.88rem}
+footer a{color:var(--ink)}
