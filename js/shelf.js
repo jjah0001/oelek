@@ -52,8 +52,28 @@ function paintShelfControls(s){
 function shelfJar(s,e){
   const jar=shelfButton("",()=>openSambal(s.id),"shelf-jar "+e.status);
   jar.setAttribute("aria-label",`${s.name} · ${SHELF_STATUS[e.status]}${e.rating?` · ${e.rating} of 5 stars`:""}`);
-  // A consistent stoneware glaze: status is conveyed by shape, outline and text.
-  jar.innerHTML=`<svg viewBox="0 0 100 118" aria-hidden="true"><ellipse cx="50" cy="110" rx="37" ry="4" fill="currentColor" opacity=".1"/><rect x="26" y="15" width="48" height="14" rx="5" fill="#716b60"/><ellipse cx="50" cy="15" rx="24" ry="5" fill="#969082"/><path d="M27 29Q17 33 17 46V98Q17 109 29 109H71Q83 109 83 98V46Q83 33 73 29Z" fill="${e.status==="wish"?"none":"#b6ac96"}" stroke="#817967" stroke-width="2" ${e.status==="wish"?'stroke-dasharray="4 3"':""}/><path d="M24 43V96" stroke="#fff" opacity=".25" stroke-width="4" stroke-linecap="round"/><rect x="27" y="48" width="46" height="40" rx="2" fill="#f4eddc" stroke="#a99b7e"/><path d="M43 62c5 2 10-1 13-7-1 10-6 17-15 16 4-2 5-5 2-9Z" fill="#716b60"/><path d="m55 56 3-4" stroke="#716b60" stroke-width="2"/><path d="M35 79H65" stroke="#b6ac96"/>${e.status==="tried"?'<circle cx="80" cy="39" r="10" fill="#f4eddc" stroke="#817967"/><path d="m75 39 3 3 6-7" fill="none" stroke="#716b60" stroke-width="2"/>':""}</svg>`;
+  // A glass toples showing the sambal inside, in the same colour as its cobek illustration. The lid takes the
+  // family colour. Status shows in how full it is: stocked (by weight when recorded), a little left once tried,
+  // and an empty dashed jar for one still to try.
+  const L=LOOK[s.id]||(s._look||(s._look=autoLook(s))), base=L.b, dark=shade(base,-40), light=shade(base,35);
+  const fam=s.kind==="full"?`var(--${s.style})`:"#8a7f6c", uid="j"+s.id.replace(/[^a-z0-9]/gi,"");
+  const lvl=e.status==="wish"?0:e.status==="tried"?.22:e.grams?Math.max(.3,Math.min(.92,e.grams/350)):.8;
+  const body="M27 29Q17 33 17 46V98Q17 109 29 109H71Q83 109 83 98V46Q83 33 73 29Z", top=109-lvl*78;
+  let fill="";
+  if(lvl){
+    fill=`<clipPath id="c${uid}"><path d="${body}"/></clipPath><linearGradient id="g${uid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${dark}"/><stop offset=".45" stop-color="${base}"/><stop offset=".8" stop-color="${light}"/><stop offset="1" stop-color="${dark}"/></linearGradient>`+
+      `<g clip-path="url(#c${uid})"><path d="M10 ${top.toFixed(1)}Q30 ${(top-3).toFixed(1)} 50 ${top.toFixed(1)}T90 ${top.toFixed(1)}V115H10Z" fill="url(#g${uid})"/>`;
+    const R=rng(s.id); for(let i=0;i<(L.smooth?10:26);i++){ const y=top+3+R()*(109-top-4); fill+=`<circle cx="${(20+R()*60).toFixed(1)}" cy="${y.toFixed(1)}" r="${(0.7+R()*1.6).toFixed(1)}" fill="${R()<.5?dark:light}" opacity=".75"/>`; }
+    if(L.oil) fill+=`<path d="M17 ${(top+1).toFixed(1)}H83V${(top+5).toFixed(1)}H17Z" fill="#ffc861" opacity=".45"/>`;
+    fill+="</g>";
+  }
+  jar.innerHTML=`<svg viewBox="0 0 100 118" aria-hidden="true"><ellipse cx="50" cy="110" rx="37" ry="4" fill="currentColor" opacity=".1"/>`+
+    `<path d="${body}" fill="#eef3f2" fill-opacity="${e.status==="wish"?0:.55}"/>${fill}`+
+    `<path d="${body}" fill="none" stroke="#8d9a98" stroke-width="2" ${e.status==="wish"?'stroke-dasharray="4 3"':""}/>`+
+    `<path d="M24 43V96" stroke="#fff" opacity=".55" stroke-width="4" stroke-linecap="round"/><path d="M31 40V60" stroke="#fff" opacity=".35" stroke-width="2" stroke-linecap="round"/>`+
+    `<rect x="26" y="15" width="48" height="14" rx="5" fill="${fam}"/><rect x="26" y="15" width="48" height="14" rx="5" fill="#000" opacity=".12"/><ellipse cx="50" cy="15" rx="24" ry="5" fill="${fam}"/><ellipse cx="50" cy="15" rx="24" ry="5" fill="#fff" opacity=".18"/>`+
+    `<rect x="29" y="58" width="42" height="26" rx="2" fill="#f7f1e2" stroke="#b8a989"/><path d="M41 67c4 1.6 8-.8 10.5-5.6-.8 8-4.8 13.6-12 12.8 3.2-1.6 4-4 1.5-7.2Z" fill="#c3301d"/><path d="m50.5 62 2.4-3.2" stroke="#3f7d3a" stroke-width="1.8"/><path d="M36 79H64" stroke="#cdbf9f"/>`+
+    (e.status==="tried"?'<circle cx="80" cy="39" r="10" fill="#f4eddc" stroke="#817967"/><path d="m75 39 3 3 6-7" fill="none" stroke="#716b60" stroke-width="2"/>':"")+`</svg>`;
   jar.append(el("span",{class:"shelf-jar-name",text:s.name.replace(/^Sambal\s+/i,"")}),el("span",{class:"shelf-jar-detail",text:e.status==="have"&&e.grams!==null?`${e.grams} g`:e.rating?"★".repeat(e.rating):SHELF_STATUS[e.status]}));return jar;
 }
 function renderShelf(){
