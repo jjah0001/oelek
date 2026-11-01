@@ -74,7 +74,9 @@ function shelfJar(s,e){
     `<rect x="26" y="15" width="48" height="14" rx="5" fill="${fam}"/><rect x="26" y="15" width="48" height="14" rx="5" fill="#000" opacity=".12"/><ellipse cx="50" cy="15" rx="24" ry="5" fill="${fam}"/><ellipse cx="50" cy="15" rx="24" ry="5" fill="#fff" opacity=".18"/>`+
     `<rect x="29" y="58" width="42" height="26" rx="2" fill="#f7f1e2" stroke="#b8a989"/><path d="M41 67c4 1.6 8-.8 10.5-5.6-.8 8-4.8 13.6-12 12.8 3.2-1.6 4-4 1.5-7.2Z" fill="#c3301d"/><path d="m50.5 62 2.4-3.2" stroke="#3f7d3a" stroke-width="1.8"/><path d="M36 79H64" stroke="#cdbf9f"/>`+
     (e.status==="tried"?'<circle cx="80" cy="39" r="10" fill="#f4eddc" stroke="#817967"/><path d="m75 39 3 3 6-7" fill="none" stroke="#716b60" stroke-width="2"/>':"")+`</svg>`;
-  jar.append(el("span",{class:"shelf-jar-name",text:s.name.replace(/^Sambal\s+/i,"")}),el("span",{class:"shelf-jar-detail",text:e.status==="have"&&e.grams!==null?`${e.grams} g`:e.rating?"★".repeat(e.rating):SHELF_STATUS[e.status]}));return jar;
+  // under the jar: only what the visitor recorded (weight or stars); the row heading already says the status
+  const detail=e.status==="have"&&e.grams!==null?`${e.grams} g`:e.rating?"★".repeat(e.rating):"";
+  jar.append(el("span",{class:"shelf-jar-name",text:s.name.replace(/^Sambal\s+/i,"")}),...(detail?[el("span",{class:"shelf-jar-detail",text:detail})]:[]));return jar;
 }
 function renderShelf(){
   const entries=Object.entries(shelfItems).map(([id,e])=>({s:byId[id],e}));
