@@ -1,7 +1,7 @@
 "use strict";
 // Hash routing and boot.
 // ================= pages =================
-const VIEWS=["beranda","peta","shelf","rempah","padanan","kuis"];
+const VIEWS=["beranda","peta","shelf","rempah","padanan","kuis","tentang"];
 function go(v,push=true){
   if(v==="kenal"){ go("beranda",push); $("#kenal").scrollIntoView(); return; } // old "What is sambal" links
   if(!VIEWS.includes(v)) v="beranda";
