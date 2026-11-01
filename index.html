@@ -15,6 +15,7 @@
 
 <canvas id="kampung" aria-hidden="true"></canvas>
 <div class="veil" aria-hidden="true"></div>
+<div class="preview" id="preview" hidden><span id="previewText"></span><button type="button" id="previewPeek" aria-pressed="false">Just the kampung</button><a id="previewBack" href="./">Back to now</a></div>
 <button class="suara" id="suara" type="button" aria-pressed="false" aria-label="Kampung sounds" title="Kampung sounds">
   <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor" stroke="none"/><path class="on" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="off" d="M17 9.5l5 5M22 9.5l-5 5"/></svg></span>
 </button>
@@ -246,17 +247,13 @@
       <p>Behind the atlas is a kampung on the slopes of Merapi, looking north across the sawah to the volcano and Merbabu. It follows <b>your</b> clock: roosters and mist at subuh, egrets over the padi in the morning, cicadas at midday, kites in the afternoon, bats at dusk, then crickets, frogs, the tokek and fireflies, with Merapi glowing red in the dark. After dark the whole page turns to its night colours. The moon shows its real phase, and on some afternoons in the wet season it rains.</p>
       <p>The kampung also keeps the year. The sawah goes through three crops: ploughing, tandur, green padi, gold padi, harvest and burning the jerami. After the second harvest there is merti desa, with a kirab of gunungan and wayang kulit all night, and once a year the Kraton's Labuhan procession climbs the slope of Merapi.</p>
       <p>Like most villages in Java, its neighbours are a masjid, a gereja, a klenteng and a pura, and each keeps its own days: 17 Agustus with flags, tirakatan and panjat pinang; Ramadan, malam takbiran, Lebaran and Idul Adha; Sekaten and the quiet of malam 1 Suro; Natal and Paskah; the ogoh-ogoh before Nyepi; lanterns rising from Borobudur on Waisak night; Imlek and Cap Go Meh with the barongsai; and fireworks for the new year.</p>
-      <p class="about-try">See another moment:
-        <a href="?jam=5.5&amp;hujan=0#tentang">subuh</a>
-        <a href="?jam=16.2&amp;hujan=0#tentang">sore</a>
-        <a href="?jam=15&amp;hujan=1#tentang">hujan</a>
-        <a href="?jam=21&amp;hujan=0#tentang">malam</a>
-        <a href="?tgl=2027-03-09&amp;jam=20&amp;hujan=0#tentang">malam takbiran</a>
-        <a href="?tgl=2027-08-17&amp;jam=10&amp;hujan=0#tentang">17 Agustus</a>
-        <a href="?tgl=2027-05-20&amp;jam=21&amp;hujan=0#tentang">Waisak</a>
-        <a href="?tgl=2027-02-06&amp;jam=10#tentang">Imlek</a>
-        <a href="./#tentang">back to now</a>
-      </p>
+      <p class="about-try"><a href="#saksikan">See every moment you can visit ↓</a></p>
+    </div>
+
+    <div class="about-block" id="saksikan">
+      <h3>Moments to visit</h3>
+      <p>Open any of these to see and hear the kampung at another time. The page keeps running from there, so the clock moves on as you watch. Tap anywhere once for sound.</p>
+      <div class="moments" id="moments"></div>
     </div>
 
     <div class="about-block">
@@ -330,6 +327,7 @@
 <script src="js/data/quiz.js"></script>
 <script src="js/data/social-icons.js"></script>
 <script src="js/data/hari-besar.js"></script>
+<script src="js/data/moments.js"></script>
 <script src="js/core.js"></script>
 <script src="js/art.js"></script>
 <script src="js/dialog.js"></script>

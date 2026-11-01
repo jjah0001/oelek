@@ -18,6 +18,7 @@ js/data/
   spices.js                spice primer (SPICES)
   quiz.js                  quiz questions and weights (QUIZ)
   social-icons.js          brand marks for the share buttons (Simple Icons, CC0), as data URIs
+  moments.js               moments listed on About us, with English explanations
   hari-besar.js            holiday dates the kampung celebrates (update yearly from the SKB)
 js/
   core.js                  helpers and the combined index (ALL, byId)
@@ -43,7 +44,7 @@ The scripts share globals and must load in the order listed in `index.html`: dat
 
 ## Notes
 
-- **About us (`#tentang`):** what Oelek is for, the sources and notes (moved from the footer), where its sambals come from, the kampung backdrop and its year, the sounds (and why voices such as the adzan are not imitated), Claude, and privacy, with links to preview other times and hari besar.
+- **About us (`#tentang`):** what Oelek is for, the sources and notes (moved from the footer), where its sambals come from, the kampung backdrop and its year, the sounds (and why voices such as the adzan are not imitated), Claude, and privacy, with links to preview other times and hari besar. Its "Moments to visit" lists 42 moments (times of day, the rice year, village and palace customs and every holiday), each explained in plain English for readers who know no Indonesian (`js/data/moments.js`). Opening one shows a strip naming the moment, a "Just the kampung" button that fades the page away, and "Back to now".
 - **Map:** every sambal is on the map. Each province ring counts its sambals, and a dashed ring west of Sumatra holds the sambals made all over Indonesia. Zoomed in, sambals with a recorded place get a solid pin there; those recorded only by province get a hollow pin, grouped in a tidy block at the province centre rather than at an invented spot.
 - **Dish pairing:** inside claude.ai the pairing asks Claude directly. Elsewhere, including GitHub Pages, it asks Claude through the `oelek-pair` Cloudflare Worker in `worker/`. If the Worker is busy or unavailable, the page falls back to its built-in keyword matcher.
 - **Recipes:** every sambal card has a recipe written by Claude on request (the "✦ Recipe" button). It is built from the card's region, ingredients and notes and written in the voice of an oma from the sambal's own region who is known for that sambal, for the visitor's country (Cloudflare's country-level `request.cf.country` in the Worker, or the browser's language region inside claude.ai; nothing finer is read or stored), with that country's units, substitutes and where to find Indonesian ingredients. It is kept in the visitor's browser once written, and cached by the Worker's `/recipe` route for 30 days per sambal and country, so each one is generated once. Each recipe says how long the sambal keeps at room temperature, in the fridge and in the freezer, and when to throw it out; fermented and fish-based sambals also get a food-safety note.
