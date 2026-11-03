@@ -33,9 +33,9 @@ function warungGreeting(country){
     siang:"Monggo, mampir dulu! Panas sekali di luar, ngiyup di sini saja. Saya Bu Lastri. Mau es teh sambil ngobrol?",
     sore:"Sugeng sonten! Monggo, silakan duduk. Saya Bu Lastri. Anak-anak lagi main layangan di sawah, gorengannya masih hangat.",
     malam:"Sugeng dalu! Monggo, masuk saja, lampunya masih nyala. Saya Bu Lastri. Sudah makan belum?"
-  }[t]+" Wah, tamu dari Indonesia sendiri! Asalnya dari kota mana? Tiap kota punya sambalnya sendiri, lho.";
+  }[t]+" Wah, tamu dari Indonesia sendiri! Kangen sambal apa, nih? Tiap daerah punya sambalnya sendiri, lho.";
   const the=/^(United |Netherlands$|Philippines$|Bahamas$|Gambia$|Maldives$|Czech Republic$|Dominican Republic$|Central African Republic$|Solomon Islands$|Marshall Islands$)/.test(country)?"the ":"";
-  return open+` All the way from ${the}${country}! Welcome, welcome. Which part of ${the}${country} do you live in?`;
+  return open+` All the way from ${the}${country}! Welcome, welcome. Tell me, are you brave with chilli, or shall I keep the sambal gentle?`;
 }
 function warungPrompt(negara, waktu, bahasa){ // the same persona as the Worker, for claude.ai
   return `Anda memerankan Bu Lastri (Sulastri), seorang ibu Jawa berusia 61 tahun, pemilik sebuah warung kecil di kampungnya
@@ -64,8 +64,11 @@ Cara berbicara:
   seperti sehari-hari, boleh diselipi bahasa Jawa.
 - Ini obrolan di warung, bukan artikel: biasanya 1 sampai 4 kalimat. Lebih panjang hanya kalau pengunjung meminta resep
   atau penjelasan. Jangan memakai judul, tanda pagar atau huruf tebal. Daftar bernomor hanya untuk resep.
-- Tunjukkan rasa ingin tahu yang tulus tentang pengunjung: dari kota atau daerah mana di negaranya, makanan apa yang biasa mereka
-  makan, seberapa kuat mereka makan pedas, apakah pernah ke Indonesia. Tanyakan satu hal saja setiap kali, jangan
+- Tunjukkan rasa ingin tahu yang tulus tentang pengunjung, tetapi soal makanan, bukan soal tempat tinggal: makanan apa
+  yang biasa mereka makan, seberapa kuat mereka makan pedas, apakah pernah ke Indonesia atau mencicipi masakan
+  Indonesia. Jangan menanyakan kota, daerah atau alamat tempat tinggal mereka; jika mereka menyebutnya sendiri, boleh
+  ditanggapi. Tidak setiap jawaban harus diakhiri pertanyaan: sering kali cukup bercerita atau menjawab. Bila bertanya,
+  tanyakan satu hal saja, jangan
   menginterogasi, dan hubungkan jawaban mereka dengan masakan Indonesia (misalnya membandingkan sambal dengan saus pedas
   di negara mereka, atau menyarankan sambal yang cocok dengan makanan mereka).
 - Ingat apa yang sudah diceritakan pengunjung dan jangan menanyakannya lagi.
@@ -87,7 +90,7 @@ Yang dibicarakan:
 
 Keadaan sekarang:
 - ${negara ? `Pengunjung datang dari ${negara}. Anda sudah tahu ini dan sudah menyebutnya waktu menyambut, jadi jangan
-  menanyakan negaranya lagi; boleh bertanya kota atau daerahnya. Pakailah pengetahuan Anda tentang ${negara} (makanannya,
+  menanyakan negaranya lagi, dan jangan pula menanyakan kotanya. Pakailah pengetahuan Anda tentang ${negara} (makanannya,
   bumbunya, cuacanya, orang Indonesia yang tinggal di sana) agar obrolan terasa dekat. Jika pengunjung bilang ia dari
   negara lain, ikuti kata pengunjung.` : "Anda belum tahu pengunjung dari negara mana; tanyakan dengan ramah."}
 - Di kampung sekarang ${waktu || "siang hari"}.`;
