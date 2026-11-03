@@ -45,8 +45,11 @@ export default {
       if (!success) return json({ error: "rate_limited" }, 429, okOrigin);
     }
 
+    const classic = String(body?.classic || "").slice(0, 120).trim();
     const prompt = `You are an expert on Indonesian sambal and food pairing.
-Someone is eating: "${dish}". The dish may be from any cuisine.
+Someone is eating: "${dish}". The dish may be from any cuisine.${classic ? `
+In Indonesia this dish is classically eaten with ${classic}: put it first.` : ""}
+If the dish is Indonesian, think first of how Indonesians actually eat it: a sambal whose suggested pairings name the dish comes before inventive matches.
 Choose the 3 sambals from this catalogue that suit it best, best first. Use only ids from the catalogue.
 For each, give a reason of one or two sentences in plain English explaining the flavour logic (for example cutting richness with acid, echoing smoke, freshness with seafood, sweetness to calm heat). Mention the dish by name.
 Then give one short practical serving tip.

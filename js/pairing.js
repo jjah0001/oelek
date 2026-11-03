@@ -22,6 +22,20 @@ const RULES=[
  [/sweet|kid|child|mild|gentle|not spicy/,{bajak:3,pecel:3,petis:2}],
  [/taco|mexican|pizza|pasta|italian/,{dabu:3,matah:2,bawang:1}]
 ];
+// Classic pairings: the sambal Indonesians actually eat with these dishes. They always come first, whoever picks the rest.
+const CLASSIC=[
+ [/bakmi|bakmie|mie ayam|mi ayam|mie bakso|bakso|baso|meatball|cuanki|soto(?! lamongan)|chicken noodle/,"mie-ayam","the sambal in the jar on every bakmi, mie ayam, bakso and soto cart"],
+ [/soto lamongan|lontong balap|tahu campur/,"l147","the candlenut sambal East Java spoons into soto Lamongan"]
+];
+function classicFor(dish){ const t=dish.toLowerCase(); const c=CLASSIC.find(([re,id])=>re.test(t)&&byId[id]); return c?{id:c[1],what:c[2]}:null; }
+function withClassic(res,dish){
+  const c=classicFor(dish); if(!c||!res||!Array.isArray(res.picks)||!res.picks.length) return res;
+  const picks=res.picks.filter(p=>p&&p.id!==c.id);
+  const had=res.picks.find(p=>p&&p.id===c.id);
+  const s=byId[c.id];
+  const reason=had&&had.reason ? had.reason : `This is the classic: ${c.what}. Boiled rather than fried, it melts into the broth as clean heat without changing the taste of the soup.`;
+  return {...res,picks:[{id:c.id,reason},...picks].slice(0,3)};
+}
 function localPairs(dish){
   const t=dish.toLowerCase(); const score={};
   for(const [re,add] of RULES) if(re.test(t)) for(const[k,v] of Object.entries(add)) score[k]=(score[k]||0)+v;
@@ -29,8 +43,8 @@ function localPairs(dish){
   const ranked=Object.entries(score).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
   for(const d of ["terasi","dabu","bajak"]) if(!ranked.includes(d)) ranked.push(d);
   const why={raw:"Fresh and sharp, it lifts the dish without weighing it down.",boiled:"Gentle and clean, it adds heat without weighing the dish down.",cooked:"Its deeper, fried flavour stands up to the dish and adds savouriness.",fermented:"Sour, pungent depth gives the dish a bold contrast."};
-  return {picks:ranked.slice(0,3).map(id=>({id,reason:why[byId[id].style]+" Suggested alongside "+byId[id].serve.slice(0,2).join(" and ").toLowerCase()+"."})),
-          tip:"Picked by the built-in matcher. Open each profile to see what goes in."};
+  return withClassic({picks:ranked.slice(0,3).map(id=>({id,reason:why[byId[id].style]+" Suggested alongside "+byId[id].serve.slice(0,2).join(" and ").toLowerCase()+"."})),
+          tip:"Picked by the built-in matcher. Open each profile to see what goes in."},dish);
 }
 function renderPicks(res, note){
   const valid=(res.picks||[]).filter(p=>p&&byId[p.id]).slice(0,3);
@@ -55,7 +69,9 @@ $("#askForm").addEventListener("submit", async e=>{
   $("#askBtn").disabled=true; $("#stopBtn").hidden=false;
   $("#askStatus").textContent="Asking Claude…"; $("#picks").replaceChildren();
   const prompt=`You are Indonesia's 0.1% top restauranteur who has opened several fine dining restaurants across Jakarta, Surabaya and Bali serving local Indonesian food while also possessing strong knowledge in Chinese, Japanese and European cuisines.
-Someone is eating: "${dish.slice(0,300)}".
+Someone is eating: "${dish.slice(0,300)}".${classicFor(dish)?`
+In Indonesia this dish is classically eaten with ${byId[classicFor(dish).id].name} (id ${classicFor(dish).id}): put it first.`:""}
+If the dish is Indonesian, think first of how Indonesians actually eat it: a sambal whose suggested pairings name the dish comes before inventive matches.
 Choose the 3 sambals from this catalogue that suit it best, best first. Use only ids from the catalogue.
 For each, give a reason of one or two sentences in plain English explaining the flavour logic (for example cutting richness with acid, echoing smoke, freshness with seafood, sweetness to calm heat). Mention the dish by name.
 Then give one short practical serving tip.
@@ -67,7 +83,7 @@ ${catalogue}
 Reply with only JSON in this shape:
 {"picks":[{"id":"matah","reason":"..."}],"tip":"..."}`;
   const viaProxy=async()=>{
-    const r=await fetch(PAIR_PROXY,{method:"POST",headers:{"content-type":"application/json"},signal:ctl.signal,body:JSON.stringify({dish,catalogue})});
+    const r=await fetch(PAIR_PROXY,{method:"POST",headers:{"content-type":"application/json"},signal:ctl.signal,body:JSON.stringify({dish,catalogue,classic:classicFor(dish)?byId[classicFor(dish).id].name+" (id "+classicFor(dish).id+")":""})});
     if(r.status===429) throw {code:"rate_limited"};
     if(!r.ok) throw {code:"upstream",status:r.status};
     return await r.json();
@@ -84,7 +100,7 @@ Reply with only JSON in this shape:
     throw {code:"no_ai"};
   };
   try{
-    const res=await ask();
+    const res=withClassic(await ask(),dish);
     renderPicks(res||{}, "Suggested by Claude from the atlas.");
   }catch(err){
     const code=err&&(err.code||err.name);
