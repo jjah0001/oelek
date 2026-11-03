@@ -36,7 +36,7 @@ function smoothPath(pts){
 }
 // per-province counts by family (listed entries have unknown family)
 const provStats = {};
-for(const c of [...Object.keys(PROV),ACROSS]) provStats[c]={raw:0,cooked:0,fermented:0,unknown:0,total:0};
+for(const c of [...Object.keys(PROV),ACROSS]) provStats[c]={raw:0,boiled:0,cooked:0,fermented:0,unknown:0,total:0};
 // sambals made all over Indonesia get their own ring out in the Indian Ocean, west of Sumatra
 const ACROSS_AT=[97.2,-6.6];
 for(const s of S){ if(!provStats[s.prov]) continue; provStats[s.prov][s.style]++; provStats[s.prov].total++; }
@@ -173,7 +173,7 @@ function markPin(id,on){ const m=gMk&&gMk.querySelector(`.mk[data-id="${CSS.esca
 $("#mapBack").addEventListener("click",zoomOut);
 function famBar(st){
   const bar=el("div",{class:"bar2"});
-  for(const k of ["raw","cooked","fermented","unknown"]){ if(!st[k]) continue; const i=el("i"); i.style.width=(st[k]/st.total*100)+"%"; i.style.background=k==="unknown"?"var(--line)":`var(--${k})`; i.title=`${k}: ${st[k]}`; bar.append(i); }
+  for(const k of ["raw","boiled","cooked","fermented","unknown"]){ if(!st[k]) continue; const i=el("i"); i.style.width=(st[k]/st.total*100)+"%"; i.style.background=k==="unknown"?"var(--line)":`var(--${k})`; i.title=`${k}: ${st[k]}`; bar.append(i); }
   return bar;
 }
 function renderProv(code){
@@ -193,7 +193,7 @@ function renderProv(code){
         el("button",{class:"btn ghost small",type:"button",text:"All of Indonesia",onclick:()=>{ gBub.querySelectorAll(".bub.sel").forEach(b=>b.classList.remove("sel")); renderProv(null); syncGridToMap(null); }})));
     return;
   }
-  const fams=["raw","cooked","fermented"].filter(k=>st[k]).map(k=>`${st[k]} ${STYLE[k].en.toLowerCase()}`).join(", ");
+  const fams=["raw","boiled","cooked","fermented"].filter(k=>st[k]).map(k=>`${st[k]} ${STYLE[k].en.toLowerCase()}`).join(", ");
   P.replaceChildren(
     el("p",{class:"eyebrow",text:`${st.total} sambal${st.total===1?"":"s"} recorded`}),
     el("h3",{text:PROV[code][0]}), famBar(st),

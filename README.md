@@ -10,7 +10,7 @@ Plain HTML, CSS and JavaScript with no build step (fonts load from Google Fonts)
 index.html                 page markup; loads the scripts below in order
 style.css
 js/data/
-  sambals.js               flavour axes (DIMS), the 34 core profiles (S) and families (STYLE)
+  sambals.js               flavour axes (DIMS), the 34 core profiles (S) and the four families (STYLE: raw, boiled, cooked, fermented)
   sambals-regional.js      the 207 regional profiles l0–l206, pushed onto S
   sambals-additional.js    16 further documented profiles, pushed onto S
   sources.js               citation keys and every linked source URL (SRC)

@@ -4640,7 +4640,7 @@ S.push(
   "prov": "AC",
   "region": "Aceh",
   "locationAccuracy": "province",
-  "style": "cooked",
+  "style": "boiled",
   "heat": 5,
   "p": [
     5,
@@ -4905,7 +4905,7 @@ S.push(
   "prov": "SB",
   "region": "West Sumatra",
   "locationAccuracy": "province",
-  "style": "cooked",
+  "style": "boiled",
   "heat": 3,
   "p": [
     3,
@@ -5084,7 +5084,7 @@ S.push(
   "prov": "SB",
   "region": "Bukittinggi, West Sumatra",
   "locationAccuracy": "province",
-  "style": "cooked",
+  "style": "boiled",
   "heat": 3,
   "p": [
     3,
@@ -5874,7 +5874,7 @@ S.push(
   "prov": "JB",
   "region": "West Java",
   "locationAccuracy": "province",
-  "style": "cooked",
+  "style": "boiled",
   "heat": 2,
   "p": [
     2,
@@ -6510,7 +6510,7 @@ S.push(
   "prov": "JI",
   "region": "East Java",
   "locationAccuracy": "province",
-  "style": "cooked",
+  "style": "boiled",
   "heat": 3,
   "p": [
     3,

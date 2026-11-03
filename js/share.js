@@ -7,7 +7,7 @@ let LAST_RESULT=null;                 // {top, you, pct}; set by renderResult in
 const SITE_URL="https://jjah0001.github.io/oelek/";
 const QUIZ_URL=SITE_URL+"#kuis";
 const CARD_C={paper:"#EEF0E6",card:"#F9FAF4",ink:"#1B2140",ink2:"#5A6075",rule:"#D3D7C6",chili:"#C3301D",nila:"#2E3672",soga:"#7A4A26",
-  raw:"#4A6E3A",cooked:"#7A4A26",fermented:"#2E3672"};
+  raw:"#4A6E3A",boiled:"#2C7A7B",cooked:"#7A4A26",fermented:"#2E3672"};
 
 // ---------- little toast for share feedback ----------
 let toastT=0;

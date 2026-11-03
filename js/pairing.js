@@ -27,7 +27,7 @@ function localPairs(dish){
   for(const s of S) for(const w of s.serve) for(const word of w.toLowerCase().split(/[^a-z]+/)) if(word.length>3 && t.includes(word)) score[s.id]=(score[s.id]||0)+2;
   const ranked=Object.entries(score).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
   for(const d of ["terasi","dabu","bajak"]) if(!ranked.includes(d)) ranked.push(d);
-  const why={raw:"Fresh and sharp, it lifts the dish without weighing it down.",cooked:"Its deeper, fried flavour stands up to the dish and adds savouriness.",fermented:"Sour, pungent depth gives the dish a bold contrast."};
+  const why={raw:"Fresh and sharp, it lifts the dish without weighing it down.",boiled:"Gentle and clean, it adds heat without weighing the dish down.",cooked:"Its deeper, fried flavour stands up to the dish and adds savouriness.",fermented:"Sour, pungent depth gives the dish a bold contrast."};
   return {picks:ranked.slice(0,3).map(id=>({id,reason:why[byId[id].style]+" Suggested alongside "+byId[id].serve.slice(0,2).join(" and ").toLowerCase()+"."})),
           tip:"Picked by the built-in matcher. Open each profile to see what goes in."};
 }

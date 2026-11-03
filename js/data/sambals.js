@@ -60,9 +60,9 @@ const S = [
   ing:["Kecombrang (torch ginger flower)","Red chilli","Shallot","Garlic","Makrut lime leaf","Salt"],serve:["Grilled fish","Lalapan","Fried chicken"],
   note:"Torch ginger buds are sliced into the chilli, giving a floral, gently sour perfume.",
   src:["P","W"],persona:["The Romantic","Fragrant, a little dreamy, and better than people expect."]},
- {id:"tumpang",name:"Sambal Tumpang",prov:"JT",region:"Central Java",lon:110.75,lat:-7.25,style:"cooked",heat:2,p:[2,4,0,1,0,5],
+ {id:"tumpang",name:"Sambal Tumpang",prov:"JT",region:"Central Java",lon:110.75,lat:-7.25,style:"boiled",heat:2,p:[2,4,0,1,0,5],
   ing:["Overripe tempeh (tempe semangit)","Chilli","Spices"],serve:["Boiled vegetables","Rice","Crackers"],
-  note:"Made from tempeh left to over-ferment until pungent, then cooked into a thick sauce for vegetables. Nothing goes to waste.",
+  note:"Made from tempeh left to over-ferment until pungent. It is boiled with chilli and aromatics, mashed, then simmered into a thick sauce for vegetables. Nothing goes to waste.",
   src:["P","W"],persona:["The Resourceful One","You can make something good out of anything."]},
  {id:"pecel",name:"Sambal Pecel",prov:"JI",region:"East Java",lon:111.5,lat:-7.65,style:"cooked",heat:2,p:[2,0,1,4,2,5],
   ing:["Fried peanuts","Red chilli","Garlic","Kencur","Makrut lime leaf","Palm sugar"],serve:["Pecel vegetables","Rice","Rempeyek crackers","Fried tempeh"],
@@ -144,7 +144,9 @@ const S = [
 const STYLE = {
  raw:{examples:["matah","dabu","terasi"],label:"Raw · mentah",en:"Raw",color:"var(--raw)",sum:"Pounded or sliced fresh, eaten the same day.",
   body:"Raw sambals are sharp, bright and aromatic. The chilli is never cooked, so its fruitiness and full heat come through. Some are pounded to a coarse paste; others, like matah and dabu-dabu, are sliced and dressed so they eat like a salsa. Make them close to mealtime: they lose their snap within a day."},
- cooked:{examples:["balado","roa","pecel"],label:"Cooked · masak",en:"Cooked",color:"var(--cooked)",sum:"Fried after pounding; deeper, keeps for days.",
+ boiled:{examples:["tumpang","l147","l115"],label:"Boiled · rebus",en:"Boiled",color:"var(--boiled)",sum:"Boiled, steamed or simmered in water; soft and clean.",
+  body:"Boiled sambals cook the chilli in water instead of oil. The chillies, shallots and tomatoes are boiled or steamed until soft and then ground, or simmered straight into a loose sauce, as in Minangkabau cangkuak or Sambal Lado Uap steamed beside the rice. With no frying they taste clean and gentle, sit lighter on the stomach, and suit soups, steamed fish and boiled vegetables. Keep them in the fridge and eat them within a few days."},
+ cooked:{examples:["balado","roa","pecel"],label:"Cooked · masak",en:"Cooked",color:"var(--cooked)",sum:"Fried or sautéed in oil; deeper, keeps for days.",
   body:"Cooked sambals are pounded first and then fried in oil, sometimes for a long time. The heat rounds off, sugars caramelise and candlenut, peanuts or smoked fish add body. These are the sambals that live in a jar by the stove."},
  fermented:{examples:["tempoyak","tauco","rusip"],label:"Fermented · fermentasi",en:"Fermented",color:"var(--fermented)",sum:"Built on a fermented base for sourness and funk.",
   body:"Fermented sambals start from something left to sour: durian in tempoyak, anchovies in rusip, tiny shrimp in cencalok, soybeans in tauco, fruit skin in mandai. They are pungent, tangy and keep well. Terasi is itself fermented, so in a sense nearly every sambal carries some fermentation."}
