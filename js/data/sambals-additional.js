@@ -1,5 +1,5 @@
 "use strict";
-// Sixteen additional documented profiles; descriptive IDs remain stable for shelves and ratings.
+// Nineteen additional documented profiles; descriptive IDs remain stable for shelves and ratings.
 // Recipe locations are not claims of exclusive origin.
 S.push(
 {
@@ -710,6 +710,141 @@ S.push(
   "sourceRecord": {
     "ingredient": "Sambal belut (eel)",
     "source": "https://www.waroengss.com/article/products-list"
+  }
+},
+{
+  "id": "mie-ayam",
+  "name": "Sambal Mie Ayam",
+  "prov": "ID",
+  "region": "Across Indonesia — noodle and meatball stalls",
+  "locationAccuracy": "national",
+  "style": "boiled",
+  "heat": 5,
+  "p": [
+    5,
+    0,
+    0,
+    0,
+    3,
+    1
+  ],
+  "ing": [
+    "Bird’s-eye chilli",
+    "Red curly chilli",
+    "Garlic",
+    "The chilli cooking water",
+    "Salt",
+    "A pinch of stock powder"
+  ],
+  "serve": [
+    "Mie ayam (chicken noodles)",
+    "Bakso (meatball soup)",
+    "Soto"
+  ],
+  "note": "The thin, fiery sambal in the jar on every bakmi, mie ayam and bakso cart. The chillies and garlic are boiled until soft, blended with some of their own cooking water, then simmered again with salt. Boiling keeps it bright and clean rather than oily, so a spoonful disappears into the broth as heat without changing the soup's taste. Its fresh, watery body also means it sours within days.",
+  "src": [
+    "https://cookpad.com/id/resep/15752449",
+    "https://www.popbela.com/lifestyle/food/resep-sambal-bakso-kampung-pedas-00-rhrd4-nrb7q0",
+    "https://www.fimela.com/food/read/5440680/resep-sambal-soto-4-bahan"
+  ],
+  "persona": [
+    "The Regular",
+    "Unfussy and always there. People don't notice you until you're missing."
+  ],
+  "profileBasis": "Source-informed representative version; pairings and flavour scores are editorial.",
+  "sourceRecord": {
+    "ingredient": "Boiled bird’s-eye chilli",
+    "source": "https://cookpad.com/id/resep/15752449"
+  }
+},
+{
+  "id": "tomat-rebus",
+  "name": "Sambal Terasi Tomat Rebus",
+  "prov": "ID",
+  "region": "Java — home kitchens",
+  "locationAccuracy": "national",
+  "style": "boiled",
+  "heat": 3,
+  "p": [
+    3,
+    3,
+    3,
+    2,
+    3,
+    1
+  ],
+  "ing": [
+    "Tomato",
+    "Bird’s-eye chilli",
+    "Red chilli",
+    "Shallot",
+    "Garlic",
+    "Terasi (shrimp paste)",
+    "Salt",
+    "Palm sugar"
+  ],
+  "serve": [
+    "Sayur bening (clear vegetable soup)",
+    "Fried egg",
+    "Steamed eggplant and greens"
+  ],
+  "note": "A gentle everyday sambal: tomatoes, chillies, shallot, garlic and terasi are boiled together until soft, then pounded in the cobek with salt and a little sugar. Nothing is fried, so it tastes fresh and tomatoey rather than rich, and it suits a light home meal of clear vegetable soup and an egg.",
+  "src": [
+    "https://www.fimela.com/food/read/5425194/resep-sambal-terasi-tomat-rebus-yang-gurih-dan-segar",
+    "https://www.fimela.com/lifestyle/read/4155117/4-pilihan-sambal-rebus-yang-mudah-dibuat"
+  ],
+  "persona": [
+    "The Homebody",
+    "Warm and easy to be around. You make an ordinary day feel looked after."
+  ],
+  "profileBasis": "Source-informed representative version; pairings and flavour scores are editorial. A recipe location does not imply an exclusive origin.",
+  "sourceRecord": {
+    "ingredient": "Boiled tomato",
+    "source": "https://www.fimela.com/food/read/5425194/resep-sambal-terasi-tomat-rebus-yang-gurih-dan-segar"
+  }
+},
+{
+  "id": "hijau-rebus",
+  "name": "Sambal Cabai Hijau Rebus",
+  "prov": "ID",
+  "region": "Java — home kitchens",
+  "locationAccuracy": "national",
+  "style": "boiled",
+  "heat": 2,
+  "p": [
+    2,
+    2,
+    2,
+    0,
+    4,
+    1
+  ],
+  "ing": [
+    "Green chilli",
+    "Green bird’s-eye chilli",
+    "Green tomato",
+    "Shallot",
+    "Garlic",
+    "Terasi (shrimp paste)",
+    "Salt"
+  ],
+  "serve": [
+    "Fried chicken",
+    "Grilled fish",
+    "Tempeh and tofu"
+  ],
+  "note": "Green chillies, green tomato, shallot and garlic are boiled until they slump, then roughly pounded with toasted terasi and salt. Boiling tames the green chilli's raw edge and keeps its grassy colour, so this is a milder, softer cousin of the fried green sambals.",
+  "src": [
+    "https://www.fimela.com/lifestyle/read/4155117/4-pilihan-sambal-rebus-yang-mudah-dibuat"
+  ],
+  "persona": [
+    "The Calm One",
+    "Soft-spoken and green at heart. You cool the room without leaving it."
+  ],
+  "profileBasis": "Source-informed representative version; pairings and flavour scores are editorial. A recipe location does not imply an exclusive origin.",
+  "sourceRecord": {
+    "ingredient": "Boiled green chilli",
+    "source": "https://www.fimela.com/lifestyle/read/4155117/4-pilihan-sambal-rebus-yang-mudah-dibuat"
   }
 }
 );

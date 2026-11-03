@@ -15,6 +15,7 @@ const RULES=[
  [/vegetable|salad|greens|spinach|sayur|kangkung|tofu|tahu|tempeh|tempe|vegan|vegetarian/,{pecel:3,plecing:2,cibiuk:2,tumpang:2,goang:1}],
  [/pork|babi|belly|ham|bacon|lamb|goat|duck/,{andaliman:3,embe:3,luat:2,matah:2}],
  [/beef|steak|burger|brisket|sapi|meat/,{luat:2,andaliman:2,balado:2,katokkon:2}],
+ [/bakmi|mie ayam|mi ayam|bakso|meatball|soto|cuanki|chicken noodle/,{"mie-ayam":8,l147:2}],
  [/porridge|congee|bubur|soup|soto|broth|noodle|mie|ramen|pho/,{roa:3,cakalang:2,bawang:2,"teri-lado":1}],
  [/rice|nasi|fried rice/,{terasi:2,bajak:2,"teri-lado":2,roa:1}],
  [/egg|telur|toast|avocado|bread|sandwich|breakfast/,{balado:3,roa:2,dabu:2,bajak:1}],

@@ -1,6 +1,6 @@
 # Oelek
 
-An English atlas of Indonesian sambal: 257 fully profiled sambals across 35 provinces, each illustrated as a card, with a province map, sambal of the day, dish pairing, a spice primer and a "Which sambal are you?" quiz.
+An English atlas of Indonesian sambal: 260 fully profiled sambals across 35 provinces, each illustrated as a card, with a province map, sambal of the day, dish pairing, a spice primer and a "Which sambal are you?" quiz.
 
 Plain HTML, CSS and JavaScript with no build step (fonts load from Google Fonts). Open `index.html` in a browser.
 
@@ -142,6 +142,6 @@ https://supabase.com/docs/guides/getting-started/api-keys.
 
 ## Additional profiles
 
-Sixteen source-linked profiles bring the current catalogue to 257. These are independently documented additions, not a reconstruction of the 257 entries in the UGM survey. Home-recipe locations are labelled as such; flavour scores and suggested pairings remain editorial. Existing IDs and card templates are unchanged.
+Nineteen source-linked profiles bring the current catalogue to 260, including three boiled (rebus) sambals: Sambal Mie Ayam (the jar on every bakmi, mie ayam and bakso cart; Pairing sends noodle, meatball and soto dishes to it first), Sambal Terasi Tomat Rebus and Sambal Cabai Hijau Rebus. These are independently documented additions, not a reconstruction of the 257 entries in the UGM survey. Home-recipe locations are labelled as such; flavour scores and suggested pairings remain editorial. Existing IDs and card templates are unchanged.
 
-For an existing Supabase project, run the **contents** of `supabase/additional-sambals.sql` in its SQL Editor to enable voting on the new profiles. This only registers their IDs and leaves votes untouched. Fresh installations can use the updated `supabase/schema.sql`.
+For an existing Supabase project, run the **contents** of `supabase/additional-sambals.sql` in its SQL Editor to enable voting on the new profiles (re-run it after each addition; it is idempotent). This only registers their IDs and leaves votes untouched. Fresh installations can use the updated `supabase/schema.sql`.

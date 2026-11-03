@@ -321,6 +321,9 @@ insert into public.oelek_sambals(id) values
 ('kenikir'),
 ('jantung-pisang'),
 ('goreng-keong-mas'),
-('gobal-gabul')
+('gobal-gabul'),
+('mie-ayam'),
+('tomat-rebus'),
+('hijau-rebus')
 on conflict do nothing;
 commit;

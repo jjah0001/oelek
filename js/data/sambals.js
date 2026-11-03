@@ -144,7 +144,7 @@ const S = [
 const STYLE = {
  raw:{examples:["matah","dabu","terasi"],label:"Raw · mentah",en:"Raw",color:"var(--raw)",sum:"Pounded or sliced fresh, eaten the same day.",
   body:"Raw sambals are sharp, bright and aromatic. The chilli is never cooked, so its fruitiness and full heat come through. Some are pounded to a coarse paste; others, like matah and dabu-dabu, are sliced and dressed so they eat like a salsa. Make them close to mealtime: they lose their snap within a day."},
- boiled:{examples:["tumpang","l147","l115"],label:"Boiled · rebus",en:"Boiled",color:"var(--boiled)",sum:"Boiled, steamed or simmered in water; soft and clean.",
+ boiled:{examples:["mie-ayam","tumpang","tomat-rebus"],label:"Boiled · rebus",en:"Boiled",color:"var(--boiled)",sum:"Boiled, steamed or simmered in water; soft and clean.",
   body:"Boiled sambals cook the chilli in water instead of oil. The chillies, shallots and tomatoes are boiled or steamed until soft and then ground, or simmered straight into a loose sauce, as in Minangkabau cangkuak or Sambal Lado Uap steamed beside the rice. With no frying they taste clean and gentle, sit lighter on the stomach, and suit soups, steamed fish and boiled vegetables. Keep them in the fridge and eat them within a few days."},
  cooked:{examples:["balado","roa","pecel"],label:"Cooked · masak",en:"Cooked",color:"var(--cooked)",sum:"Fried or sautéed in oil; deeper, keeps for days.",
   body:"Cooked sambals are pounded first and then fried in oil, sometimes for a long time. The heat rounds off, sugars caramelise and candlenut, peanuts or smoked fish add body. These are the sambals that live in a jar by the stove."},
