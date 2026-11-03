@@ -287,7 +287,10 @@ async function warung(body, req, env, okOrigin) {
   const data = await upstream.json();
   const reply = (data?.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
   if (!reply) return json({ error: "empty" }, 502, okOrigin);
-  return json({ reply: reply.slice(0, 4000) }, 200, okOrigin);
+  // nothing from the conversation is cached or kept, here or by the browser
+  const res = json({ reply: reply.slice(0, 4000) }, 200, okOrigin);
+  res.headers.set("cache-control", "no-store");
+  return res;
 }
 
 function negaraOf(req) {
