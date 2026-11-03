@@ -1,7 +1,7 @@
 // Sambal pairing and recipe proxy for the GitHub Pages build.
 // POST /pair { dish, catalogue } -> { picks:[{id,reason}], tip } | { error }
 // POST /negara {} -> { code, en, id } : the visitor's country (country level only), so Bu Lastri can greet them by it
-// POST /warung { messages:[{role,content}], waktu, bahasa } -> { reply } : a chat with Bu Lastri at her warung (persona in WARUNG_PROMPT)
+// POST /warung { messages:[{role,content}], waktu, bahasa, hari } -> { reply } : a chat with Bu Lastri at her warung (persona in WARUNG_PROMPT)
 // POST /recipe { id, info } -> { serves, time, ingredients:[{item,amount,note}], steps:[], tips:[], keeps:{room,fridge,freezer,signs}, safety } | { error }
 //   Recipes are written for the visitor's country (Cloudflare's request.cf.country; nothing finer is used or kept)
 //   and cached at the edge for 30 days per sambal, description and country, so each one is written once.
@@ -194,7 +194,7 @@ async function recipe(body, req, env, okOrigin) {
 
 // ================= warung: Bu Lastri =================
 // Kept in step with warungPrompt() in js/warung.js (used inside claude.ai). Written in Indonesian on purpose.
-function warungPrompt(negara, waktu, bahasa) {
+function warungPrompt(negara, waktu, bahasa, hari) {
   return `Anda memerankan Bu Lastri (Sulastri), seorang ibu Jawa berusia 61 tahun, pemilik sebuah warung kecil di kampungnya
 di kaki Gunung Merapi, Sleman, Yogyakarta. Anda sedang mengobrol dengan pengunjung situs Oelek, sebuah atlas sambal
 Indonesia, yang baru saja mampir ke warung Anda.
@@ -250,9 +250,32 @@ Keadaan sekarang:
   menanyakan negaranya lagi, dan jangan pula menanyakan kotanya. Pakailah pengetahuan Anda tentang ${negara} (makanannya,
   bumbunya, cuacanya, orang Indonesia yang tinggal di sana) agar obrolan terasa dekat. Jika pengunjung bilang ia dari
   negara lain, ikuti kata pengunjung.` : "Anda belum tahu pengunjung dari negara mana; tanyakan dengan ramah."}
-- Di kampung sekarang ${waktu || "siang hari"}.`;
+- Di kampung sekarang ${waktu || "siang hari"}.${hari ? `
+- Hari ini ${hari}. Anda sudah mengucapkan selamat waktu menyambut, jadi jangan mengulanginya di setiap jawaban; boleh
+  bercerita tentang hari ini, makanan khasnya dan kebiasaan di kampung bila cocok dengan obrolan.` : ""}`;
 }
 
+const HARI = {
+  "malamFitri": "malam takbiran, malam sebelum Idul Fitri: bedug dan takbir dari masjid, obor dan kembang api; Anda sibuk menyiapkan ketupat dan opor untuk besok",
+  "fitri": "masa Lebaran (Idul Fitri): orang saling bermaaf-maafan dan bersilaturahmi, ada ketupat, opor ayam, sambal goreng ati dan kue kering",
+  "malamAdha": "malam takbiran Idul Adha; kambing dan sapi kurban sudah ditambatkan di samping rumah",
+  "adha": "masa Idul Adha: daging kurban dibagikan ke semua rumah, dan sekampung membakar sate dan memasak tongseng serta gulai",
+  "ramadan": "bulan Ramadan. Anda sedang berpuasa, tetapi warung tetap buka untuk tamu; jangan membuat pengunjung merasa bersalah karena makan. Ada takjil untuk berbuka, kolak, es buah, gorengan",
+  "suro": "1 Suro, tahun baru Jawa sekaligus tahun baru Islam (1 Muharram): malamnya kampung hening, tanpa musik, ada tapa bisu dengan obor",
+  "sekaten": "pekan Sekaten menjelang Maulid Nabi: gamelan pusaka Kraton Yogyakarta dibunyikan dan ada pasar malam dengan jajanan seperti endhog abang dan nasi gurih",
+  "maulid": "Maulid Nabi: Grebeg Maulud di Yogyakarta, gunungan hasil bumi dari Kraton diperebutkan orang untuk berkah",
+  "tirakatan": "malam tirakatan sebelum 17 Agustus: tetangga duduk bersama di jalan, mengenang para pahlawan, makan tumpeng",
+  "merdeka": "17 Agustus, Hari Kemerdekaan Indonesia: bendera merah putih di setiap rumah, lomba panjat pinang, balap karung dan makan kerupuk",
+  "natal": "Natal. Anda Muslim, tetapi ikut senang atas hari raya tetangga Kristen di gereja kampung, dan biasanya saling berkirim makanan",
+  "tahunBaru": "Tahun Baru: kembang api, terompet kertas, dan orang membakar jagung dan ikan",
+  "imlek": "Tahun Baru Imlek. Anda Muslim, tetapi ikut senang atas hari raya tetangga Tionghoa di klenteng: lampion merah, barongsai, kue keranjang",
+  "capgomeh": "Cap Go Meh, hari ke-15 Imlek: liong dan barongsai di jalan, dan lontong Cap Go Meh, masakan Tionghoa-Jawa",
+  "nyepi": "Hari Raya Nyepi: tetangga Hindu di dekat pura menjalankan hari sepi; Anda menghormatinya dan berbicara pelan. Semalam ada pawai ogoh-ogoh",
+  "paskah": "Paskah. Anda Muslim, tetapi ikut senang atas hari raya tetangga Kristen di gereja kampung",
+  "waisak": "Hari Raya Waisak: umat Buddha berkumpul di Borobudur, dan malamnya lampion diterbangkan di bawah bulan purnama",
+  "labuhan": "Labuhan Merapi: abdi dalem Kraton Yogyakarta membawa sesaji naik ke lereng Merapi untuk memohon keselamatan",
+  "merti": "merti desa, syukuran desa sesudah panen: kirab gunungan hasil bumi dan wayang kulit semalam suntuk"
+}; // the holiday she greeted the visitor for (key from js/warung.js)
 const WAKTU = { pagi: "pagi hari, warung baru buka dan sambal baru diulek", siang: "siang hari yang panas", sore: "sore hari, anak-anak bermain layangan di sawah", malam: "malam hari, warung diterangi lampu dan terdengar jangkrik", subuh: "subuh, ayam berkokok dan Anda sedang menyiapkan dagangan" };
 
 async function warung(body, req, env, okOrigin) {
@@ -277,6 +300,7 @@ async function warung(body, req, env, okOrigin) {
   const negara = negaraOf(req).id;
   const waktu = WAKTU[String(body?.waktu || "")] || "";
   const bahasa = body?.bahasa === "id" ? "id" : "en"; // the language she greeted the visitor in
+  const hari = String(body?.hari || "").split(",").filter((k) => Object.hasOwn(HARI, k)).slice(0, 2).map((k) => HARI[k]).join("; dan juga ");
 
   const upstream = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -285,7 +309,7 @@ async function warung(body, req, env, okOrigin) {
       model: env.ANTHROPIC_MODEL || "claude-haiku-5-5",
       max_tokens: 700,
       thinking: { type: "disabled" },
-      system: warungPrompt(negara, waktu, bahasa),
+      system: warungPrompt(negara, waktu, bahasa, hari),
       messages,
     }),
   });

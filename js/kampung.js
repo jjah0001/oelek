@@ -85,6 +85,7 @@ function festAt(d){
   F.wayang=(sat&&h>=20.5)||(sun&&h<4.3);
   F.merti=sat||(sun&&h<4.3);
   const pd=padiDays(d); F.padi=padiStage(pd); F.padiHari=pd;
+  F.off={R,Fi,Ad,Su,Ma,Im,Ny,Pa,Wa,lb};
   return F;
 }
 // ================= padi =================
@@ -97,6 +98,7 @@ function padiDays(d){ // days since the latest crop began ploughing
 const PADI=[[10,"olah"],[17,"tandur"],[40,"muda"],[90,"hijau"],[103,"kuning"],[110,"panen"],[1e9,"jerami"]];
 const padiStage=days=>PADI.find(([e])=>days<e)[1];
 let FEST=festAt(kNow());
+window.kampungNow=()=>{ const d=kNow(); return {d,F:festAt(d)}; }; // for Bu Lastri's holiday greetings
 
 // ================= helpers =================
 const rng=s=>()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
