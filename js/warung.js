@@ -37,7 +37,7 @@ function warungGreeting(country){
   const the=/^(United |Netherlands$|Philippines$|Bahamas$|Gambia$|Maldives$|Czech Republic$|Dominican Republic$|Central African Republic$|Solomon Islands$|Marshall Islands$)/.test(country)?"the ":"";
   return open+` All the way from ${the}${country}! Welcome, welcome. Which part of ${the}${country} do you live in?`;
 }
-function warungPrompt(negara, waktu){ // the same persona as the Worker, for claude.ai
+function warungPrompt(negara, waktu, bahasa){ // the same persona as the Worker, for claude.ai
   return `Anda memerankan Bu Lastri (Sulastri), seorang ibu Jawa berusia 61 tahun, pemilik sebuah warung kecil di kampungnya
 di kaki Gunung Merapi, Sleman, Yogyakarta. Anda sedang mengobrol dengan pengunjung situs Oelek, sebuah atlas sambal
 Indonesia, yang baru saja mampir ke warung Anda.
@@ -56,11 +56,12 @@ Tentang Bu Lastri:
 - Cucu Anda ada yang tinggal di luar negeri, jadi Anda belajar bahasa Inggris dan senang bertemu orang dari negara lain.
 
 Cara berbicara:
-- Jawablah dalam bahasa yang dipakai pengunjung. Jika pengunjung menulis dalam bahasa Inggris, jawablah dalam bahasa
-  Inggris yang hangat dan sederhana. Jika pengunjung datang dari Indonesia, Anda sudah menyambutnya dalam bahasa
-  Indonesia: teruskan dalam bahasa Indonesia sehari-hari yang santai (boleh diselipi bahasa Jawa tanpa terjemahan),
-  kecuali pengunjung sendiri menulis dalam bahasa lain. Selipkan sesekali kata Jawa atau Indonesia (misalnya "monggo", "nggih", "cobek",
-  "ulek") dengan artinya di dalam kurung saat pertama dipakai.
+- Bahasa obrolan: ${bahasa === "id" ? "bahasa Indonesia" : "bahasa Inggris"}. Anda sudah menyambut pengunjung dalam bahasa itu, jadi
+  teruskan dalam bahasa itu. Ganti bahasa hanya jika pengunjung jelas menulis kalimat utuh dalam bahasa lain atau
+  memintanya; satu kata, nama kota, nama makanan atau istilah Indonesia dari pengunjung bukan alasan untuk berganti
+  bahasa. Dalam bahasa Inggris: hangat dan sederhana, selipkan sesekali kata Jawa atau Indonesia (misalnya "monggo",
+  "nggih", "cobek", "ulek") dengan artinya di dalam kurung saat pertama dipakai. Dalam bahasa Indonesia: santai
+  seperti sehari-hari, boleh diselipi bahasa Jawa.
 - Ini obrolan di warung, bukan artikel: biasanya 1 sampai 4 kalimat. Lebih panjang hanya kalau pengunjung meminta resep
   atau penjelasan. Jangan memakai judul, tanda pagar atau huruf tebal. Daftar bernomor hanya untuk resep.
 - Tunjukkan rasa ingin tahu yang tulus tentang pengunjung: dari kota atau daerah mana di negaranya, makanan apa yang biasa mereka
@@ -152,14 +153,14 @@ async function warungReply(){
   if(sample){
     try{
       const cc=typeof visitorCountry==="function"?visitorCountry():"";
-      const prompt=warungPrompt(cc&&typeof countryName==="function"?countryName(cc,"id"):"",WARUNG_WAKTU[waktu])+
+      const prompt=warungPrompt(cc&&typeof countryName==="function"?countryName(cc,"id"):"",WARUNG_WAKTU[waktu],warungLang)+
         "\n\nObrolan sejauh ini:\n"+msgs.map(m=>(m.role==="user"?"Pengunjung: ":"Bu Lastri: ")+m.content).join("\n")+
         '\n\nTulis balasan Bu Lastri berikutnya. Balas hanya dengan JSON dalam bentuk ini: {"reply":"..."}';
       const r=await sample.json(prompt,{signal:warungCtl.signal}); if(r&&r.reply) return String(r.reply);
     }catch(err){ if(!["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(err&&err.code)) throw err; }
   }
   if(!WARUNG_PROXY) throw {code:"no_ai"};
-  const res=await fetch(WARUNG_PROXY,{method:"POST",headers:{"content-type":"application/json"},signal:warungCtl.signal,body:JSON.stringify({messages:msgs,waktu})});
+  const res=await fetch(WARUNG_PROXY,{method:"POST",headers:{"content-type":"application/json"},signal:warungCtl.signal,body:JSON.stringify({messages:msgs,waktu,bahasa:warungLang})});
   if(res.status===429) throw {code:"rate_limited"};
   if(!res.ok) throw {code:"upstream"};
   const r=await res.json(); if(!r||!r.reply) throw {code:"empty"};

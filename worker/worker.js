@@ -1,7 +1,7 @@
 // Sambal pairing and recipe proxy for the GitHub Pages build.
 // POST /pair { dish, catalogue } -> { picks:[{id,reason}], tip } | { error }
 // POST /negara {} -> { code, en, id } : the visitor's country (country level only), so Bu Lastri can greet them by it
-// POST /warung { messages:[{role,content}], waktu } -> { reply } : a chat with Bu Lastri at her warung (persona in WARUNG_PROMPT)
+// POST /warung { messages:[{role,content}], waktu, bahasa } -> { reply } : a chat with Bu Lastri at her warung (persona in WARUNG_PROMPT)
 // POST /recipe { id, info } -> { serves, time, ingredients:[{item,amount,note}], steps:[], tips:[], keeps:{room,fridge,freezer,signs}, safety } | { error }
 //   Recipes are written for the visitor's country (Cloudflare's request.cf.country; nothing finer is used or kept)
 //   and cached at the edge for 30 days per sambal, description and country, so each one is written once.
@@ -191,7 +191,7 @@ async function recipe(body, req, env, okOrigin) {
 
 // ================= warung: Bu Lastri =================
 // Kept in step with warungPrompt() in js/warung.js (used inside claude.ai). Written in Indonesian on purpose.
-function warungPrompt(negara, waktu) {
+function warungPrompt(negara, waktu, bahasa) {
   return `Anda memerankan Bu Lastri (Sulastri), seorang ibu Jawa berusia 61 tahun, pemilik sebuah warung kecil di kampungnya
 di kaki Gunung Merapi, Sleman, Yogyakarta. Anda sedang mengobrol dengan pengunjung situs Oelek, sebuah atlas sambal
 Indonesia, yang baru saja mampir ke warung Anda.
@@ -210,11 +210,12 @@ Tentang Bu Lastri:
 - Cucu Anda ada yang tinggal di luar negeri, jadi Anda belajar bahasa Inggris dan senang bertemu orang dari negara lain.
 
 Cara berbicara:
-- Jawablah dalam bahasa yang dipakai pengunjung. Jika pengunjung menulis dalam bahasa Inggris, jawablah dalam bahasa
-  Inggris yang hangat dan sederhana. Jika pengunjung datang dari Indonesia, Anda sudah menyambutnya dalam bahasa
-  Indonesia: teruskan dalam bahasa Indonesia sehari-hari yang santai (boleh diselipi bahasa Jawa tanpa terjemahan),
-  kecuali pengunjung sendiri menulis dalam bahasa lain. Selipkan sesekali kata Jawa atau Indonesia (misalnya "monggo", "nggih", "cobek",
-  "ulek") dengan artinya di dalam kurung saat pertama dipakai.
+- Bahasa obrolan: ${bahasa === "id" ? "bahasa Indonesia" : "bahasa Inggris"}. Anda sudah menyambut pengunjung dalam bahasa itu, jadi
+  teruskan dalam bahasa itu. Ganti bahasa hanya jika pengunjung jelas menulis kalimat utuh dalam bahasa lain atau
+  memintanya; satu kata, nama kota, nama makanan atau istilah Indonesia dari pengunjung bukan alasan untuk berganti
+  bahasa. Dalam bahasa Inggris: hangat dan sederhana, selipkan sesekali kata Jawa atau Indonesia (misalnya "monggo",
+  "nggih", "cobek", "ulek") dengan artinya di dalam kurung saat pertama dipakai. Dalam bahasa Indonesia: santai
+  seperti sehari-hari, boleh diselipi bahasa Jawa.
 - Ini obrolan di warung, bukan artikel: biasanya 1 sampai 4 kalimat. Lebih panjang hanya kalau pengunjung meminta resep
   atau penjelasan. Jangan memakai judul, tanda pagar atau huruf tebal. Daftar bernomor hanya untuk resep.
 - Tunjukkan rasa ingin tahu yang tulus tentang pengunjung: dari kota atau daerah mana di negaranya, makanan apa yang biasa mereka
@@ -269,6 +270,7 @@ async function warung(body, req, env, okOrigin) {
   }
   const negara = negaraOf(req).id;
   const waktu = WAKTU[String(body?.waktu || "")] || "";
+  const bahasa = body?.bahasa === "id" ? "id" : "en"; // the language she greeted the visitor in
 
   const upstream = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -277,7 +279,7 @@ async function warung(body, req, env, okOrigin) {
       model: env.ANTHROPIC_MODEL || "claude-haiku-5-5",
       max_tokens: 700,
       thinking: { type: "disabled" },
-      system: warungPrompt(negara, waktu),
+      system: warungPrompt(negara, waktu, bahasa),
       messages,
     }),
   });
