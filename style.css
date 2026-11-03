@@ -450,13 +450,15 @@ body.peek .bar,body.peek main,body.peek footer,body.peek .kawung,body.peek .veil
 .warung-scene{inset:0;width:100%;height:100%}
 .warung-oma{left:34.4%;top:21%;width:32.9%;height:auto;filter:drop-shadow(0 10px 18px #0004)}
 .warung-meja{left:0;top:72.37%;width:100%;height:27.63%}
-.warung-night,.warung-lamp{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .6s}
-.warung-night{background:linear-gradient(#070b26 0%,#141c46 45%,#2a2f5a 70%,#3a3448 100%);mix-blend-mode:multiply}
-.warung-lamp{background:radial-gradient(ellipse 26% 42% at 51% 44%,#ffb04a66,transparent 70%),radial-gradient(ellipse 60% 22% at 50% 80%,#ff9a3a33,transparent 70%);mix-blend-mode:screen}
-:root[data-kampung="malam"] .warung-night,:root[data-kampung="malam"] .warung-lamp{opacity:1}
-:root[data-kampung="malam"] .warung-scene{filter:brightness(.8) saturate(.8)}
-:root[data-kampung="malam"] .warung-oma{filter:brightness(.82) sepia(.18) drop-shadow(0 10px 18px #0006)}
-:root[data-kampung="malam"] .warung-meja{filter:brightness(.55) saturate(.8) sepia(.2)}
+/* night: the painted night warung and its counter fade in over the day ones; the oil lamp on the left lights Bu Lastri */
+.warung-world .warung-malam{opacity:0;transition:opacity .6s}
+.warung-lamp{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .6s;mix-blend-mode:screen;
+  background:radial-gradient(ellipse 22% 30% at 13.5% 38%,#ffb04a55,transparent 70%),radial-gradient(ellipse 30% 40% at 40% 45%,#ff9a3a22,transparent 70%)}
+:root[data-kampung="malam"] .warung-world .warung-malam{opacity:1}
+:root[data-kampung="malam"] .warung-lamp{opacity:1;animation:pelita 3.2s ease-in-out infinite}
+@keyframes pelita{0%,100%{opacity:1}35%{opacity:.82}55%{opacity:.95}70%{opacity:.86}}
+@media (prefers-reduced-motion:reduce){:root[data-kampung="malam"] .warung-lamp{animation:none}}
+:root[data-kampung="malam"] .warung-oma{filter:brightness(.72) saturate(.85) sepia(.3) drop-shadow(-6px 10px 18px #0008)}
 .warung-chat{display:grid;grid-template-rows:minmax(0,1fr) auto auto auto;gap:10px;min-height:0;height:min(72vh,620px);padding:14px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 94%,transparent)}
 .warung-log{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px;min-height:220px}
 .wbubble{max-width:88%;padding:10px 14px;border-radius:16px;line-height:1.5;font-size:.95rem}
