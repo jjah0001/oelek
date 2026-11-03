@@ -13,14 +13,20 @@ function warungTime(){ // the kampung's hour: a previewed ?jam= or the visitor's
   if(h===undefined){ const d=new Date(); h=d.getHours()+d.getMinutes()/60; }
   return h<5?"malam":h<6.5?"subuh":h<11?"pagi":h<15?"siang":h<18.3?"sore":"malam";
 }
-function warungGreeting(){
-  return {
-    subuh:"Oh! You're up early. Monggo (please, come in), sit down. The rooster beat you, but only just. I'm Bu Lastri. The rice is still steaming and I'm about to start the sambal. Where have you come from?",
-    pagi:"Monggo, monggo (come in, come in)! Sit wherever you like. I'm Bu Lastri, this is my warung. I've just finished grinding today's sambal in the cobek. Where are you visiting from?",
-    siang:"Monggo (come in)! Out of that sun, sit in the shade. I'm Bu Lastri. Would you like some cold es teh (iced sweet tea) while we talk? Where are you from?",
-    sore:"Sugeng sonten (good afternoon)! Monggo, sit. I'm Bu Lastri. The children are flying kites over the sawah and the gorengan (fritters) are still warm. Where have you come from?",
-    malam:"Sugeng dalu (good evening)! Monggo, come in, the lamp is still on. I'm Bu Lastri. Listen to the crickets... Have you eaten? Where are you visiting from?"
-  }[warungTime()];
+// Her greeting needs no AI call. She already knows which country the visitor is in (country level only).
+function warungGreeting(country){
+  const t=warungTime(), home=country==="Indonesia";
+  const open={
+    subuh:"Oh! You're up early. Monggo (please, come in), sit down. The rooster beat you, but only just. I'm Bu Lastri. The rice is still steaming and I'm about to start the sambal.",
+    pagi:"Monggo, monggo (come in, come in)! Sit wherever you like. I'm Bu Lastri, this is my warung. I've just finished grinding today's sambal in the cobek.",
+    siang:"Monggo (come in)! Out of that sun, sit in the shade. I'm Bu Lastri. Would you like some cold es teh (iced sweet tea) while we talk?",
+    sore:"Sugeng sonten (good afternoon)! Monggo, sit. I'm Bu Lastri. The children are flying kites over the sawah and the gorengan (fritters) are still warm.",
+    malam:"Sugeng dalu (good evening)! Monggo, come in, the lamp is still on. I'm Bu Lastri. Listen to the crickets... Have you eaten?"
+  }[t];
+  if(!country) return open+" Where are you visiting from?";
+  if(home) return open+" A guest from here in Indonesia, how nice! Which city are you from? Every city has its own sambal, you know.";
+  const the=/^(United |Netherlands$|Philippines$|Bahamas$|Gambia$|Maldives$|Czech Republic$|Dominican Republic$|Central African Republic$|Solomon Islands$|Marshall Islands$)/.test(country)?"the ":"";
+  return open+` All the way from ${the}${country}! Welcome, welcome. Which part of ${the}${country} do you live in?`;
 }
 function warungPrompt(negara, waktu){ // the same persona as the Worker, for claude.ai
   return `Anda memerankan Bu Lastri (Sulastri), seorang ibu Jawa berusia 61 tahun, pemilik sebuah warung kecil di kampungnya
@@ -46,7 +52,7 @@ Cara berbicara:
   "ulek") dengan artinya di dalam kurung saat pertama dipakai.
 - Ini obrolan di warung, bukan artikel: biasanya 1 sampai 4 kalimat. Lebih panjang hanya kalau pengunjung meminta resep
   atau penjelasan. Jangan memakai judul, tanda pagar atau huruf tebal. Daftar bernomor hanya untuk resep.
-- Tunjukkan rasa ingin tahu yang tulus tentang pengunjung: dari negara dan kota mana, makanan apa yang biasa mereka
+- Tunjukkan rasa ingin tahu yang tulus tentang pengunjung: dari kota atau daerah mana di negaranya, makanan apa yang biasa mereka
   makan, seberapa kuat mereka makan pedas, apakah pernah ke Indonesia. Tanyakan satu hal saja setiap kali, jangan
   menginterogasi, dan hubungkan jawaban mereka dengan masakan Indonesia (misalnya membandingkan sambal dengan saus pedas
   di negara mereka, atau menyarankan sambal yang cocok dengan makanan mereka).
@@ -68,7 +74,10 @@ Yang dibicarakan:
 - Jaga obrolan tetap sopan dan cocok untuk semua umur. Tolak dengan halus permintaan yang kasar atau berbahaya.
 
 Keadaan sekarang:
-- Pengunjung tampaknya berasal dari ${negara || "negara yang belum diketahui"}${negara ? " (perkiraan dari koneksinya, bisa saja salah: tanyakan dengan wajar, jangan langsung menebak)" : ""}.
+- ${negara ? `Pengunjung datang dari ${negara}. Anda sudah tahu ini dan sudah menyebutnya waktu menyambut, jadi jangan
+  menanyakan negaranya lagi; boleh bertanya kota atau daerahnya. Pakailah pengetahuan Anda tentang ${negara} (makanannya,
+  bumbunya, cuacanya, orang Indonesia yang tinggal di sana) agar obrolan terasa dekat. Jika pengunjung bilang ia dari
+  negara lain, ikuti kata pengunjung.` : "Anda belum tahu pengunjung dari negara mana; tanyakan dengan ramah."}
 - Di kampung sekarang ${waktu || "siang hari"}.`;
 }
 const WARUNG_WAKTU={pagi:"pagi hari, warung baru buka dan sambal baru diulek",siang:"siang hari yang panas",sore:"sore hari, anak-anak bermain layangan di sawah",malam:"malam hari, warung diterangi lampu dan terdengar jangkrik",subuh:"subuh, ayam berkokok dan Anda sedang menyiapkan dagangan"};
@@ -100,12 +109,24 @@ function warungIdeas(){
   const left=WARUNG_IDEAS.filter(t=>!used.has(t)).slice(0,warungLog.length>2?2:4);
   $("#warungIdeas").replaceChildren(...left.map(t=>el("button",{type:"button",class:"pill",text:t,onclick:()=>warungAsk(t)})));
 }
-function openWarung(){
+// The visitor's country: from the Worker (Cloudflare's country-level location), or the browser's region inside claude.ai.
+async function warungCountry(){
+  const local=()=>{ const cc=typeof visitorCountry==="function"?visitorCountry():""; return cc&&typeof countryName==="function"?countryName(cc,"en"):""; };
+  if(!WARUNG_PROXY) return local();
+  try{
+    const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),3000);
+    const r=await fetch(WARUNG_PROXY.replace(/\/warung$/,"/negara"),{method:"POST",headers:{"content-type":"application/json"},body:"{}",signal:ctl.signal});
+    clearTimeout(t); if(r.ok){ const j=await r.json(); if(j&&j.en) return String(j.en).slice(0,60); }
+  }catch(e){}
+  return ""; // the browser's language is no guide to where someone lives, so she simply asks
+}
+async function openWarung(){
   if(warungOpened) return; warungOpened=true;
   const saved=warungStore.get();
-  if(saved&&saved.length){ warungLog=saved; for(const m of saved) m.role==="user"?warungBubble("user",m.content):warungSay(m.content,true); }
-  else { const g=warungGreeting(); warungLog=[{role:"assistant",content:g}]; warungStore.set(warungLog); warungSay(g); }
-  warungIdeas();
+  if(saved&&saved.length){ warungLog=saved; for(const m of saved) m.role==="user"?warungBubble("user",m.content):warungSay(m.content,true); warungIdeas(); return; }
+  const wait=el("div",{class:"wbubble wbu wthinking"},el("b",{class:"wname",text:"Bu Lastri"}),el("p",{text:"…"})); $("#warungLog").append(wait);
+  const g=warungGreeting(await warungCountry()); wait.remove();
+  warungLog=[{role:"assistant",content:g}]; warungStore.set(warungLog); warungIdeas(); warungSay(g);
 }
 async function warungReply(){
   const waktu=warungTime(), msgs=warungLog.slice(-20);

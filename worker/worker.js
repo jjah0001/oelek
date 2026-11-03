@@ -1,5 +1,6 @@
 // Sambal pairing and recipe proxy for the GitHub Pages build.
 // POST /pair { dish, catalogue } -> { picks:[{id,reason}], tip } | { error }
+// POST /negara {} -> { code, en, id } : the visitor's country (country level only), so Bu Lastri can greet them by it
 // POST /warung { messages:[{role,content}], waktu } -> { reply } : a chat with Bu Lastri at her warung (persona in WARUNG_PROMPT)
 // POST /recipe { id, info } -> { serves, time, ingredients:[{item,amount,note}], steps:[], tips:[], keeps:{room,fridge,freezer,signs}, safety } | { error }
 //   Recipes are written for the visitor's country (Cloudflare's request.cf.country; nothing finer is used or kept)
@@ -26,13 +27,14 @@ export default {
     const okOrigin = allowed.length === 0 ? origin || "*" : allowed.includes(origin) ? origin : allowed[0];
 
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors(okOrigin) });
-    if (req.method !== "POST" || !["/pair", "/recipe", "/warung"].includes(url.pathname)) return json({ error: "not_found" }, 404, okOrigin);
+    if (req.method !== "POST" || !["/pair", "/recipe", "/warung", "/negara"].includes(url.pathname)) return json({ error: "not_found" }, 404, okOrigin);
     if (allowed.length && !allowed.includes(origin)) return json({ error: "origin_not_allowed" }, 403, okOrigin);
 
     let body = null;
     try { body = await req.json(); } catch { return json({ error: "bad_json" }, 400, okOrigin); }
     if (url.pathname === "/recipe") return recipe(body, req, env, okOrigin);
     if (url.pathname === "/warung") return warung(body, req, env, okOrigin);
+    if (url.pathname === "/negara") return json(negaraOf(req), 200, okOrigin);
     const dish = String(body?.dish || "").slice(0, 300).trim();
     const catalogue = String(body?.catalogue || "").slice(0, 80000);
     if (!dish || !catalogue) return json({ error: "dish_and_catalogue_required" }, 400, okOrigin);
@@ -213,7 +215,7 @@ Cara berbicara:
   "ulek") dengan artinya di dalam kurung saat pertama dipakai.
 - Ini obrolan di warung, bukan artikel: biasanya 1 sampai 4 kalimat. Lebih panjang hanya kalau pengunjung meminta resep
   atau penjelasan. Jangan memakai judul, tanda pagar atau huruf tebal. Daftar bernomor hanya untuk resep.
-- Tunjukkan rasa ingin tahu yang tulus tentang pengunjung: dari negara dan kota mana, makanan apa yang biasa mereka
+- Tunjukkan rasa ingin tahu yang tulus tentang pengunjung: dari kota atau daerah mana di negaranya, makanan apa yang biasa mereka
   makan, seberapa kuat mereka makan pedas, apakah pernah ke Indonesia. Tanyakan satu hal saja setiap kali, jangan
   menginterogasi, dan hubungkan jawaban mereka dengan masakan Indonesia (misalnya membandingkan sambal dengan saus pedas
   di negara mereka, atau menyarankan sambal yang cocok dengan makanan mereka).
@@ -235,7 +237,10 @@ Yang dibicarakan:
 - Jaga obrolan tetap sopan dan cocok untuk semua umur. Tolak dengan halus permintaan yang kasar atau berbahaya.
 
 Keadaan sekarang:
-- Pengunjung tampaknya berasal dari ${negara || "negara yang belum diketahui"}${negara ? " (perkiraan dari koneksinya, bisa saja salah: tanyakan dengan wajar, jangan langsung menebak)" : ""}.
+- ${negara ? `Pengunjung datang dari ${negara}. Anda sudah tahu ini dan sudah menyebutnya waktu menyambut, jadi jangan
+  menanyakan negaranya lagi; boleh bertanya kota atau daerahnya. Pakailah pengetahuan Anda tentang ${negara} (makanannya,
+  bumbunya, cuacanya, orang Indonesia yang tinggal di sana) agar obrolan terasa dekat. Jika pengunjung bilang ia dari
+  negara lain, ikuti kata pengunjung.` : "Anda belum tahu pengunjung dari negara mana; tanyakan dengan ramah."}
 - Di kampung sekarang ${waktu || "siang hari"}.`;
 }
 
@@ -260,8 +265,7 @@ async function warung(body, req, env, okOrigin) {
     const { success } = await env.PAIR_RL.limit({ key: ip });
     if (!success) return json({ error: "rate_limited" }, 429, okOrigin);
   }
-  const cc = /^[A-Z]{2}$/.test(req.cf?.country || "") ? req.cf.country : "";
-  let negara = ""; try { negara = cc ? new Intl.DisplayNames(["id"], { type: "region" }).of(cc) || "" : ""; } catch {}
+  const negara = negaraOf(req).id;
   const waktu = WAKTU[String(body?.waktu || "")] || "";
 
   const upstream = await fetch("https://api.anthropic.com/v1/messages", {
@@ -280,4 +284,10 @@ async function warung(body, req, env, okOrigin) {
   const reply = (data?.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
   if (!reply) return json({ error: "empty" }, 502, okOrigin);
   return json({ reply: reply.slice(0, 4000) }, 200, okOrigin);
+}
+
+function negaraOf(req) {
+  const code = /^[A-Z]{2}$/.test(req.cf?.country || "") && req.cf.country !== "XX" && req.cf.country !== "T1" ? req.cf.country : "";
+  const name = (lang) => { try { return code ? new Intl.DisplayNames([lang], { type: "region" }).of(code) || "" : ""; } catch { return ""; } };
+  return { code, en: name("en"), id: name("id") };
 }
