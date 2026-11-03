@@ -10,6 +10,9 @@ html = html.replace('<link rel="stylesheet" href="style.css">', () =>
 // Keep the tab icon embedded in the standalone export, too.
 html = html.replace('href="favicon.svg"', () =>
   `href="data:image/svg+xml;base64,${fs.readFileSync(path.join(root, "favicon.svg")).toString("base64")}"`);
+// The warung pictures go in as data URIs too, so the single file still shows Bu Lastri.
+html = html.replace(/src="(img\/[^"]+\.webp)"/g, (m, f) =>
+  `src="data:image/webp;base64,${fs.readFileSync(path.join(root, f)).toString("base64")}"`);
 const srcs = [];
 html = html.replace(/(?:<script src="([^"]+)"><\/script>\n?)+/, (block) => {
   for (const m of block.matchAll(/<script src="([^"]+)"><\/script>/g)) srcs.push(m[1]);

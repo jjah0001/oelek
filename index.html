@@ -29,6 +29,7 @@
       <a href="#rempah" data-view="rempah">Spices<small>rempah</small></a>
       <a href="#padanan" data-view="padanan">Pairing<small>padanan</small></a>
       <a href="#kuis" data-view="kuis">Which sambal<small>kepribadian</small></a>
+      <a href="#warung" data-view="warung">Warung<small>Bu Lastri</small></a>
       <a href="#tentang" data-view="tentang">About us<small>tentang kami</small></a>
     </nav>
   </div>
@@ -215,6 +216,38 @@
 </section>
 <div class="kawung" aria-hidden="true"></div>
 
+<section id="warung" hidden>
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Warung · Bu Lastri's food stall</p>
+      <h2>Pull up a stool at Bu Lastri's warung</h2>
+      <p class="lede">A <i>warung</i> is a small family-run food stall, the heart of every Indonesian village. Bu Lastri spent years travelling across Indonesia learning sambal from the cooks of each city, then came home to open her own warung at the foot of Merapi. Ask her anything about sambal, Javanese food or Indonesian cooking; she will want to hear about you too.</p>
+    </div>
+    <div class="warung">
+      <div class="warung-stage" aria-hidden="true"><div class="warung-world">
+        <img class="warung-scene" src="img/warung.webp" alt="" width="1672" height="941" loading="lazy" decoding="async">
+        <div class="warung-night"></div>
+        <img class="warung-oma" id="omaDiam" src="img/oma-diam.webp" alt="" width="640" height="960" loading="lazy" decoding="async">
+        <img class="warung-oma" id="omaBicara" src="img/oma-bicara.webp" alt="" width="640" height="960" loading="lazy" decoding="async" hidden>
+        <img class="warung-meja" src="img/warung-meja.webp" alt="" width="1672" height="260" loading="lazy" decoding="async">
+        <div class="warung-lamp"></div>
+      </div></div>
+      <div class="warung-chat" aria-label="Conversation with Bu Lastri">
+        <div class="warung-log" id="warungLog" role="log" aria-live="polite"></div>
+        <div class="warung-ideas" id="warungIdeas"></div>
+        <form class="warung-form" id="warungForm">
+          <label class="sr-only" for="warungInput">Say something to Bu Lastri</label>
+          <textarea id="warungInput" rows="2" maxlength="1000" placeholder="Say something to Bu Lastri…"></textarea>
+          <button class="btn" id="warungSend" type="submit">Send</button>
+        </form>
+        <p class="warung-note">Bu Lastri is a character played by Claude, an AI. Her stories are made up; her food knowledge is a starting point, not gospel. <button type="button" class="linkbtn" id="warungReset">Start a new visit</button></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="kawung" aria-hidden="true"></div>
+
 <section id="tentang" hidden>
   <div class="wrap about">
     <div class="sec-head">
@@ -238,6 +271,7 @@
           <li><b>Pairing.</b> Name any dish and Claude suggests three sambals for it.</li>
           <li><b>Recipes.</b> On every sambal card, an oma from that sambal's region writes you a recipe, with substitutes you can find in your own country.</li>
           <li><b>Which sambal.</b> A short quiz that matches you to a sambal.</li>
+          <li><b>Warung.</b> Sit down at Bu Lastri's food stall and talk sambal and Indonesian food with her. She is a character played by Claude.</li>
         </ul>
       </div>
     </div>
@@ -337,6 +371,7 @@
 <script src="js/rempah.js"></script>
 <script src="js/pairing.js"></script>
 <script src="js/recipe.js"></script>
+<script src="js/warung.js"></script>
 <script src="js/quiz.js"></script>
 <script src="js/share.js"></script>
 <script src="js/shelf.js"></script>

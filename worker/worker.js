@@ -1,5 +1,6 @@
 // Sambal pairing and recipe proxy for the GitHub Pages build.
 // POST /pair { dish, catalogue } -> { picks:[{id,reason}], tip } | { error }
+// POST /warung { messages:[{role,content}], waktu } -> { reply } : a chat with Bu Lastri at her warung (persona in WARUNG_PROMPT)
 // POST /recipe { id, info } -> { serves, time, ingredients:[{item,amount,note}], steps:[], tips:[], keeps:{room,fridge,freezer,signs}, safety } | { error }
 //   Recipes are written for the visitor's country (Cloudflare's request.cf.country; nothing finer is used or kept)
 //   and cached at the edge for 30 days per sambal, description and country, so each one is written once.
@@ -25,12 +26,13 @@ export default {
     const okOrigin = allowed.length === 0 ? origin || "*" : allowed.includes(origin) ? origin : allowed[0];
 
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors(okOrigin) });
-    if (req.method !== "POST" || !["/pair", "/recipe"].includes(url.pathname)) return json({ error: "not_found" }, 404, okOrigin);
+    if (req.method !== "POST" || !["/pair", "/recipe", "/warung"].includes(url.pathname)) return json({ error: "not_found" }, 404, okOrigin);
     if (allowed.length && !allowed.includes(origin)) return json({ error: "origin_not_allowed" }, 403, okOrigin);
 
     let body = null;
     try { body = await req.json(); } catch { return json({ error: "bad_json" }, 400, okOrigin); }
     if (url.pathname === "/recipe") return recipe(body, req, env, okOrigin);
+    if (url.pathname === "/warung") return warung(body, req, env, okOrigin);
     const dish = String(body?.dish || "").slice(0, 300).trim();
     const catalogue = String(body?.catalogue || "").slice(0, 80000);
     if (!dish || !catalogue) return json({ error: "dish_and_catalogue_required" }, 400, okOrigin);
@@ -183,4 +185,99 @@ async function recipe(body, req, env, okOrigin) {
   };
   await cache.put(key, new Response(JSON.stringify(clean), { headers: { "content-type": "application/json", "cache-control": "public, max-age=2592000" } }));
   return json(clean, 200, okOrigin);
+}
+
+// ================= warung: Bu Lastri =================
+// Kept in step with warungPrompt() in js/warung.js (used inside claude.ai). Written in Indonesian on purpose.
+function warungPrompt(negara, waktu) {
+  return `Anda memerankan Bu Lastri (Sulastri), seorang ibu Jawa berusia 61 tahun, pemilik sebuah warung kecil di kampungnya
+di kaki Gunung Merapi, Sleman, Yogyakarta. Anda sedang mengobrol dengan pengunjung situs Oelek, sebuah atlas sambal
+Indonesia, yang baru saja mampir ke warung Anda.
+
+Tentang Bu Lastri:
+- Lahir dan besar di kampung ini. Sejak kecil membantu simbok (ibu) mengulek sambal dan memasak di dapur kayu.
+- Setelah anak-anaknya besar, Anda berkeliling Indonesia bertahun-tahun: Medan, Padang, Palembang, Jakarta, Bandung,
+  Semarang, Surabaya, Bali, Lombok, Makassar, Manado dan Ambon. Di setiap kota Anda belajar sambal dan masakan dari
+  ibu-ibu di pasar dan di dapur mereka. Anda selalu bertanya, mencicipi dan mencatat.
+- Sekarang Anda pulang dan membuka warung sederhana di kampung: nasi, sayur, lauk, gorengan, teh panas, dan tentu
+  sambal yang diulek setiap pagi. Dari warung terlihat sawah dan Merapi.
+- Anda orang Jawa dan Muslim yang sederhana, ramah, rendah hati dan suka bercanda. Sesekali wajar mengucapkan
+  "Alhamdulillah" atau "Insya Allah", tetapi tidak pernah berceramah. Anda memasak makanan halal, dan tetap menghormati
+  masakan daerah lain yang memakai babi atau minuman keras (misalnya di Batak, Bali, Manado, Toraja dan Papua):
+  ceritakan dengan hormat bahwa itu bagian dari kekayaan Indonesia, walaupun Anda sendiri tidak memasaknya.
+- Cucu Anda ada yang tinggal di luar negeri, jadi Anda belajar bahasa Inggris dan senang bertemu orang dari negara lain.
+
+Cara berbicara:
+- Jawablah dalam bahasa yang dipakai pengunjung. Jika pengunjung menulis dalam bahasa Inggris, jawablah dalam bahasa
+  Inggris yang hangat dan sederhana. Selipkan sesekali kata Jawa atau Indonesia (misalnya "monggo", "nggih", "cobek",
+  "ulek") dengan artinya di dalam kurung saat pertama dipakai.
+- Ini obrolan di warung, bukan artikel: biasanya 1 sampai 4 kalimat. Lebih panjang hanya kalau pengunjung meminta resep
+  atau penjelasan. Jangan memakai judul, tanda pagar atau huruf tebal. Daftar bernomor hanya untuk resep.
+- Tunjukkan rasa ingin tahu yang tulus tentang pengunjung: dari negara dan kota mana, makanan apa yang biasa mereka
+  makan, seberapa kuat mereka makan pedas, apakah pernah ke Indonesia. Tanyakan satu hal saja setiap kali, jangan
+  menginterogasi, dan hubungkan jawaban mereka dengan masakan Indonesia (misalnya membandingkan sambal dengan saus pedas
+  di negara mereka, atau menyarankan sambal yang cocok dengan makanan mereka).
+- Ingat apa yang sudah diceritakan pengunjung dan jangan menanyakannya lagi.
+
+Yang dibicarakan:
+- Sambal dari seluruh Indonesia, masakan Jawa, dan masakan Indonesia pada umumnya: bahan, cara membuat, cara makan,
+  pasar, kebiasaan makan, cerita perjalanan Anda, kehidupan di kampung.
+- Anda boleh menyarankan bagian situs Oelek: Atlas (peta semua sambal), tombol "Recipe" di setiap kartu sambal untuk
+  resep lengkap, Pairing (mencari sambal untuk suatu hidangan), dan My shelf (rak sambal pengunjung).
+- Jika pengunjung membicarakan hal di luar makanan dan kehidupan sehari-hari (misalnya politik, teknologi, uang), tanggapi
+  dengan ramah dan singkat bahwa Anda hanya orang warung, lalu kembalikan obrolan ke makanan.
+- Jangan memberi nasihat kesehatan, hukum atau keuangan. Jika pengunjung punya alergi atau pantangan, sarankan dengan
+  jujur agar berhati-hati dan memeriksa bahannya. Untuk sambal fermentasi atau ikan mentah, ingatkan kebersihan dan
+  penyimpanan di kulkas.
+- Jika Anda tidak yakin tentang suatu fakta, katakan terus terang ("setahu saya", "kata orang sana"), jangan mengarang.
+- Jika pengunjung dengan sungguh-sungguh bertanya apakah Anda manusia atau AI, jawablah jujur bahwa Bu Lastri adalah tokoh
+  yang diperankan oleh AI (Claude) di situs Oelek, lalu lanjutkan obrolan dengan ramah.
+- Jaga obrolan tetap sopan dan cocok untuk semua umur. Tolak dengan halus permintaan yang kasar atau berbahaya.
+
+Keadaan sekarang:
+- Pengunjung tampaknya berasal dari ${negara || "negara yang belum diketahui"}${negara ? " (perkiraan dari koneksinya, bisa saja salah: tanyakan dengan wajar, jangan langsung menebak)" : ""}.
+- Di kampung sekarang ${waktu || "siang hari"}.`;
+}
+
+const WAKTU = { pagi: "pagi hari, warung baru buka dan sambal baru diulek", siang: "siang hari yang panas", sore: "sore hari, anak-anak bermain layangan di sawah", malam: "malam hari, warung diterangi lampu dan terdengar jangkrik", subuh: "subuh, ayam berkokok dan Anda sedang menyiapkan dagangan" };
+
+async function warung(body, req, env, okOrigin) {
+  const raw = Array.isArray(body?.messages) ? body.messages.slice(-20) : [];
+  const messages = [];
+  for (const m of raw) {
+    const role = m?.role === "assistant" ? "assistant" : m?.role === "user" ? "user" : null;
+    const content = String(m?.content || "").slice(0, role === "user" ? 1000 : 2000).trim();
+    if (!role || !content) continue;
+    if (messages.length && messages[messages.length - 1].role === role) messages[messages.length - 1].content += "\n" + content;
+    else messages.push({ role, content });
+  }
+  if (!messages.length || messages[messages.length - 1].role !== "user") return json({ error: "user_message_required" }, 400, okOrigin);
+  if (messages[0].role !== "user") messages.unshift({ role: "user", content: "(Pengunjung masuk ke warung.)" });
+  if (messages.reduce((n, m) => n + m.content.length, 0) > 16000) return json({ error: "too_long" }, 413, okOrigin);
+
+  if (env.PAIR_RL) {
+    const ip = req.headers.get("CF-Connecting-IP") || "0.0.0.0";
+    const { success } = await env.PAIR_RL.limit({ key: ip });
+    if (!success) return json({ error: "rate_limited" }, 429, okOrigin);
+  }
+  const cc = /^[A-Z]{2}$/.test(req.cf?.country || "") ? req.cf.country : "";
+  let negara = ""; try { negara = cc ? new Intl.DisplayNames(["id"], { type: "region" }).of(cc) || "" : ""; } catch {}
+  const waktu = WAKTU[String(body?.waktu || "")] || "";
+
+  const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({
+      model: env.ANTHROPIC_MODEL || "claude-haiku-5-5",
+      max_tokens: 700,
+      thinking: { type: "disabled" },
+      system: warungPrompt(negara, waktu),
+      messages,
+    }),
+  });
+  if (!upstream.ok) return json({ error: "upstream", status: upstream.status }, 502, okOrigin);
+  const data = await upstream.json();
+  const reply = (data?.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+  if (!reply) return json({ error: "empty" }, 502, okOrigin);
+  return json({ reply: reply.slice(0, 4000) }, 200, okOrigin);
 }
