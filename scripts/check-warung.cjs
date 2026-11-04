@@ -72,9 +72,11 @@ async function main(){
   assert.equal(cook().dataset.movement,'talk');
   timers.shift()(); assert.equal(cook().dataset.movement,'offer');
   timers.shift()(); assert.equal(cook().dataset.movement,'rest');
-  // A run of sambal sentences stays one grinding pose rather than flicking between the two.
+  // In a run of sambal sentences she may go on to show the stroke, but does not flick back.
   vm.runInContext('warungMovement("gentle_grind",true); warungHoldUntil=0; warungMovement("grind")',context);
-  assert.equal(cook().dataset.movement,'gentle_grind');
+  assert.equal(cook().dataset.movement,'grind');
+  vm.runInContext('warungHoldUntil=0; warungMovement("gentle_grind")',context);
+  assert.equal(cook().dataset.movement,'grind');
   vm.runInContext('warungMovement("rest",true)',context); timers.length=0;
   // A reset interrupts an old reply that is still typing.
   const old=vm.runInContext('warungSay("An old reply that is still typing about sambal",false)',context);

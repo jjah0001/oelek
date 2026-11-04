@@ -196,7 +196,7 @@ function warungMovement(pose,force){
   const wait=warungHoldUntil-Date.now();
   if(wait<=0||move===cur&&!warungPending){
     clearTimeout(warungPendingTimer); warungPending=warungAfter=null;
-    if(!(WARUNG_GRINDING.has(cur)&&WARUNG_GRINDING.has(move))) warungApply(move);   // keep grinding the same way
+    if(!warungStayGrinding(cur,move)) warungApply(move);
     return;
   }
   // Still holding: remember what comes next. A gesture still waiting its turn is not skipped
@@ -207,10 +207,13 @@ function warungMovement(pose,force){
   warungPendingTimer=setTimeout(()=>{
     const m=warungPending, then=warungAfter; warungPending=warungAfter=null;
     const cur=$("#warungCook").dataset.movement;
-    if(m&&!(WARUNG_GRINDING.has(cur)&&WARUNG_GRINDING.has(m))) warungApply(m);   // its turn has come
+    if(m&&!warungStayGrinding(cur,m)) warungApply(m);   // its turn has come
     if(then) warungMovement(then);
   },wait);
 }
+// Within a run of sambal sentences she may move from grinding-while-chatting to showing the stroke
+// (when she starts talking about the grinding itself), but she does not flick back.
+function warungStayGrinding(cur,move){ return WARUNG_GRINDING.has(move)&&(cur===move||cur==="grind"); }
 function warungApply(move){
   const cook=$("#warungCook");
   if(cook.dataset.movement===move) return;
@@ -222,7 +225,7 @@ function warungApply(move){
 // The animator: frames come from BU_LASTRI (js/data/bu-lastri.js, built by scripts/build-bu-lastri.py).
 // Each movement names a set of frames, how fast it cycles, and whether she can blink or move her mouth on it.
 const WARUNG_PLAN={
-  // Listening uses her talking frame with the mouth closed, so going between listening and talking never moves her.
+  // Just after speaking she listens in her talking frame with the mouth closed, so a quick back-and-forth never moves her.
   rest:{pose:"talk"}, glance:{pose:"glance"}, think:{pose:"cycle",fps:5},
   talk:{pose:"talk"}, gentle_grind:{pose:"chat",fps:4}, grind:{pose:"cycle",fps:10},
   offer:{pose:"offer"}, greet:{pose:"greet"}
@@ -248,7 +251,8 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
   function tick(t){
     ticking=false;
     if(cook.offsetParent===null){ schedule(); return; }               // the warung is not on screen
-    const plan=WARUNG_PLAN[move]||WARUNG_PLAN.rest, set=B.role[plan.pose], calm=still();
+    // After a few quiet seconds she settles into her listening pose, head tilted toward the visitor.
+    const plan=move==="rest"&&t-since>3500?{pose:"listen"}:WARUNG_PLAN[move]||WARUNG_PLAN.rest, set=B.role[plan.pose], calm=still();
     const f=set[plan.fps&&!calm?Math.floor((t-since)*plan.fps/1000)%set.length:0];
     if(f!==frame){ if(!set.includes(frame)) fade(frame); cell(now,f,B.poses); frame=f; }
     // a blink every few seconds, now and then a double one
