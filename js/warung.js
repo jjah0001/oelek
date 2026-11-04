@@ -154,17 +154,32 @@ function warungSetLang(l){
   $("#warungInput").placeholder=l==="id"?"Ngobrol sama Bu Lastri…":"Say something to Bu Lastri…";
   $("#warungSend").textContent=l==="id"?"Kirim":"Send";
 }
-// Claude chooses a bounded action; never accept CSS, asset URLs or executable code.
+// Her movement is chosen here in code, not by Claude: Claude only writes what she says, as plain text.
+// While a sentence about sambal, grinding or tasting is being "spoken" she works the ulek (fast when she
+// is urging the visitor to try something); any other sentence she just talks; when quiet she listens.
 const WARUNG_MOVEMENTS=["grind","gentle_grind","rest"];
-const WARUNG_DIRECTION='Pilih gerakan yang cocok dengan pesan pengunjung dan jawaban Anda: grind untuk mengulek atau menjelaskan resep dengan semangat, gentle_grind untuk percakapan hangat atau bercerita, rest untuk mendengarkan atau topik serius. Balas hanya JSON: {"reply":"balasan Anda","movement":"grind|gentle_grind|rest"}. Jangan tulis arahan gerakan di dalam reply.';
+const WARUNG_ULEK=/sambal|ulek|cobek|lumpang|cabai|cabe|lombok|chil+i|terasi|trasi|bawang|tomat|garlic|shallot|mortar|pestle|grind|pound|pedas|pedes|spicy|heat|kemiri|petis|rempah|bumbu|spice/i;
+const WARUNG_COBA=/\b(coba|cobain|cicipi|icipi|rasakan|monggo|mangga|silakan dicoba|try|taste|have a bite|dig in)\b/i;
 let warungVisit=0, warungSpeech=0;
-function warungMovement(movement){
-  $("#warungCook").classList.remove("is-speaking");
-  $("#warungCook").dataset.movement=WARUNG_MOVEMENTS.includes(movement)?movement:"gentle_grind";
+function warungMoveFor(sentence){
+  return WARUNG_COBA.test(sentence)&&WARUNG_ULEK.test(sentence)?"grind":WARUNG_ULEK.test(sentence)?"gentle_grind":"talk";
+}
+// pose: "rest" (listening), "talk" (talking mouth), "grind"/"gentle_grind" (working the ulek)
+function warungMovement(pose){
+  const cook=$("#warungCook"), talk=pose==="talk";
+  cook.classList[talk?"add":"remove"]("is-speaking");
+  cook.dataset.movement=talk?"rest":WARUNG_MOVEMENTS.includes(pose)?pose:"rest";
+}
+// Sentence spans of a reply, so her pose can follow the sentence being typed.
+function warungSentences(text){
+  const out=[], re=/[^.!?…\n]*(?:[.!?…]+|\n+|$)/g; let m;
+  while((m=re.exec(text))&&m[0]){ out.push({end:m.index+m[0].length,move:warungMoveFor(m[0])}); }
+  return out.length?out:[{end:text.length,move:warungMoveFor(text)}];
 }
 function warungResponse(r){
-  if(!r||typeof r.reply!=="string"||!r.reply.trim()) throw {code:"empty"};
-  return {reply:r.reply.slice(0,4000),movement:WARUNG_MOVEMENTS.includes(r.movement)?r.movement:"gentle_grind"};
+  const reply=typeof r==="string"?r:r&&typeof r.reply==="string"?r.reply:"";
+  if(!reply.trim()) throw {code:"empty"};
+  return reply.trim().slice(0,4000);
 }
 function warungBubble(role,text){
   const b=el("div",{class:"wbubble "+(role==="user"?"wme":"wbu")});
@@ -172,18 +187,19 @@ function warungBubble(role,text){
   const p=el("p"); p.textContent=text; b.append(p);
   $("#warungLog").append(b); $("#warungLog").scrollTop=$("#warungLog").scrollHeight; return p;
 }
-// She "speaks" the reply: the text appears at talking pace while her talking picture shows.
-function warungSay(text,instant,movement="gentle_grind"){
+// She "speaks" the reply: the text appears at talking pace, and her pose follows each sentence.
+function warungSay(text,instant){
   const speech=++warungSpeech;
   const p=warungBubble("assistant",instant?text:"");
   warungMovement("rest");
   if(instant||matchMedia("(prefers-reduced-motion: reduce)").matches){ p.textContent=text; return Promise.resolve(); }
-  warungMovement(movement);
-  $("#warungCook").classList.add("is-speaking");
+  const spans=warungSentences(text); let k=0;
+  warungMovement(spans[0].move);
   return new Promise(res=>{
     let i=0; const step=()=>{
       if(speech!==warungSpeech){ res(); return; }
       i=Math.min(text.length,i+2); p.textContent=text.slice(0,i); $("#warungLog").scrollTop=$("#warungLog").scrollHeight;
+      while(k<spans.length-1&&i>=spans[k].end){ k++; warungMovement(spans[k].move); }
       if(i<text.length) setTimeout(step,28); else { warungMovement("rest"); res(); }
     };
     step();
@@ -225,7 +241,7 @@ async function warungReply(signal){
       const cc=typeof visitorCountry==="function"?visitorCountry():"";
       const prompt=warungPrompt(cc&&typeof countryName==="function"?countryName(cc,"id"):"",WARUNG_WAKTU[waktu],warungLang,warungHari().map(x=>WARUNG_HARI[x][2]).join("; dan juga "))+
         "\n\nObrolan sejauh ini:\n"+msgs.map(m=>(m.role==="user"?"Pengunjung: ":"Bu Lastri: ")+m.content).join("\n")+
-        '\n\n'+WARUNG_DIRECTION;
+        '\n\nTulis balasan Bu Lastri berikutnya. Balas hanya dengan JSON dalam bentuk ini: {"reply":"..."}';
       const r=await sample.json(prompt,{signal}); return warungResponse(r);
     }catch(err){ if(!["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(err&&err.code)) throw err; }
   }
@@ -233,7 +249,7 @@ async function warungReply(signal){
   const res=await fetch(WARUNG_PROXY,{method:"POST",headers:{"content-type":"application/json"},signal,body:JSON.stringify({messages:msgs,waktu,bahasa:warungLang,hari:warungHari().join(",")})});
   if(res.status===429) throw {code:"rate_limited"};
   if(!res.ok) throw {code:"upstream"};
-  const r=await res.json(); if(!r||!r.reply) throw {code:"empty"};
+  const r=await res.json();
   return warungResponse(r);
 }
 async function warungAsk(text){
@@ -244,9 +260,9 @@ async function warungAsk(text){
   const wait=el("div",{class:"wbubble wbu wthinking"},el("b",{class:"wname",text:"Bu Lastri"}),el("p",{text:"…"})); $("#warungLog").append(wait); $("#warungLog").scrollTop=$("#warungLog").scrollHeight;
   warungCtl=new AbortController();
   try{
-    const {reply,movement}=await warungReply(warungCtl.signal); if(visit!==warungVisit) return; wait.remove();
+    const reply=await warungReply(warungCtl.signal); if(visit!==warungVisit) return; wait.remove();
     warungLog.push({role:"assistant",content:reply});
-    await warungSay(reply,false,movement);
+    await warungSay(reply);
   }catch(err){
     if(visit!==warungVisit) return;
     wait.remove(); warungLog.pop();

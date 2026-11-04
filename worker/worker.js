@@ -1,7 +1,7 @@
 // Sambal pairing and recipe proxy for the GitHub Pages build.
 // POST /pair { dish, catalogue } -> { picks:[{id,reason}], tip } | { error }
 // POST /negara {} -> { code, en, id } : the visitor's country (country level only), so Bu Lastri can greet them by it
-// POST /warung { messages:[{role,content}], waktu, bahasa, hari } -> { reply, movement } : a chat with Bu Lastri at her warung (persona in WARUNG_PROMPT)
+// POST /warung { messages:[{role,content}], waktu, bahasa, hari } -> { reply } : a chat with Bu Lastri at her warung (persona in WARUNG_PROMPT)
 // POST /recipe { id, info } -> { serves, time, ingredients:[{item,amount,note}], steps:[], tips:[], keeps:{room,fridge,freezer,signs}, safety } | { error }
 //   Recipes are written for the visitor's country (Cloudflare's request.cf.country; nothing finer is used or kept)
 //   and cached at the edge for 30 days per sambal, description and country, so each one is written once.
@@ -296,24 +296,11 @@ const HARI = {
 }; // the holiday she greeted the visitor for (key from js/warung.js)
 const WAKTU = { pagi: "pagi hari, warung baru buka dan sambal baru diulek", siang: "siang hari yang panas", sore: "sore hari, anak-anak bermain layangan di sawah", malam: "malam hari, warung diterangi lampu dan terdengar jangkrik", subuh: "subuh, ayam berkokok dan Anda sedang menyiapkan dagangan" };
 
-const WARUNG_MOVES = ["grind", "gentle_grind", "rest"];
-const WARUNG_SCHEMA = {
-  type: "object",
-  properties: { reply: { type: "string" }, movement: { type: "string", enum: WARUNG_MOVES } },
-  required: ["reply", "movement"],
-  additionalProperties: false,
-};
-// Reads {reply, movement} from Claude's text. Structured outputs make this plain JSON, but a reply is never thrown
-// away over its wrapping: a fenced or prefaced object is unwrapped, and bare prose is kept as what she says.
+// Her reply as plain text. Strips a "Bu Lastri:" label, and unwraps {"reply": ...} in case a reply still comes as JSON.
 function warungParse(text) {
-  let o = null;
-  const tryParse = (t) => { try { const v = JSON.parse(t); return v && typeof v === "object" ? v : null; } catch { return null; } };
-  o = tryParse(text) || tryParse(text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
-  if (!o) { const m = text.match(/\{[\s\S]*\}/); if (m) o = tryParse(m[0]); }
-  if (!o && text && !/^\s*[{\[]/.test(text)) o = { reply: text };
-  const reply = typeof o?.reply === "string" ? o.reply.trim() : "";
-  const movement = WARUNG_MOVES.includes(o?.movement) ? o.movement : "gentle_grind";
-  return { reply, movement };
+  let t = String(text || "").trim().replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
+  if (/^\{[\s\S]*\}$/.test(t)) { try { const o = JSON.parse(t); t = typeof o?.reply === "string" ? o.reply : ""; } catch { t = ""; } }
+  return t.replace(/^\*{0,2}Bu Lastri\*{0,2}\s*:\s*/i, "").trim();
 }
 
 async function warung(body, req, env, okOrigin) {
@@ -345,12 +332,10 @@ async function warung(body, req, env, okOrigin) {
     headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({
       model: env.ANTHROPIC_MODEL || "claude-haiku-5-5",
-      max_tokens: 1500,
+      max_tokens: 1000,
       thinking: { type: "disabled" },
-      // Structured outputs: the reply is always valid JSON in this shape, even when earlier turns in
-      // the history (her greeting, her past replies) are plain prose the model would otherwise imitate.
-      output_config: { format: { type: "json_schema", schema: WARUNG_SCHEMA } },
-      system: warungPrompt(negara, waktu, bahasa, hari)+'\n\nPilih gerakan yang cocok dengan pesan pengunjung dan jawaban Anda: grind untuk mengulek atau menjelaskan resep dengan semangat, gentle_grind untuk percakapan hangat atau bercerita, rest untuk mendengarkan atau topik serius. Balas hanya JSON: {"reply":"balasan Anda","movement":"grind|gentle_grind|rest"}. Jangan tulis arahan gerakan di dalam reply.',
+      // Plain text only: her movement is chosen by js/warung.js from what she says, so no JSON or tokens are spent on it.
+      system: warungPrompt(negara, waktu, bahasa, hari),
       messages,
     }),
   });
@@ -361,13 +346,13 @@ async function warung(body, req, env, okOrigin) {
   }
   const data = await upstream.json();
   const rawReply = (data?.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
-  const { reply, movement } = warungParse(rawReply);
+  const reply = warungParse(rawReply);
   if (!reply) {
     console.log("warung empty", data?.stop_reason, rawReply.slice(0, 500));
     return json({ error: "empty" }, 502, okOrigin);
   }
   // nothing from the conversation is cached or kept, here or by the browser
-  const res = json({ reply: reply.slice(0, 4000), movement }, 200, okOrigin);
+  const res = json({ reply: reply.slice(0, 4000) }, 200, okOrigin);
   res.headers.set("cache-control", "no-store");
   return res;
 }
