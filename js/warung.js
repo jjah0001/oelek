@@ -154,7 +154,17 @@ function warungSetLang(l){
   $("#warungInput").placeholder=l==="id"?"Ngobrol sama Bu Lastri…":"Say something to Bu Lastri…";
   $("#warungSend").textContent=l==="id"?"Kirim":"Send";
 }
-function omaSpeaking(on){ $("#omaBicara").hidden=!on; $("#omaDiam").hidden=on; }
+// Claude chooses a bounded action; never accept CSS, asset URLs or executable code.
+const WARUNG_MOVEMENTS=["grind","gentle_grind","rest"];
+const WARUNG_DIRECTION='Pilih gerakan yang cocok dengan pesan pengunjung dan jawaban Anda: grind untuk mengulek atau menjelaskan resep dengan semangat, gentle_grind untuk percakapan hangat atau bercerita, rest untuk mendengarkan atau topik serius. Balas hanya JSON: {"reply":"balasan Anda","movement":"grind|gentle_grind|rest"}. Jangan tulis arahan gerakan di dalam reply.';
+let warungVisit=0, warungSpeech=0;
+function warungMovement(movement){
+  $("#warungCook").dataset.movement=WARUNG_MOVEMENTS.includes(movement)?movement:"gentle_grind";
+}
+function warungResponse(r){
+  if(!r||typeof r.reply!=="string"||!r.reply.trim()) throw {code:"empty"};
+  return {reply:r.reply.slice(0,4000),movement:WARUNG_MOVEMENTS.includes(r.movement)?r.movement:"gentle_grind"};
+}
 function warungBubble(role,text){
   const b=el("div",{class:"wbubble "+(role==="user"?"wme":"wbu")});
   if(role!=="user") b.append(el("b",{class:"wname",text:"Bu Lastri"}));
@@ -162,13 +172,18 @@ function warungBubble(role,text){
   $("#warungLog").append(b); $("#warungLog").scrollTop=$("#warungLog").scrollHeight; return p;
 }
 // She "speaks" the reply: the text appears at talking pace while her talking picture shows.
-function warungSay(text,instant){
+function warungSay(text,instant,movement="gentle_grind"){
+  const speech=++warungSpeech;
   const p=warungBubble("assistant",instant?text:"");
+  warungMovement("rest");
   if(instant||matchMedia("(prefers-reduced-motion: reduce)").matches){ p.textContent=text; return Promise.resolve(); }
-  omaSpeaking(true);
+  warungMovement(movement);
   return new Promise(res=>{
-    let i=0; const step=()=>{ i=Math.min(text.length,i+2); p.textContent=text.slice(0,i); $("#warungLog").scrollTop=$("#warungLog").scrollHeight;
-      if(i<text.length) setTimeout(step,28); else { omaSpeaking(false); res(); } };
+    let i=0; const step=()=>{
+      if(speech!==warungSpeech){ res(); return; }
+      i=Math.min(text.length,i+2); p.textContent=text.slice(0,i); $("#warungLog").scrollTop=$("#warungLog").scrollHeight;
+      if(i<text.length) setTimeout(step,28); else { warungMovement("rest"); res(); }
+    };
     step();
   });
 }
@@ -190,12 +205,17 @@ async function warungCountry(){
 }
 async function openWarung(){
   if(warungOpened) return; warungOpened=true;
+  warungBusy=true; $("#warungSend").disabled=true;
   const wait=el("div",{class:"wbubble wbu wthinking"},el("b",{class:"wname",text:"Bu Lastri"}),el("p",{text:"…"})); $("#warungLog").append(wait);
-  const country=await warungCountry(); wait.remove();
+  const visit=warungVisit;
+  const country=await warungCountry(); if(visit!==warungVisit) return; wait.remove();
   warungSetLang(country==="Indonesia"?"id":"en"); const g=warungGreeting(country);
-  warungLog=[{role:"assistant",content:g}]; warungIdeas(); warungSay(g);
+  warungLog=[{role:"assistant",content:g}]; warungIdeas();
+  warungBusy=true; $("#warungSend").disabled=true;
+  await warungSay(g);
+  if(visit===warungVisit){ warungBusy=false; $("#warungSend").disabled=false; }
 }
-async function warungReply(){
+async function warungReply(signal){
   const waktu=warungTime(), msgs=warungLog.slice(-20);
   const sample=(typeof aiOff!=="undefined"&&aiOff)?null:await samplePromise;
   if(sample){
@@ -203,33 +223,35 @@ async function warungReply(){
       const cc=typeof visitorCountry==="function"?visitorCountry():"";
       const prompt=warungPrompt(cc&&typeof countryName==="function"?countryName(cc,"id"):"",WARUNG_WAKTU[waktu],warungLang,warungHari().map(x=>WARUNG_HARI[x][2]).join("; dan juga "))+
         "\n\nObrolan sejauh ini:\n"+msgs.map(m=>(m.role==="user"?"Pengunjung: ":"Bu Lastri: ")+m.content).join("\n")+
-        '\n\nTulis balasan Bu Lastri berikutnya. Balas hanya dengan JSON dalam bentuk ini: {"reply":"..."}';
-      const r=await sample.json(prompt,{signal:warungCtl.signal}); if(r&&r.reply) return String(r.reply);
+        '\n\n'+WARUNG_DIRECTION;
+      const r=await sample.json(prompt,{signal}); return warungResponse(r);
     }catch(err){ if(!["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(err&&err.code)) throw err; }
   }
   if(!WARUNG_PROXY) throw {code:"no_ai"};
-  const res=await fetch(WARUNG_PROXY,{method:"POST",headers:{"content-type":"application/json"},signal:warungCtl.signal,body:JSON.stringify({messages:msgs,waktu,bahasa:warungLang,hari:warungHari().join(",")})});
+  const res=await fetch(WARUNG_PROXY,{method:"POST",headers:{"content-type":"application/json"},signal,body:JSON.stringify({messages:msgs,waktu,bahasa:warungLang,hari:warungHari().join(",")})});
   if(res.status===429) throw {code:"rate_limited"};
   if(!res.ok) throw {code:"upstream"};
   const r=await res.json(); if(!r||!r.reply) throw {code:"empty"};
-  return String(r.reply);
+  return warungResponse(r);
 }
 async function warungAsk(text){
   text=String(text||"").trim().slice(0,1000); if(!text||warungBusy) return;
-  warungBusy=true; $("#warungSend").disabled=true; $("#warungInput").value=""; $("#warungIdeas").replaceChildren();
+  const visit=warungVisit;
+  warungBusy=true; warungMovement("rest"); $("#warungSend").disabled=true; $("#warungInput").value=""; $("#warungIdeas").replaceChildren();
   warungBubble("user",text); warungLog.push({role:"user",content:text});
   const wait=el("div",{class:"wbubble wbu wthinking"},el("b",{class:"wname",text:"Bu Lastri"}),el("p",{text:"…"})); $("#warungLog").append(wait); $("#warungLog").scrollTop=$("#warungLog").scrollHeight;
   warungCtl=new AbortController();
   try{
-    const reply=await warungReply(); wait.remove();
+    const {reply,movement}=await warungReply(warungCtl.signal); if(visit!==warungVisit) return; wait.remove();
     warungLog.push({role:"assistant",content:reply});
-    await warungSay(reply);
+    await warungSay(reply,false,movement);
   }catch(err){
+    if(visit!==warungVisit) return;
     wait.remove(); warungLog.pop();
     const code=err&&(err.code||err.name);
     if(code!=="AbortError") warungBubble("note", code==="rate_limited"?"Bu Lastri is serving another table. Try again in a minute.":"Bu Lastri didn't catch that (the connection dropped). Try again in a moment.").parentNode.classList.add("wnote");
-  }finally{ warungBusy=false; $("#warungSend").disabled=false; warungIdeas(); }
+  }finally{ if(visit===warungVisit){ warungMovement("rest"); warungBusy=false; $("#warungSend").disabled=false; warungIdeas(); } }
 }
 $("#warungForm").addEventListener("submit",e=>{ e.preventDefault(); warungAsk($("#warungInput").value); });
 $("#warungInput").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); warungAsk($("#warungInput").value); } });
-$("#warungReset").addEventListener("click",()=>{ if(warungCtl) warungCtl.abort(); warungLog=[]; $("#warungLog").replaceChildren(); omaSpeaking(false); warungOpened=false; openWarung(); });
+$("#warungReset").addEventListener("click",()=>{ warungVisit++; warungSpeech++; if(warungCtl) warungCtl.abort(); warungBusy=false; warungLog=[]; $("#warungLog").replaceChildren(); warungMovement("rest"); warungOpened=false; openWarung(); });

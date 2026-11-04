@@ -1,7 +1,7 @@
 // Sambal pairing and recipe proxy for the GitHub Pages build.
 // POST /pair { dish, catalogue } -> { picks:[{id,reason}], tip } | { error }
 // POST /negara {} -> { code, en, id } : the visitor's country (country level only), so Bu Lastri can greet them by it
-// POST /warung { messages:[{role,content}], waktu, bahasa, hari } -> { reply } : a chat with Bu Lastri at her warung (persona in WARUNG_PROMPT)
+// POST /warung { messages:[{role,content}], waktu, bahasa, hari } -> { reply, movement } : a chat with Bu Lastri at her warung (persona in WARUNG_PROMPT)
 // POST /recipe { id, info } -> { serves, time, ingredients:[{item,amount,note}], steps:[], tips:[], keeps:{room,fridge,freezer,signs}, safety } | { error }
 //   Recipes are written for the visitor's country (Cloudflare's request.cf.country; nothing finer is used or kept)
 //   and cached at the edge for 30 days per sambal, description and country, so each one is written once.
@@ -327,16 +327,20 @@ async function warung(body, req, env, okOrigin) {
       model: env.ANTHROPIC_MODEL || "claude-haiku-5-5",
       max_tokens: 700,
       thinking: { type: "disabled" },
-      system: warungPrompt(negara, waktu, bahasa, hari),
+      system: warungPrompt(negara, waktu, bahasa, hari)+'\n\nPilih gerakan yang cocok dengan pesan pengunjung dan jawaban Anda: grind untuk mengulek atau menjelaskan resep dengan semangat, gentle_grind untuk percakapan hangat atau bercerita, rest untuk mendengarkan atau topik serius. Balas hanya JSON: {"reply":"balasan Anda","movement":"grind|gentle_grind|rest"}. Jangan tulis arahan gerakan di dalam reply.',
       messages,
     }),
   });
   if (!upstream.ok) return json({ error: "upstream", status: upstream.status }, 502, okOrigin);
   const data = await upstream.json();
-  const reply = (data?.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+  const rawReply = (data?.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+  let response;
+  try { response = JSON.parse(rawReply.replace(/^```(?:json)?\s*|\s*```$/g, "")); } catch { return json({ error: "invalid_reply" }, 502, okOrigin); }
+  const reply = typeof response?.reply === "string" ? response.reply.trim() : "";
+  const movement = ["grind", "gentle_grind", "rest"].includes(response?.movement) ? response.movement : "gentle_grind";
   if (!reply) return json({ error: "empty" }, 502, okOrigin);
   // nothing from the conversation is cached or kept, here or by the browser
-  const res = json({ reply: reply.slice(0, 4000) }, 200, okOrigin);
+  const res = json({ reply: reply.slice(0, 4000), movement }, 200, okOrigin);
   res.headers.set("cache-control", "no-store");
   return res;
 }
