@@ -26,7 +26,7 @@ async function main(){
   assert.equal((await reply('{"reply":42}')).status,502);
 
   const nodes=new Map(), timers=[];
-  function node(){return {dataset:{},classList:{add(){}},append(){},replaceChildren(){},addEventListener(){},remove(){}};}
+  function node(){return {dataset:{},classList:{add(){},remove(){}},append(){},replaceChildren(){},addEventListener(){},remove(){}};}
   const context={sessionStorage:{removeItem(){}},$:key=>{if(!nodes.has(key))nodes.set(key,node());return nodes.get(key);},el:()=>node(),matchMedia:()=>({matches:false}),setTimeout:fn=>timers.push(fn)};
   vm.createContext(context);
   vm.runInContext(fs.readFileSync('js/warung.js','utf8'),context);

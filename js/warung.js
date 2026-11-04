@@ -159,6 +159,7 @@ const WARUNG_MOVEMENTS=["grind","gentle_grind","rest"];
 const WARUNG_DIRECTION='Pilih gerakan yang cocok dengan pesan pengunjung dan jawaban Anda: grind untuk mengulek atau menjelaskan resep dengan semangat, gentle_grind untuk percakapan hangat atau bercerita, rest untuk mendengarkan atau topik serius. Balas hanya JSON: {"reply":"balasan Anda","movement":"grind|gentle_grind|rest"}. Jangan tulis arahan gerakan di dalam reply.';
 let warungVisit=0, warungSpeech=0;
 function warungMovement(movement){
+  $("#warungCook").classList.remove("is-speaking");
   $("#warungCook").dataset.movement=WARUNG_MOVEMENTS.includes(movement)?movement:"gentle_grind";
 }
 function warungResponse(r){
@@ -178,6 +179,7 @@ function warungSay(text,instant,movement="gentle_grind"){
   warungMovement("rest");
   if(instant||matchMedia("(prefers-reduced-motion: reduce)").matches){ p.textContent=text; return Promise.resolve(); }
   warungMovement(movement);
+  $("#warungCook").classList.add("is-speaking");
   return new Promise(res=>{
     let i=0; const step=()=>{
       if(speech!==warungSpeech){ res(); return; }

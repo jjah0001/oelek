@@ -448,20 +448,37 @@ body.peek .bar,body.peek main,body.peek footer,body.peek .kawung,body.peek .veil
 .warung-world{position:absolute;top:0;left:calc(var(--vx)/var(--vw)*-100%);width:calc(1672/var(--vw)*100%);aspect-ratio:1672/941}
 .warung-world img{position:absolute;display:block;max-width:none}
 .warung-scene{inset:0;width:100%;height:100%}
-/* Register each sprite to the same mortar position. Only the arms change
-   pose; the scene anchor and viewport stay fixed throughout a reply. */
+/* Register the full grinding poses by head-to-mortar height, then pin the
+   mortar foot. Talking changes only the mouth over a stationary portrait. */
 .warung-cook{position:absolute;left:32%;top:18%;width:36%;aspect-ratio:1;overflow:hidden;filter:drop-shadow(0 5px 5px #0003)}
-.warung-world .warung-ulek{inset:0;width:200%;height:200%;transform:translate(0,0)}
+.warung-pose,.warung-arm,.warung-mouth{position:absolute;inset:0;overflow:hidden}
+.warung-world .warung-base,.warung-world .warung-ulek,.warung-world .warung-ngobrol{inset:0;width:200%;height:200%;max-width:none}
+/* Measured opaque head/foot landmarks: top row y=45..601, lower row
+   y=657..1218. Register those landmarks instead of assuming equal cells. */
+.warung-grinding .warung-base{z-index:1;clip-path:inset(43% 50% 50% 0)}
+.warung-ulek{transform-origin:0 0}
+.warung-mouth{clip-path:ellipse(7.5% 5% at 55% 30%)}
+.warung-talking{visibility:hidden;transform:translate(3%,0) scale(.975);transform-origin:50% 96%}
+.warung-cook[data-movement="rest"] .warung-grinding{visibility:hidden}
+.warung-cook[data-movement="rest"] .warung-talking{visibility:visible}
 .warung-cook[data-movement="grind"] .warung-ulek{animation:warung-ulek 1.8s step-end infinite}
 .warung-cook[data-movement="gentle_grind"] .warung-ulek{animation:warung-ulek 3.2s step-end infinite}
-/* Offsets are fractions of the full 1254px sheet, not the 627px cell. */
+/* Pixel registration relative to the 1254px sheet; a full loop returns to
+   frame one without moving the stationary scene anchor. */
 @keyframes warung-ulek{
   0%,100%{transform:translate(0,0)}
-  25%{transform:translate(-48.5%,0)}
-  50%{transform:translate(0,-46.7%)}
-  75%{transform:translate(-48.5%,-46.7%)}
+  25%{transform:translate(-48.56%,0)}
+  50%{transform:translate(.23%,-48.34%) scale(.9911)}
+  75%{transform:translate(-47.9%,-48.34%) scale(.9911)}
 }
-@media (prefers-reduced-motion:reduce){.warung-cook[data-movement] .warung-ulek{animation:none}}
+.warung-cook.is-speaking[data-movement="rest"] .warung-ngobrol{animation:warung-ngobrol 1.4s step-end infinite}
+@keyframes warung-ngobrol{
+  0%,100%{transform:translate(0,0)}
+  20%,65%{transform:translate(-47.85%,0)}
+  40%{transform:translate(0,-48.96%)}
+  80%{transform:translate(-47.85%,-48.96%)}
+}
+@media (prefers-reduced-motion:reduce){.warung-cook[data-movement] .warung-ulek,.warung-cook.is-speaking[data-movement] .warung-ngobrol{animation:none}}
 .warung-meja{left:0;top:72.37%;width:100%;height:27.63%}
 /* night: the painted night warung and its counter fade in over the day ones; the oil lamp on the left lights Bu Lastri */
 .warung-world .warung-malam{opacity:0;transition:opacity .6s}
