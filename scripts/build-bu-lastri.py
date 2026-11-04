@@ -1,0 +1,242 @@
+#!/usr/bin/env python3
+"""Builds Bu Lastri's warung sprites from the artist's sheets.
+
+Inputs, all in art/bu-lastri/ (kept out of the published site):
+  art/bu-lastri/oma-ngobrol.webp       2x2 talking sheet; frame 1 is the master face
+  art/bu-lastri/bu-lastri-blink-v1.webp        half-closed and closed eye patches
+  art/bu-lastri/bu-lastri-grind-chat-v1.webp   2x2 grinding while looking at the visitor
+  art/bu-lastri/bu-lastri-grind-cycle-v1.webp  4x2 one concentrating ulek stroke
+  art/bu-lastri/bu-lastri-listen-offer-v1.webp 2x2 listen, glance, offer, greet
+
+Outputs:
+  img/bu-lastri-poses.webp   every full pose, registered to one camera
+  img/bu-lastri-face.webp    eye and mouth overlays, fitted to each pose's face
+  js/data/bu-lastri.js       frame tables for js/warung.js
+
+Generated frames drift a little in scale and position, so every frame is
+registered to the master by the cobek (which sits still on the counter), and
+each face is then located with ECC so the blink and mouth patches land on it.
+
+  pip install opencv-python-headless pillow numpy
+  python3 scripts/build-bu-lastri.py
+"""
+import json, os
+import numpy as np, cv2
+from PIL import Image
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ART = os.path.join(ROOT, "art", "bu-lastri")
+S = 627                      # one frame, in the talking sheet's cell pixels
+FACE = (196, 24, 288, 336)   # x, y, w, h of the overlay window inside a frame
+
+def load(p): return np.array(Image.open(p).convert("RGBA"))
+
+def components(im, n):
+    """The n largest opaque islands of a sheet, in reading order."""
+    a = (im[..., 3] > 8).astype(np.uint8)
+    m = cv2.dilate(a, np.ones((9, 9), np.uint8))
+    _, lab, st, _ = cv2.connectedComponentsWithStats(m)
+    out = []
+    for i in list(np.argsort(-st[1:, 4])[:n] + 1):
+        x, y, w, h = st[i, :4]
+        sub = im[y:y + h, x:x + w].copy()
+        sub[..., 3] = sub[..., 3] * (lab[y:y + h, x:x + w] == i)
+        out.append(((x, y), sub))
+    out.sort(key=lambda t: (round(t[0][1] / (im.shape[0] / 3)), t[0][0]))
+    return out
+
+def split_rows(im, n_per_row):
+    """Split where figures in neighbouring rows touch, then take islands per row."""
+    H, W = im.shape[:2]
+    rows = (im[H // 2 - 80:H // 2 + 80, :, 3] > 8).sum(1)
+    cut = H // 2 - 80 + int(np.argmin(rows))
+    top, bot = im.copy(), im.copy(); top[cut:] = 0; bot[:cut] = 0
+    return components(top, n_per_row) + components(bot, n_per_row)
+
+# ---------------------------------------------------------------- register by cobek
+ngobrol = load(os.path.join(ART, "oma-ngobrol.webp"))
+ref = ngobrol[0:S, 0:S]
+refm = (ref[..., 3] > 128).astype(np.float32)
+_ys = np.where(refm.sum(1) > 0)[0]; RBOT, RTOP = _ys.max(), _ys.min()
+BAND = slice(int(RBOT - 0.17 * (RBOT - RTOP)), S)        # the cobek below its rim
+
+def place(sub, s, tx, ty):
+    return cv2.warpAffine(sub, np.float32([[s, 0, tx], [0, s, ty]]), (S, S),
+                          flags=cv2.INTER_LINEAR, borderValue=(0, 0, 0, 0))
+
+def iou(sub, s, tx, ty):
+    m = (place(sub[..., 3], s, tx, ty) > 128).astype(np.float32)
+    A, B = m[BAND], refm[BAND]
+    return (A * B).sum() / max(1, ((A + B) > 0).sum())
+
+def fit_bowl(sub):
+    a = sub[..., 3] > 128; bot = np.where(a.sum(1) > 0)[0].max()
+    c = np.where(a[bot - 6:bot + 1].sum(0) > 0)[0]; cx = (c.min() + c.max()) / 2
+    rc = np.where(refm[RBOT - 6:RBOT + 1].sum(0) > 0)[0]; rcx = (rc.min() + rc.max()) / 2
+    best = (-1,)
+    for s in np.arange(0.7, 1.5, 0.02):
+        tx0, ty0 = rcx - s * cx, RBOT - s * bot
+        for dx in range(-24, 25, 6):
+            for dy in range(-12, 13, 4):
+                v = iou(sub, s, tx0 + dx, ty0 + dy)
+                if v > best[0]: best = (v, s, tx0 + dx, ty0 + dy)
+    for ds, dt in [(0.01, 3), (0.004, 1), (0.002, 0.5)]:
+        better = True
+        while better:
+            better = False; _, s, tx, ty = best
+            for c in [(s + ds, tx, ty), (s - ds, tx, ty), (s, tx + dt, ty), (s, tx - dt, ty), (s, tx, ty + dt), (s, tx, ty - dt)]:
+                v = iou(sub, *c)
+                if v > best[0] + 1e-5: best = (v,) + c; better = True
+    return best[1:]
+
+def defringe(im):
+    """Give half-transparent edge pixels the colour of the figure, not the generator's backdrop."""
+    a = im[..., 3].astype(np.float32) / 255
+    solid = (a > 0.9).astype(np.float32)
+    rgb = im[..., :3].astype(np.float32)
+    num = cv2.GaussianBlur(rgb * solid[..., None], (0, 0), 2.5)
+    den = cv2.GaussianBlur(solid, (0, 0), 2.5)[..., None] + 1e-4
+    edge = ((a > 0) & (a < 0.9))[..., None]
+    out = im.copy(); out[..., :3] = np.where(edge, np.clip(num / den, 0, 255), rgb).astype(np.uint8)
+    return out
+
+frames = {}   # name -> registered RGBA frame
+for k, (xy, sub) in enumerate(components(ngobrol, 4)):
+    frames[f"ngobrol{k}"] = place(sub, *fit_bowl(sub))
+for name, file, n, splitter in [
+    ("chat", "bu-lastri-grind-chat-v1.webp", 4, components),
+    ("cycle", "bu-lastri-grind-cycle-v1.webp", 8, components),
+    ("act", "bu-lastri-listen-offer-v1.webp", 2, split_rows),
+]:
+    im = load(os.path.join(ART, file))
+    for k, (xy, sub) in enumerate(splitter(im, n)):
+        s, tx, ty = fit_bowl(sub)
+        frames[f"{name}{k}"] = place(sub, s, tx, ty)
+# The acting sheet draws her lower behind the cobek than the talking sheet does,
+# so lift it part way: the head pops less and the cobek still sits on the counter.
+for k in range(4):
+    frames[f"act{k}"] = np.roll(frames[f"act{k}"], -14, axis=0)
+frames = {k: defringe(v) for k, v in frames.items()}
+ref = frames["ngobrol0"]
+
+# ---------------------------------------------------------------- find each face
+def gray(im):
+    a = im[..., 3:4].astype(np.float32) / 255
+    rgb = im[..., :3].astype(np.float32) * a + 128 * (1 - a)
+    return cv2.GaussianBlur(cv2.cvtColor(rgb.astype(np.uint8), cv2.COLOR_RGB2GRAY).astype(np.float32) / 255, (0, 0), 1.0)
+
+CRIT = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 400, 1e-7)
+_top = np.where(ref[..., 3].sum(1) > 0)[0].min()
+FBOX = (262, 400, _top + 50, _top + 200)
+
+def face_warp(T):
+    """2x3 map from master-face coordinates to T's coordinates."""
+    x0, x1, y0, y1 = FBOX; c = ((x0 + x1) / 2, (y0 + y1) / 2); best = (-1,)
+    g2 = gray(T)
+    for ang in (-12, -8, -5, -2, 0, 2, 5, 8, 12):
+        for sc in (0.94, 0.97, 1.0, 1.03, 1.06):
+            R = cv2.getRotationMatrix2D(c, ang, sc)
+            g1 = gray(cv2.warpAffine(ref, R, (S, S)))[y0:y1, x0:x1]
+            r = cv2.matchTemplate(g2[:400, 100:520], g1, cv2.TM_CCOEFF_NORMED)
+            _, v, _, ml = cv2.minMaxLoc(r)
+            if v > best[0]: best = (v, R, ml[0] + 100 - x0, ml[1] - y0)
+    _, R, dx, dy = best
+    W = (np.array([[1, 0, dx], [0, 1, dy], [0, 0, 1]]) @ np.vstack([R, [0, 0, 1]]))[:2].astype(np.float32)
+    mask = np.zeros((S, S), np.uint8); mask[y0:y1, x0:x1] = 1
+    for mode in (cv2.MOTION_EUCLIDEAN, cv2.MOTION_AFFINE):
+        try: _, W = cv2.findTransformECC(gray(ref), g2, W, mode, CRIT, mask, 5)
+        except cv2.error: pass
+    return W
+
+warps = {k: (np.float32([[1, 0, 0], [0, 1, 0]]) if k == "ngobrol0" else face_warp(v)) for k, v in frames.items()}
+
+# eye patches -> master face
+blink = load(os.path.join(ART, "bu-lastri-blink-v1.webp"))
+eye_src = [sub for _, sub in components(blink, 2)]
+eyes_ref = []
+for p in eye_src:
+    s = 55 / 348  # eye spacing on the master face / in the patch: the starting guess
+    M = np.float32([[s, 0, 270], [0, s, 105]])
+    m = (p[..., 3] > 230).astype(np.uint8); ys = np.where(m.sum(1) > 0)[0]; h = ys.max() - ys.min()
+    m[int(ys.min() + h * 0.36):int(ys.min() + h * 0.66)] = 0        # the lids differ: match brows and nose
+    try:
+        _, Wi = cv2.findTransformECC(gray(ref), gray(cv2.GaussianBlur(p, (0, 0), 3)), cv2.invertAffineTransform(M), cv2.MOTION_AFFINE, CRIT, m, 5)
+        M = cv2.invertAffineTransform(Wi)
+    except cv2.error: pass
+    w = cv2.warpAffine(p, M, (S, S), flags=cv2.INTER_AREA, borderValue=(0, 0, 0, 0)).astype(np.float32)
+    w[..., :3] = cv2.GaussianBlur(w[..., :3], (0, 0), 0.6)
+    eyes_ref.append(w)
+# mouth patches -> master face, from the talking sheet's other three frames
+mouths_ref = [cv2.warpAffine(frames[f"ngobrol{k}"], warps[f"ngobrol{k}"], (S, S), flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP,
+                             borderValue=(0, 0, 0, 0)).astype(np.float32) for k in (1, 2, 3)]
+EYES = [((310, 143), (25, 14)), ((365, 136), (25, 14))]
+MOUTH = [((347, 191), (44, 27))]
+
+def ellipse_mask(W, shapes, feather):
+    m = np.zeros((S, S), np.float32)
+    for (x, y), (rx, ry) in shapes:
+        cx, cy = W @ np.array([x, y, 1.0])
+        cv2.ellipse(m, (int(cx), int(cy)), (rx, ry), 0, 0, 360, 1, -1)
+    return np.clip(cv2.GaussianBlur(m, (0, 0), feather) * 1.6, 0, 1)
+
+def overlay(patch_ref, name, mask, match=True):
+    base = frames[name].astype(np.float32)
+    p = cv2.warpAffine(patch_ref, warps[name], (S, S), borderValue=(0, 0, 0, 0))
+    rgb = p[..., :3].copy(); w = mask > 0.5
+    if match and w.any():
+        for c in range(3):
+            pm, ps = rgb[..., c][w].mean(), rgb[..., c][w].std() + 1e-3
+            bm, bs = base[..., c][w].mean(), base[..., c][w].std() + 1e-3
+            rgb[..., c] = (rgb[..., c] - pm) * (0.5 + 0.5 * bs / ps) + bm
+    o = np.zeros((S, S, 4), np.uint8)
+    o[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+    o[..., 3] = (mask * (p[..., 3] / 255) * (base[..., 3] / 255) * 255).astype(np.uint8)
+    return o
+
+# ---------------------------------------------------------------- atlases
+POSES = ["ngobrol0", "act0", "act1", "act2", "act3"] + [f"chat{k}" for k in range(4)] + [f"cycle{k}" for k in range(8)]
+ROLE = {"talk": [0], "listen": [1], "glance": [2], "offer": [3], "greet": [4], "chat": list(range(5, 9)), "cycle": list(range(9, 17))}
+WITH_EYES = ["ngobrol0", "act0", "act1", "act3"] + [f"chat{k}" for k in range(4)]   # the cycle looks down: no blink needed
+WITH_MOUTH = ["ngobrol0", "act3"] + [f"chat{k}" for k in range(4)] + [f"cycle{k}" for k in range(8)]
+
+def atlas(cells, cols, w, h):
+    rows = -(-len(cells) // cols)
+    out = np.zeros((rows * h, cols * w, 4), np.uint8)
+    for i, c in enumerate(cells):
+        r, q = divmod(i, cols); out[r * h:(r + 1) * h, q * w:(q + 1) * w] = c
+    return out, rows
+
+fx, fy, fw, fh = FACE
+def _inside(o):
+    a = o[..., 3].copy(); a[fy:fy + fh, fx:fx + fw] = 0
+    assert a.max() < 8, "an overlay reaches outside the FACE window; widen FACE"
+face_cells, eyes_idx, mouth_idx = [], {}, {}
+for name in POSES:
+    i = POSES.index(name)
+    if name in WITH_EYES:
+        em = ellipse_mask(warps[name], EYES, 4)
+        eyes_idx[i] = []
+        for e in eyes_ref:
+            o = overlay(e, name, em); _inside(o)
+            eyes_idx[i].append(len(face_cells)); face_cells.append(o[fy:fy + fh, fx:fx + fw])
+    if name in WITH_MOUTH:
+        mm = ellipse_mask(warps[name], MOUTH, 5)
+        mouth_idx[i] = []
+        for m in mouths_ref:
+            o = overlay(m, name, mm, match=name != "ngobrol0"); _inside(o)
+            mouth_idx[i].append(len(face_cells)); face_cells.append(o[fy:fy + fh, fx:fx + fw])
+
+
+poses_img, prow = atlas([frames[n] for n in POSES], 6, S, S)
+face_img, frow = atlas(face_cells, 8, fw, fh)
+Image.fromarray(poses_img).save(os.path.join(ROOT, "img", "bu-lastri-poses.webp"), quality=84, alpha_quality=90, method=6)
+Image.fromarray(face_img).save(os.path.join(ROOT, "img", "bu-lastri-face.webp"), quality=86, alpha_quality=90, method=6)
+
+data = {"size": S, "poses": {"cols": 6, "rows": prow}, "face": {"cols": 8, "rows": frow, "x": fx, "y": fy, "w": fw, "h": fh},
+        "role": ROLE, "eyes": eyes_idx, "mouth": mouth_idx}
+with open(os.path.join(ROOT, "js", "data", "bu-lastri.js"), "w") as f:
+    f.write("// Generated by scripts/build-bu-lastri.py: Bu Lastri's frame tables for js/warung.js.\n")
+    f.write("// poses: grid of full frames; face: grid of eye/mouth overlays, placed at x,y,w,h inside a frame.\n")
+    f.write("// role: frames per pose; eyes[pose] = [half-closed, closed]; mouth[pose] = three open shapes.\n")
+    f.write("const BU_LASTRI=" + json.dumps(data, separators=(",", ":")) + ";\n")
+print("poses", poses_img.shape, "face cells", len(face_cells), face_img.shape)

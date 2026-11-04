@@ -155,21 +155,79 @@ function warungSetLang(l){
   $("#warungSend").textContent=l==="id"?"Kirim":"Send";
 }
 // Her movement is chosen here in code, not by Claude: Claude only writes what she says, as plain text.
-// While a sentence about sambal, grinding or tasting is being "spoken" she works the ulek (fast when she
-// is urging the visitor to try something); any other sentence she just talks; when quiet she listens.
-const WARUNG_MOVEMENTS=["grind","gentle_grind","rest"];
+// While she speaks a sentence about sambal she keeps working the ulek and looks up at the visitor; a
+// sentence about the grinding itself she demonstrates, eyes on the cobek; when she urges the visitor to
+// taste she holds out a spoonful; any other sentence she just talks. Waiting for her reply she grinds
+// quietly, while the visitor types she glances at what they write, and otherwise she listens.
+const WARUNG_MOVEMENTS=["rest","glance","think","talk","gentle_grind","grind","offer","greet"];
 const WARUNG_ULEK=/sambal|ulek|cobek|lumpang|cabai|cabe|lombok|chil+i|terasi|trasi|bawang|tomat|garlic|shallot|mortar|pestle|grind|pound|pedas|pedes|spicy|heat|kemiri|petis|rempah|bumbu|spice/i;
+const WARUNG_GILING=/\b(ulek|ngulek|diulek|uleg|nguleg|diuleg|tumbuk|ditumbuk|numbuk|giling|digiling|dihaluskan|haluskan|grind|grinding|ground|grinds|pound|pounding|crush|crushing|mash)\b/i;
 const WARUNG_COBA=/\b(coba|cobain|cicipi|icipi|rasakan|monggo|mangga|silakan dicoba|try|taste|have a bite|dig in)\b/i;
 let warungVisit=0, warungSpeech=0;
 function warungMoveFor(sentence){
-  return WARUNG_COBA.test(sentence)&&WARUNG_ULEK.test(sentence)?"grind":WARUNG_ULEK.test(sentence)?"gentle_grind":"talk";
+  if(!WARUNG_ULEK.test(sentence)) return "talk";
+  return WARUNG_COBA.test(sentence)?"offer":WARUNG_GILING.test(sentence)?"grind":"gentle_grind";
 }
-// pose: "rest" (listening), "talk" (talking mouth), "grind"/"gentle_grind" (working the ulek)
+// pose: one of WARUNG_MOVEMENTS. "talk", "gentle_grind", "grind" and "greet" move her mouth.
+const WARUNG_TALKING=new Set(["talk","gentle_grind","grind","greet"]);
 function warungMovement(pose){
-  const cook=$("#warungCook"), talk=pose==="talk";
-  cook.classList[talk?"add":"remove"]("is-speaking");
-  cook.dataset.movement=talk?"rest":WARUNG_MOVEMENTS.includes(pose)?pose:"rest";
+  const cook=$("#warungCook"), move=WARUNG_MOVEMENTS.includes(pose)?pose:"rest";
+  cook.classList[WARUNG_TALKING.has(move)?"add":"remove"]("is-speaking");
+  cook.dataset.movement=move;
+  if(typeof warungAnimate==="function") warungAnimate(move);
 }
+// The animator: frames come from BU_LASTRI (js/data/bu-lastri.js, built by scripts/build-bu-lastri.py).
+// Each movement names a set of frames, how fast it cycles, and whether she can blink or move her mouth on it.
+const WARUNG_PLAN={
+  rest:{pose:"listen"}, glance:{pose:"glance"}, think:{pose:"cycle",fps:5},
+  talk:{pose:"talk"}, gentle_grind:{pose:"chat",fps:4}, grind:{pose:"cycle",fps:10},
+  offer:{pose:"offer"}, greet:{pose:"greet"}
+};
+const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame!=="function"?null:(()=>{
+  const B=BU_LASTRI, cook=document.getElementById("warungCook");
+  if(!cook) return null;
+  const now=cook.querySelector(".bl-now .bl-pose"), ghost=cook.querySelector(".bl-ghost"), ghostImg=ghost.querySelector(".bl-pose");
+  const face=cook.querySelector(".bl-face"), eyes=cook.querySelector(".bl-eyes"), mouth=cook.querySelector(".bl-mouth");
+  const pct=v=>v*100/B.size+"%";
+  Object.assign(face.style,{left:pct(B.face.x),top:pct(B.face.y),width:pct(B.face.w),height:pct(B.face.h)});
+  for(const im of [now,ghostImg]) Object.assign(im.style,{width:B.poses.cols*100+"%",height:B.poses.rows*100+"%"});
+  for(const im of [eyes,mouth]) Object.assign(im.style,{width:B.face.cols*100+"%",height:B.face.rows*100+"%"});
+  const cell=(im,i,g)=>{ im.style.transform=`translate(${-(i%g.cols)*100/g.cols}%,${-Math.floor(i/g.cols)*100/g.rows}%)`; };
+  const show=(im,i)=>{ if(i==null){ im.style.visibility="hidden"; } else { cell(im,i,B.face); im.style.visibility="visible"; } };
+  const still=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let move="rest", since=0, frame=-1, blinkAt=0, blink=null, mouthAt=0, shape=-1, ticking=false;
+  function fade(from){
+    if(from<0||still()) return;
+    cell(ghostImg,from,B.poses); ghost.style.transition="none"; ghost.style.opacity="1";
+    void ghost.offsetWidth; ghost.style.transition="opacity .16s ease-out"; ghost.style.opacity="0";
+  }
+  function tick(t){
+    ticking=false;
+    if(cook.offsetParent===null){ schedule(); return; }               // the warung is not on screen
+    const plan=WARUNG_PLAN[move]||WARUNG_PLAN.rest, set=B.role[plan.pose], calm=still();
+    const f=set[plan.fps&&!calm?Math.floor((t-since)*plan.fps/1000)%set.length:0];
+    if(f!==frame){ if(!set.includes(frame)) fade(frame); cell(now,f,B.poses); frame=f; }
+    // a blink every few seconds, now and then a double one
+    const lids=B.eyes[f];
+    if(!blink&&t>=blinkAt){ blink={start:t,twice:Math.random()<.18}; }
+    let e=null;
+    if(blink){
+      const d=t-blink.start, seq=blink.twice?[[0,60],[1,140],[0,200],[-1,300],[0,360],[1,440],[0,500]]:[[0,60],[1,140],[0,200]];
+      const step=seq.find(s=>d<s[1]);
+      if(!step){ blink=null; blinkAt=t+2400+Math.random()*3600; } else if(step[0]>=0) e=step[0];
+    }
+    show(eyes,lids&&e!=null&&!calm?lids[e]:null);
+    // the mouth flaps while she talks, never the same shape twice running, with short closed beats
+    const lips=B.mouth[f], talking=WARUNG_TALKING.has(move)&&!calm;
+    if(talking&&lips){ if(t>=mouthAt){ let n; do{ n=Math.random()<.22?-1:Math.floor(Math.random()*lips.length); }while(n===shape); shape=n; mouthAt=t+85+Math.random()*70; } }
+    else shape=-1;
+    show(mouth,talking&&lips&&shape>=0?lips[shape]:null);
+    schedule();
+  }
+  function schedule(){ if(!ticking){ ticking=true; requestAnimationFrame(tick); } }
+  schedule();
+  return m=>{ if(m!==move){ move=m; since=performance.now(); } };
+})();
 // Sentence spans of a reply, so her pose can follow the sentence being typed.
 function warungSentences(text){
   const out=[], re=/[^.!?…\n]*(?:[.!?…]+|\n+|$)/g; let m;
@@ -188,12 +246,13 @@ function warungBubble(role,text){
   $("#warungLog").append(b); $("#warungLog").scrollTop=$("#warungLog").scrollHeight; return p;
 }
 // She "speaks" the reply: the text appears at talking pace, and her pose follows each sentence.
-function warungSay(text,instant){
+function warungSay(text,instant,greet){
   const speech=++warungSpeech;
   const p=warungBubble("assistant",instant?text:"");
   warungMovement("rest");
   if(instant||matchMedia("(prefers-reduced-motion: reduce)").matches){ p.textContent=text; return Promise.resolve(); }
   const spans=warungSentences(text); let k=0;
+  if(greet&&spans[0].move==="talk") spans[0].move="greet";   // her welcome: an open palm, monggo
   warungMovement(spans[0].move);
   return new Promise(res=>{
     let i=0; const step=()=>{
@@ -230,7 +289,7 @@ async function openWarung(){
   warungSetLang(country==="Indonesia"?"id":"en"); const g=warungGreeting(country);
   warungLog=[{role:"assistant",content:g}]; warungIdeas();
   warungBusy=true; $("#warungSend").disabled=true;
-  await warungSay(g);
+  await warungSay(g,false,true);
   if(visit===warungVisit){ warungBusy=false; $("#warungSend").disabled=false; }
 }
 async function warungReply(signal){
@@ -258,6 +317,7 @@ async function warungAsk(text){
   warungBusy=true; warungMovement("rest"); $("#warungSend").disabled=true; $("#warungInput").value=""; $("#warungIdeas").replaceChildren();
   warungBubble("user",text); warungLog.push({role:"user",content:text});
   const wait=el("div",{class:"wbubble wbu wthinking"},el("b",{class:"wname",text:"Bu Lastri"}),el("p",{text:"…"})); $("#warungLog").append(wait); $("#warungLog").scrollTop=$("#warungLog").scrollHeight;
+  warungMovement("think");
   warungCtl=new AbortController();
   try{
     const reply=await warungReply(warungCtl.signal); if(visit!==warungVisit) return; wait.remove();
@@ -272,5 +332,12 @@ async function warungAsk(text){
   }finally{ if(visit===warungVisit){ warungMovement("rest"); warungBusy=false; $("#warungSend").disabled=false; warungIdeas(); } }
 }
 $("#warungForm").addEventListener("submit",e=>{ e.preventDefault(); warungAsk($("#warungInput").value); });
+// While the visitor types she glances over at what they are writing.
+let warungGlance=0;
+$("#warungInput").addEventListener("input",()=>{
+  if(warungBusy) return;
+  warungMovement("glance"); clearTimeout(warungGlance);
+  warungGlance=setTimeout(()=>{ if(!warungBusy&&$("#warungCook").dataset.movement==="glance") warungMovement("rest"); },1600);
+});
 $("#warungInput").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); warungAsk($("#warungInput").value); } });
 $("#warungReset").addEventListener("click",()=>{ warungVisit++; warungSpeech++; if(warungCtl) warungCtl.abort(); warungBusy=false; warungLog=[]; $("#warungLog").replaceChildren(); warungMovement("rest"); warungOpened=false; openWarung(); });
