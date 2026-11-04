@@ -185,16 +185,45 @@ function warungMoveFor(sentence,prev){
 }
 // pose: one of WARUNG_MOVEMENTS. "talk", "gentle_grind", "grind" and "greet" move her mouth.
 const WARUNG_TALKING=new Set(["talk","gentle_grind","grind","greet"]);
-function warungMovement(pose){
-  const cook=$("#warungCook"), move=WARUNG_MOVEMENTS.includes(pose)?pose:"rest";
+// An animator holds a pose long enough to read: once she takes a speaking pose she keeps it for a
+// moment even if the next sentence wants another, and a run of sambal sentences stays one grinding pose.
+const WARUNG_HOLD={talk:1400,gentle_grind:1600,grind:1600,offer:2000,greet:2000};
+const WARUNG_GRINDING=new Set(["gentle_grind","grind"]);
+let warungHoldUntil=0, warungPending=null, warungAfter=null, warungPendingTimer=0;
+function warungMovement(pose,force){
+  const cook=$("#warungCook"), move=WARUNG_MOVEMENTS.includes(pose)?pose:"rest", cur=cook.dataset.movement||"rest";
+  if(force){ clearTimeout(warungPendingTimer); warungPending=warungAfter=null; warungApply(move); return; }
+  const wait=warungHoldUntil-Date.now();
+  if(wait<=0||move===cur&&!warungPending){
+    clearTimeout(warungPendingTimer); warungPending=warungAfter=null;
+    if(!(WARUNG_GRINDING.has(cur)&&WARUNG_GRINDING.has(move))) warungApply(move);   // keep grinding the same way
+    return;
+  }
+  // Still holding: remember what comes next. A gesture still waiting its turn is not skipped
+  // because she stopped talking; she makes it, then goes back to listening.
+  if(warungPending&&WARUNG_HOLD[warungPending]&&!WARUNG_HOLD[move]) warungAfter=move;
+  else { warungPending=move; warungAfter=null; }
+  clearTimeout(warungPendingTimer);
+  warungPendingTimer=setTimeout(()=>{
+    const m=warungPending, then=warungAfter; warungPending=warungAfter=null;
+    const cur=$("#warungCook").dataset.movement;
+    if(m&&!(WARUNG_GRINDING.has(cur)&&WARUNG_GRINDING.has(m))) warungApply(m);   // its turn has come
+    if(then) warungMovement(then);
+  },wait);
+}
+function warungApply(move){
+  const cook=$("#warungCook");
+  if(cook.dataset.movement===move) return;
   cook.classList[WARUNG_TALKING.has(move)?"add":"remove"]("is-speaking");
   cook.dataset.movement=move;
+  warungHoldUntil=matchMedia("(prefers-reduced-motion: reduce)").matches?0:Date.now()+(WARUNG_HOLD[move]||0);
   if(typeof warungAnimate==="function") warungAnimate(move);
 }
 // The animator: frames come from BU_LASTRI (js/data/bu-lastri.js, built by scripts/build-bu-lastri.py).
 // Each movement names a set of frames, how fast it cycles, and whether she can blink or move her mouth on it.
 const WARUNG_PLAN={
-  rest:{pose:"listen"}, glance:{pose:"glance"}, think:{pose:"cycle",fps:5},
+  // Listening uses her talking frame with the mouth closed, so going between listening and talking never moves her.
+  rest:{pose:"talk"}, glance:{pose:"glance"}, think:{pose:"cycle",fps:5},
   talk:{pose:"talk"}, gentle_grind:{pose:"chat",fps:4}, grind:{pose:"cycle",fps:10},
   offer:{pose:"offer"}, greet:{pose:"greet"}
 };
@@ -356,4 +385,4 @@ $("#warungInput").addEventListener("input",()=>{
   warungGlance=setTimeout(()=>{ if(!warungBusy&&$("#warungCook").dataset.movement==="glance") warungMovement("rest"); },1600);
 });
 $("#warungInput").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); warungAsk($("#warungInput").value); } });
-$("#warungReset").addEventListener("click",()=>{ warungVisit++; warungSpeech++; if(warungCtl) warungCtl.abort(); warungBusy=false; warungLog=[]; $("#warungLog").replaceChildren(); warungMovement("rest"); warungOpened=false; openWarung(); });
+$("#warungReset").addEventListener("click",()=>{ warungVisit++; warungSpeech++; if(warungCtl) warungCtl.abort(); warungBusy=false; warungLog=[]; $("#warungLog").replaceChildren(); warungMovement("rest",true); warungOpened=false; openWarung(); });

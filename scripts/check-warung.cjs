@@ -28,7 +28,7 @@ async function main(){
 
   const nodes=new Map(), timers=[];
   function node(){return {dataset:{},classList:{add(){},remove(){}},append(){},replaceChildren(){},addEventListener(){},remove(){}};}
-  const context={sessionStorage:{removeItem(){}},$:key=>{if(!nodes.has(key))nodes.set(key,node());return nodes.get(key);},el:()=>node(),matchMedia:()=>({matches:false}),setTimeout:fn=>timers.push(fn)};
+  const context={sessionStorage:{removeItem(){}},$:key=>{if(!nodes.has(key))nodes.set(key,node());return nodes.get(key);},el:()=>node(),matchMedia:()=>({matches:false}),setTimeout:fn=>timers.push(fn),clearTimeout(){}};
   vm.createContext(context);
   vm.runInContext(fs.readFileSync('js/warung.js','utf8'),context);
   const moveFor=t=>vm.runInContext(`warungMoveFor(${JSON.stringify(t)})`,context);
@@ -66,6 +66,16 @@ async function main(){
   await greeting;
   assert.equal(greetSeen[0],'greet+mouth'); assert.ok(greetSeen.includes('gentle_grind+mouth'));
   assert.equal(cook().dataset.movement,'rest'); assert.ok(!classes.has('is-speaking'));
+  // She holds a speaking pose before taking the next one, and a gesture still waiting is made before she listens again.
+  timers.length=0;
+  vm.runInContext('warungMovement("talk",true); warungMovement("offer"); warungMovement("rest")',context);
+  assert.equal(cook().dataset.movement,'talk');
+  timers.shift()(); assert.equal(cook().dataset.movement,'offer');
+  timers.shift()(); assert.equal(cook().dataset.movement,'rest');
+  // A run of sambal sentences stays one grinding pose rather than flicking between the two.
+  vm.runInContext('warungMovement("gentle_grind",true); warungHoldUntil=0; warungMovement("grind")',context);
+  assert.equal(cook().dataset.movement,'gentle_grind');
+  vm.runInContext('warungMovement("rest",true)',context); timers.length=0;
   // A reset interrupts an old reply that is still typing.
   const old=vm.runInContext('warungSay("An old reply that is still typing about sambal",false)',context);
   const next=vm.runInContext('warungSay("New visit",false)',context);
