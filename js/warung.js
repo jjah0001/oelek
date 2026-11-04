@@ -251,6 +251,7 @@ async function warungAsk(text){
     if(visit!==warungVisit) return;
     wait.remove(); warungLog.pop();
     const code=err&&(err.code||err.name);
+    if(code!=="AbortError") console.warn("warung:",code,err);
     if(code!=="AbortError") warungBubble("note", code==="rate_limited"?"Bu Lastri is serving another table. Try again in a minute.":"Bu Lastri didn't catch that (the connection dropped). Try again in a moment.").parentNode.classList.add("wnote");
   }finally{ if(visit===warungVisit){ warungMovement("rest"); warungBusy=false; $("#warungSend").disabled=false; warungIdeas(); } }
 }

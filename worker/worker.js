@@ -296,6 +296,26 @@ const HARI = {
 }; // the holiday she greeted the visitor for (key from js/warung.js)
 const WAKTU = { pagi: "pagi hari, warung baru buka dan sambal baru diulek", siang: "siang hari yang panas", sore: "sore hari, anak-anak bermain layangan di sawah", malam: "malam hari, warung diterangi lampu dan terdengar jangkrik", subuh: "subuh, ayam berkokok dan Anda sedang menyiapkan dagangan" };
 
+const WARUNG_MOVES = ["grind", "gentle_grind", "rest"];
+const WARUNG_SCHEMA = {
+  type: "object",
+  properties: { reply: { type: "string" }, movement: { type: "string", enum: WARUNG_MOVES } },
+  required: ["reply", "movement"],
+  additionalProperties: false,
+};
+// Reads {reply, movement} from Claude's text. Structured outputs make this plain JSON, but a reply is never thrown
+// away over its wrapping: a fenced or prefaced object is unwrapped, and bare prose is kept as what she says.
+function warungParse(text) {
+  let o = null;
+  const tryParse = (t) => { try { const v = JSON.parse(t); return v && typeof v === "object" ? v : null; } catch { return null; } };
+  o = tryParse(text) || tryParse(text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
+  if (!o) { const m = text.match(/\{[\s\S]*\}/); if (m) o = tryParse(m[0]); }
+  if (!o && text && !/^\s*[{\[]/.test(text)) o = { reply: text };
+  const reply = typeof o?.reply === "string" ? o.reply.trim() : "";
+  const movement = WARUNG_MOVES.includes(o?.movement) ? o.movement : "gentle_grind";
+  return { reply, movement };
+}
+
 async function warung(body, req, env, okOrigin) {
   const raw = Array.isArray(body?.messages) ? body.messages.slice(-20) : [];
   const messages = [];
@@ -325,20 +345,27 @@ async function warung(body, req, env, okOrigin) {
     headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({
       model: env.ANTHROPIC_MODEL || "claude-haiku-5-5",
-      max_tokens: 700,
+      max_tokens: 1500,
       thinking: { type: "disabled" },
+      // Structured outputs: the reply is always valid JSON in this shape, even when earlier turns in
+      // the history (her greeting, her past replies) are plain prose the model would otherwise imitate.
+      output_config: { format: { type: "json_schema", schema: WARUNG_SCHEMA } },
       system: warungPrompt(negara, waktu, bahasa, hari)+'\n\nPilih gerakan yang cocok dengan pesan pengunjung dan jawaban Anda: grind untuk mengulek atau menjelaskan resep dengan semangat, gentle_grind untuk percakapan hangat atau bercerita, rest untuk mendengarkan atau topik serius. Balas hanya JSON: {"reply":"balasan Anda","movement":"grind|gentle_grind|rest"}. Jangan tulis arahan gerakan di dalam reply.',
       messages,
     }),
   });
-  if (!upstream.ok) return json({ error: "upstream", status: upstream.status }, 502, okOrigin);
+  if (!upstream.ok) {
+    const detail = (await upstream.text()).slice(0, 500);
+    console.log("warung upstream", upstream.status, detail);
+    return json({ error: "upstream", status: upstream.status }, 502, okOrigin);
+  }
   const data = await upstream.json();
   const rawReply = (data?.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
-  let response;
-  try { response = JSON.parse(rawReply.replace(/^```(?:json)?\s*|\s*```$/g, "")); } catch { return json({ error: "invalid_reply" }, 502, okOrigin); }
-  const reply = typeof response?.reply === "string" ? response.reply.trim() : "";
-  const movement = ["grind", "gentle_grind", "rest"].includes(response?.movement) ? response.movement : "gentle_grind";
-  if (!reply) return json({ error: "empty" }, 502, okOrigin);
+  const { reply, movement } = warungParse(rawReply);
+  if (!reply) {
+    console.log("warung empty", data?.stop_reason, rawReply.slice(0, 500));
+    return json({ error: "empty" }, 502, okOrigin);
+  }
   // nothing from the conversation is cached or kept, here or by the browser
   const res = json({ reply: reply.slice(0, 4000), movement }, 200, okOrigin);
   res.headers.set("cache-control", "no-store");

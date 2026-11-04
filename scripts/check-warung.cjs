@@ -22,7 +22,16 @@ async function main(){
     assert.match(sent.system,/gentle_grind/);
   }
   assert.equal((await (await reply('{"reply":"Hello","movement":"bad-css"}')).json()).movement,'gentle_grind');
-  assert.equal((await reply('not JSON')).status,502);
+  // Structured outputs are requested, so the reply comes back as JSON in the Bu Lastri shape.
+  assert.equal(sent.output_config.format.type,'json_schema');
+  assert.deepEqual(sent.output_config.format.schema.properties.movement.enum,['grind','gentle_grind','rest']);
+  assert.equal(sent.thinking.type,'disabled');
+  // A good reply is never dropped over its wrapping: this was the "connection dropped" bug.
+  assert.deepEqual(await (await reply('Nasi pecel, Mas!')).json(),{reply:'Nasi pecel, Mas!',movement:'gentle_grind'});
+  assert.deepEqual(await (await reply('```json\n{"reply":"Gudeg","movement":"grind"}\n```')).json(),{reply:'Gudeg',movement:'grind'});
+  assert.deepEqual(await (await reply('Here you go: {"reply":"Soto","movement":"rest"}')).json(),{reply:'Soto',movement:'rest'});
+  assert.equal((await reply('{"reply":"cut off')).status,502);
+  assert.equal((await reply('')).status,502);
   assert.equal((await reply('{"reply":42}')).status,502);
 
   const nodes=new Map(), timers=[];
