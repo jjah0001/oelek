@@ -160,13 +160,28 @@ function warungSetLang(l){
 // taste she holds out a spoonful; any other sentence she just talks. Waiting for her reply she grinds
 // quietly, while the visitor types she glances at what they write, and otherwise she listens.
 const WARUNG_MOVEMENTS=["rest","glance","think","talk","gentle_grind","grind","offer","greet"];
-const WARUNG_ULEK=/sambal|ulek|cobek|lumpang|cabai|cabe|lombok|chil+i|terasi|trasi|bawang|tomat|garlic|shallot|mortar|pestle|grind|pound|pedas|pedes|spicy|heat|kemiri|petis|rempah|bumbu|spice/i;
+// Sambal and its making: the ingredients, the tools and the steps of a recipe.
+const WARUNG_ULEK=/sambal|ulek|uleg|cobek|lumpang|cabai|cabe|lombok|rawit|chil+i|terasi|trasi|bawang|tomat|garlic|shallot|mortar|pestle|grind|pound|pedas|pedes|spicy|kemiri|petis|rempah|bumbu|spice|\b(garam|gula jawa|gula merah|minyak panas|jeruk limau|limau|kencur|salt|palm sugar|hot oil|lime)\b/i;
+// The grinding itself, which she shows rather than tells.
 const WARUNG_GILING=/\b(ulek|ngulek|diulek|uleg|nguleg|diuleg|tumbuk|ditumbuk|numbuk|giling|digiling|dihaluskan|haluskan|grind|grinding|ground|grinds|pound|pounding|crush|crushing|mash)\b/i;
-const WARUNG_COBA=/\b(coba|cobain|cicipi|icipi|rasakan|monggo|mangga|silakan dicoba|try|taste|have a bite|dig in)\b/i;
+// Asking the visitor to taste: these words always mean it...
+const WARUNG_CICIP=/\b(cicipi|dicicipi|icipi|icip|nyicip|rasakan|dirasakan|cobain|dicoba|silakan dicoba|taste|tasting|have a bite|dig in|try some|try a little)\b/i;
+// ...these only when food is in the sentence or was in the last one ("Coba tebak" is a guessing game, not a spoon).
+const WARUNG_COBA=/\b(coba|monggo|mangga|silakan|try|have some|go on)\b/i;
+const WARUNG_MAKAN=/\b(makan|dimakan|nasi|gudeg|pecel|lalap|lalapan|tempe|tahu|kerupuk|krupuk|soto|sate|rendang|gorengan|teh|kopi|ini|eat|food|dish|this|rice|tea|coffee|bite|spoon|sendok)\b/i;
+// Welcomes and goodbyes get her open palm.
+const WARUNG_SALAM=/\b(selamat datang|sugeng rawuh|silakan masuk|come in|pinarak|silakan duduk|mampir|welcome|have a seat|sit down|selamat jalan|sampai jumpa|hati-hati di jalan|goodbye|good bye|see you|take care|safe travels)\b/i;
+const WARUNG_BUKAN_MAKAN=/\b(coba (tebak|ceritakan|bayangkan|ingat)|try to (guess|imagine|remember)|guess)\b/i;
 let warungVisit=0, warungSpeech=0;
-function warungMoveFor(sentence){
-  if(!WARUNG_ULEK.test(sentence)) return "talk";
-  return WARUNG_COBA.test(sentence)?"offer":WARUNG_GILING.test(sentence)?"grind":"gentle_grind";
+// prev: the sentence she said just before, so a short follow-up ("Coba ini, Nak!") keeps the topic.
+function warungMoveFor(sentence,prev){
+  if(WARUNG_SALAM.test(sentence)) return "greet";
+  const sambal=WARUNG_ULEK.test(sentence), before=!!prev&&WARUNG_ULEK.test(prev);
+  const tasting=!WARUNG_BUKAN_MAKAN.test(sentence)&&(WARUNG_CICIP.test(sentence)||
+    WARUNG_COBA.test(sentence)&&(sambal||before||WARUNG_MAKAN.test(sentence)));
+  if(tasting) return "offer";
+  if(sambal) return WARUNG_GILING.test(sentence)?"grind":"gentle_grind";
+  return "talk";
 }
 // pose: one of WARUNG_MOVEMENTS. "talk", "gentle_grind", "grind" and "greet" move her mouth.
 const WARUNG_TALKING=new Set(["talk","gentle_grind","grind","greet"]);
@@ -231,7 +246,8 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
 // Sentence spans of a reply, so her pose can follow the sentence being typed.
 function warungSentences(text){
   const out=[], re=/[^.!?…\n]*(?:[.!?…]+|\n+|$)/g; let m;
-  while((m=re.exec(text))&&m[0]){ out.push({end:m.index+m[0].length,move:warungMoveFor(m[0])}); }
+  let prev="";
+  while((m=re.exec(text))&&m[0]){ out.push({end:m.index+m[0].length,move:warungMoveFor(m[0],prev)}); prev=m[0]; }
   return out.length?out:[{end:text.length,move:warungMoveFor(text)}];
 }
 function warungResponse(r){
@@ -252,7 +268,7 @@ function warungSay(text,instant,greet){
   warungMovement("rest");
   if(instant||matchMedia("(prefers-reduced-motion: reduce)").matches){ p.textContent=text; return Promise.resolve(); }
   const spans=warungSentences(text); let k=0;
-  if(greet&&spans[0].move==="talk") spans[0].move="greet";   // her welcome: an open palm, monggo
+  if(greet&&(spans[0].move==="talk"||spans[0].move==="offer")) spans[0].move="greet";   // her welcome: an open palm, monggo
   warungMovement(spans[0].move);
   return new Promise(res=>{
     let i=0; const step=()=>{
