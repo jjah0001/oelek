@@ -36,6 +36,17 @@ async function main(){
   assert.equal(moveFor('Try this sambal matah.'),'offer');
   assert.equal(moveFor('Cabainya diulek dulu sampai halus.'),'grind');
   assert.equal(moveFor('Grind the chillies with a pinch of salt first.'),'grind');
+  // Context: a short follow-up keeps the topic of the sentence before it, and only food is offered.
+  const after=(t,p)=>vm.runInContext(`warungMoveFor(${JSON.stringify(t)},${JSON.stringify(p)})`,context);
+  assert.equal(after('Coba ini, Nak, masih anget!','Sambal bawangnya baru jadi.'),'offer');
+  assert.equal(after('Habis itu disiram minyak panas, biar wangi.','Cabainya diulek kasar.'),'gentle_grind');
+  assert.equal(moveFor('Taste it and tell me if it needs more salt.'),'offer');
+  assert.equal(moveFor('Try the gudeg too, it is sweet.'),'offer');
+  assert.equal(moveFor('Coba tebak, Ibu umurnya berapa?'),'talk');
+  assert.equal(moveFor('Coba ceritakan, kamu suka makan apa?'),'talk');
+  assert.equal(moveFor('The heat here is terrible in the afternoon.'),'talk');
+  assert.equal(moveFor('Selamat jalan, hati-hati di jalan ya, Nak!'),'greet');
+  assert.equal(moveFor('Monggo, mampir dulu! Mau es teh?'),'greet');
   assert.equal(moveFor('Sambal terasi itu dari cabai dan terasi bakar.'),'gentle_grind');
   assert.equal(moveFor('Orang Jawa biasanya sarapan nasi pecel atau gudeg.'),'talk');
   // Her pose follows the sentence being typed, and she listens again when she has finished.
