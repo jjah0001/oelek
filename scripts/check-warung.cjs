@@ -32,8 +32,10 @@ async function main(){
   vm.createContext(context);
   vm.runInContext(fs.readFileSync('js/warung.js','utf8'),context);
   const moveFor=t=>vm.runInContext(`warungMoveFor(${JSON.stringify(t)})`,context);
-  assert.equal(moveFor('Coba sambal bawang ini, Nak!'),'grind');
-  assert.equal(moveFor('Try this sambal matah.'),'grind');
+  assert.equal(moveFor('Coba sambal bawang ini, Nak!'),'offer');
+  assert.equal(moveFor('Try this sambal matah.'),'offer');
+  assert.equal(moveFor('Cabainya diulek dulu sampai halus.'),'grind');
+  assert.equal(moveFor('Grind the chillies with a pinch of salt first.'),'grind');
   assert.equal(moveFor('Sambal terasi itu dari cabai dan terasi bakar.'),'gentle_grind');
   assert.equal(moveFor('Orang Jawa biasanya sarapan nasi pecel atau gudeg.'),'talk');
   // Her pose follows the sentence being typed, and she listens again when she has finished.
@@ -41,11 +43,17 @@ async function main(){
   const seen=[];
   context.$('#warungCook'); const classes=new Set(); cook().classList={add:c=>classes.add(c),remove:c=>classes.delete(c)};
   const speech=vm.runInContext('warungSay("Selamat pagi, Nak. Coba sambal bawang ini!",false)',context);
-  seen.push(classes.has('is-speaking')?'talk':cook().dataset.movement);
-  while(timers.length){ timers.shift()(); seen.push(classes.has('is-speaking')?'talk':cook().dataset.movement); }
+  const look=()=>cook().dataset.movement+(classes.has('is-speaking')?'+mouth':'');
+  seen.push(look());
+  while(timers.length){ timers.shift()(); seen.push(look()); }
   await speech;
-  assert.ok(seen.includes('talk')); assert.ok(seen.includes('grind'));
-  assert.ok(seen.indexOf('talk')<seen.indexOf('grind'));
+  assert.ok(seen.includes('talk+mouth')); assert.ok(seen.includes('offer'));
+  assert.ok(seen.indexOf('talk+mouth')<seen.indexOf('offer'));
+  // Her welcome opens with the greeting pose, and talking about sambal keeps her mouth moving while she grinds.
+  const greetSeen=[]; const greeting=vm.runInContext('warungSay("Monggo, pinarak. Sambal terasi baru saja jadi.",false,true)',context);
+  greetSeen.push(look()); while(timers.length){ timers.shift()(); greetSeen.push(look()); }
+  await greeting;
+  assert.equal(greetSeen[0],'greet+mouth'); assert.ok(greetSeen.includes('gentle_grind+mouth'));
   assert.equal(cook().dataset.movement,'rest'); assert.ok(!classes.has('is-speaking'));
   // A reset interrupts an old reply that is still typing.
   const old=vm.runInContext('warungSay("An old reply that is still typing about sambal",false)',context);
@@ -58,6 +66,6 @@ async function main(){
   assert.equal(timers.length,0);
   assert.equal(vm.runInContext('warungResponse({reply:" Legacy ",movement:"grind"})',context),'Legacy');
   assert.equal(vm.runInContext('warungResponse("Plain")',context),'Plain');
-  console.log('Warung: plain-text replies, code-driven ulek and talking poses, interrupted speech and reduced motion passed.');
+  console.log('Warung: plain-text replies, code-driven poses (talk, ulek, offer, greet), interrupted speech and reduced motion passed.');
 }
 main().catch(err=>{console.error(err);process.exitCode=1;});

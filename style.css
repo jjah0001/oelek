@@ -448,39 +448,21 @@ body.peek .bar,body.peek main,body.peek footer,body.peek .kawung,body.peek .veil
 .warung-world{position:absolute;top:0;left:calc(var(--vx)/var(--vw)*-100%);width:calc(1672/var(--vw)*100%);aspect-ratio:1672/941}
 .warung-world img{position:absolute;display:block;max-width:none}
 .warung-scene{inset:0;width:100%;height:100%}
-/* Register the full grinding poses by head-to-mortar height, then pin the
-   mortar foot. Talking changes only the mouth over a stationary portrait. */
+/* Bu Lastri: every pose is one frame of img/bu-lastri-poses.webp, registered to the same camera by
+   scripts/build-bu-lastri.py; blinks and mouth shapes are small overlays from img/bu-lastri-face.webp.
+   js/warung.js picks the frame. The ghost layer holds the previous pose for a short dissolve. */
 .warung-cook{position:absolute;left:32%;top:18%;width:36%;aspect-ratio:1;overflow:hidden;filter:drop-shadow(0 5px 5px #0003)}
-.warung-pose,.warung-arm,.warung-mouth{position:absolute;inset:0;overflow:hidden}
-.warung-world .warung-base,.warung-world .warung-ulek,.warung-world .warung-ngobrol{inset:0;width:200%;height:200%;max-width:none}
-/* Measured opaque head/foot landmarks: top row y=45..601, lower row
-   y=657..1218. Register those landmarks instead of assuming equal cells. */
-.warung-grinding .warung-base{z-index:1;clip-path:inset(43% 50% 50% 0)}
-.warung-ulek{transform-origin:0 0}
-.warung-mouth{clip-path:ellipse(7.5% 5% at 55% 30%)}
-.warung-talking{visibility:hidden;transform:translate(3%,0) scale(.975);transform-origin:50% 96%}
-.warung-cook[data-movement="rest"] .warung-grinding{visibility:hidden}
-.warung-cook[data-movement="rest"] .warung-talking{visibility:visible}
-.warung-cook[data-movement="grind"] .warung-ulek{animation:warung-ulek 1.8s step-end infinite}
-.warung-cook[data-movement="gentle_grind"] .warung-ulek{animation:warung-ulek 3.2s step-end infinite}
-/* Pixel registration relative to the 1254px sheet; a full loop returns to
-   frame one without moving the stationary scene anchor. */
-@keyframes warung-ulek{
-  0%,100%{transform:translate(0,0)}
-  25%{transform:translate(-48.56%,0)}
-  50%{transform:translate(.23%,-48.34%) scale(.9911)}
-  75%{transform:translate(-47.9%,-48.34%) scale(.9911)}
-}
-.warung-cook.is-speaking[data-movement="rest"] .warung-ngobrol{animation:warung-ngobrol 1.4s step-end infinite}
-@keyframes warung-ngobrol{
-  0%,100%{transform:translate(0,0)}
-  20%,65%{transform:translate(-47.85%,0)}
-  40%{transform:translate(0,-48.96%)}
-  80%{transform:translate(-47.85%,-48.96%)}
-}
-@media (prefers-reduced-motion:reduce){.warung-cook[data-movement] .warung-ulek,.warung-cook.is-speaking[data-movement] .warung-ngobrol{animation:none}}
+.bl-fig{position:absolute;inset:0;transform:translate(3%,0) scale(.975);transform-origin:50% 96%}
+.bl-layer{position:absolute;inset:0;overflow:hidden;transform-origin:50% 97%;animation:bl-breathe 4.2s ease-in-out infinite}
+.bl-ghost{z-index:2;opacity:0;pointer-events:none}
+.warung-world .bl-pose{left:0;top:0;width:600%;height:300%}
+.bl-face{position:absolute;overflow:hidden}
+.warung-world .bl-eyes,.warung-world .bl-mouth{left:0;top:0;width:800%;height:800%;visibility:hidden}
+@keyframes bl-breathe{0%,100%{transform:none}45%{transform:scale(1.004,1.008)}}
+@media (prefers-reduced-motion:reduce){.bl-layer{animation:none}.bl-ghost{display:none}}
 .warung-meja{left:0;top:72.37%;width:100%;height:27.63%}
-/* night: the painted night warung and its counter fade in over the day ones; the oil lamp on the left lights Bu Lastri */
+/* night: the painted night warung and its counter fade in over the day ones; the oil lamp on the left lights Bu Lastri,
+   so her shadow falls to the right */
 .warung-world .warung-malam{opacity:0;transition:opacity .6s}
 .warung-lamp{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .6s;mix-blend-mode:screen;
   background:radial-gradient(ellipse 22% 30% at 13.5% 38%,#ffb04a55,transparent 70%),radial-gradient(ellipse 30% 40% at 40% 45%,#ff9a3a22,transparent 70%)}
@@ -488,7 +470,7 @@ body.peek .bar,body.peek main,body.peek footer,body.peek .kawung,body.peek .veil
 :root[data-kampung="malam"] .warung-lamp{opacity:1;animation:pelita 3.2s ease-in-out infinite}
 @keyframes pelita{0%,100%{opacity:1}35%{opacity:.82}55%{opacity:.95}70%{opacity:.86}}
 @media (prefers-reduced-motion:reduce){:root[data-kampung="malam"] .warung-lamp{animation:none}}
-:root[data-kampung="malam"] .warung-cook{filter:brightness(.72) saturate(.85) sepia(.3) drop-shadow(-6px 10px 18px #0008)}
+:root[data-kampung="malam"] .warung-cook{filter:brightness(.72) saturate(.85) sepia(.3) drop-shadow(6px 10px 18px #0008)}
 .warung-chat{display:grid;grid-template-rows:minmax(0,1fr) auto auto auto;gap:10px;min-height:0;height:min(72vh,620px);padding:14px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 94%,transparent)}
 .warung-log{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px;min-height:220px}
 .wbubble{max-width:88%;padding:10px 14px;border-radius:16px;line-height:1.5;font-size:.95rem}
