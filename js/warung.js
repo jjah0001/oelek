@@ -159,7 +159,7 @@ function warungSetLang(l){
 // sentence about the grinding itself she demonstrates, eyes on the cobek; when she urges the visitor to
 // taste she holds out a spoonful; any other sentence she just talks. Waiting for her reply she grinds
 // quietly, while the visitor types she glances at what they write, and otherwise she listens.
-const WARUNG_MOVEMENTS=["rest","glance","think","talk","gentle_grind","grind","offer","greet"];
+const WARUNG_MOVEMENTS=["rest","glance","think","talk","gentle_grind","grind","offer","greet","farewell"];
 // Sambal and its making: the ingredients, the tools and the steps of a recipe.
 const WARUNG_ULEK=/sambal|ulek|uleg|cobek|lumpang|cabai|cabe|lombok|rawit|chil+i|terasi|trasi|bawang|tomat|garlic|shallot|mortar|pestle|grind|pound|pedas|pedes|spicy|kemiri|petis|rempah|bumbu|spice|\b(garam|gula jawa|gula merah|minyak panas|jeruk limau|limau|kencur|salt|palm sugar|hot oil|lime)\b/i;
 // The grinding itself, which she shows rather than tells.
@@ -169,12 +169,22 @@ const WARUNG_CICIP=/\b(cicipi|dicicipi|icipi|icip|nyicip|rasakan|dirasakan|cobai
 // ...these only when food is in the sentence or was in the last one ("Coba tebak" is a guessing game, not a spoon).
 const WARUNG_COBA=/\b(coba|monggo|mangga|silakan|try|have some|go on)\b/i;
 const WARUNG_MAKAN=/\b(makan|dimakan|nasi|gudeg|pecel|lalap|lalapan|tempe|tahu|kerupuk|krupuk|soto|sate|rendang|gorengan|teh|kopi|ini|eat|food|dish|this|rice|tea|coffee|bite|spoon|sendok)\b/i;
-// Welcomes and goodbyes get her open palm.
-const WARUNG_SALAM=/\b(selamat datang|sugeng rawuh|silakan masuk|come in|pinarak|silakan duduk|mampir|welcome|have a seat|sit down|selamat jalan|sampai jumpa|hati-hati di jalan|goodbye|good bye|see you|take care|safe travels)\b/i;
+// Welcomes get her open palm; goodbyes a small wave and a nod.
+const WARUNG_SALAM=/\b(selamat datang|sugeng rawuh|silakan masuk|come in|pinarak|silakan duduk|mampir|welcome|have a seat|sit down)\b/i;
+const WARUNG_PAMIT=/\b(selamat jalan|sugeng tindak|sampai jumpa|sampai ketemu|hati-hati di jalan|mampir lagi|datang lagi|dadah|goodbye|good bye|bye|see you|take care|safe travels|come back soon)\b/i;
+// Her face follows the feeling of the sentence; most sentences need none. Checked in this order.
+const WARUNG_FEELS=[
+  ["laugh",/\b(ha(ha)+|he(he)+|hi(hi)+|wk(wk)+|lol|lucu|lucunya|funny|joke|joking|bercanda|becanda|ketawa|tertawa|laugh)\b|😄|😂|😆|🤣/i],
+  ["sympathy",/\b(sorry to hear|so sorry|poor (you|thing)|kasihan|sedih|sedihnya|capek|capeknya|lelah|turut berduka|semoga (cepat|lekas) sembuh|get well|that must be (hard|tough)|must be tiring|sabar ya|yang sabar|condolences|I'm sorry)\b/i],
+  ["waduh",/\b(waduh|wadhuh|astaga|astagfirullah|ya ampun|masya ?allah|whoa|wow|oh my|goodness|good heavens|really\?|beneran\?|masa\?|seriously\?)|\b(lho|loh)\b/i],
+  ["thinking",/\b(hmm+|let me think|let me see|let me remember|coba (saya|ibu) ingat|sebentar ya|apa ya|kalau tidak salah|kalau nggak salah|setahu saya|if I remember)\b/i]
+];
+function warungFeelFor(sentence){ const hit=WARUNG_FEELS.find(([,re])=>re.test(sentence)); return hit?hit[0]:null; }
 const WARUNG_BUKAN_MAKAN=/\b(coba (tebak|ceritakan|bayangkan|ingat)|try to (guess|imagine|remember)|guess)\b/i;
 let warungVisit=0, warungSpeech=0;
 // prev: the sentence she said just before, so a short follow-up ("Coba ini, Nak!") keeps the topic.
 function warungMoveFor(sentence,prev){
+  if(WARUNG_PAMIT.test(sentence)) return "farewell";
   if(WARUNG_SALAM.test(sentence)) return "greet";
   const sambal=WARUNG_ULEK.test(sentence), before=!!prev&&WARUNG_ULEK.test(prev);
   const tasting=!WARUNG_BUKAN_MAKAN.test(sentence)&&(WARUNG_CICIP.test(sentence)||
@@ -183,11 +193,11 @@ function warungMoveFor(sentence,prev){
   if(sambal) return WARUNG_GILING.test(sentence)?"grind":"gentle_grind";
   return "talk";
 }
-// pose: one of WARUNG_MOVEMENTS. "talk", "gentle_grind", "grind" and "greet" move her mouth.
-const WARUNG_TALKING=new Set(["talk","gentle_grind","grind","greet"]);
+// pose: one of WARUNG_MOVEMENTS. "talk", "gentle_grind", "grind", "greet" and "farewell" move her mouth.
+const WARUNG_TALKING=new Set(["talk","gentle_grind","grind","greet","farewell"]);
 // An animator holds a pose long enough to read: once she takes a speaking pose she keeps it for a
 // moment even if the next sentence wants another, and a run of sambal sentences stays one grinding pose.
-const WARUNG_HOLD={talk:1400,gentle_grind:1600,grind:1600,offer:2000,greet:2000};
+const WARUNG_HOLD={talk:1400,gentle_grind:1600,grind:1600,offer:2000,greet:2000,farewell:2600};
 const WARUNG_GRINDING=new Set(["gentle_grind","grind"]);
 let warungHoldUntil=0, warungPending=null, warungAfter=null, warungPendingTimer=0;
 function warungMovement(pose,force){
@@ -228,21 +238,50 @@ const WARUNG_PLAN={
   // Just after speaking she listens in her talking frame with the mouth closed, so a quick back-and-forth never moves her.
   rest:{pose:"talk"}, glance:{pose:"glance"}, think:{pose:"cycle",fps:5},
   talk:{pose:"talk"}, gentle_grind:{pose:"chat",fps:4}, grind:{pose:"cycle",fps:10},
-  offer:{pose:"offer"}, greet:{pose:"greet"}
+  offer:{pose:"offer"}, greet:{pose:"greet"},
+  // goodbye: a small wave, then the hand goes back to the ulekan and she nods
+  farewell:{seq:[["wave",1300],["nod",0]]}
 };
+// In-between frames, so her hand travels instead of dissolving: [from pose, to pose] -> frame set, shown briefly.
+// "*" is any other pose. The first rule that matches is used.
+const WARUNG_VIA=[["offer","*","lower"],["*","offer","raise"],["wave","nod","reach"],["greet","*","reach"],["wave","*","reach"],["*","greet","release"],["*","wave","release"]];
+function warungVia(from,to){
+  if(!from||from===to) return null;
+  const r=WARUNG_VIA.find(([a,b])=>(a===from||a==="*")&&(b===to||b==="*")&&!(a==="*"&&b==="*"));
+  return r?r[2]:null;
+}
 const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame!=="function"?null:(()=>{
   const B=BU_LASTRI, cook=document.getElementById("warungCook");
   if(!cook) return null;
   const now=cook.querySelector(".bl-now .bl-pose"), ghost=cook.querySelector(".bl-ghost"), ghostImg=ghost.querySelector(".bl-pose");
   const face=cook.querySelector(".bl-face"), eyes=cook.querySelector(".bl-eyes"), mouth=cook.querySelector(".bl-mouth");
+  const feelBox=cook.querySelector(".bl-feelbox"), feelImg=feelBox&&feelBox.querySelector(".bl-feel");
   const pct=v=>v*100/B.size+"%";
   Object.assign(face.style,{left:pct(B.face.x),top:pct(B.face.y),width:pct(B.face.w),height:pct(B.face.h)});
   for(const im of [now,ghostImg]) Object.assign(im.style,{width:B.poses.cols*100+"%",height:B.poses.rows*100+"%"});
   for(const im of [eyes,mouth]) Object.assign(im.style,{width:B.face.cols*100+"%",height:B.face.rows*100+"%"});
+  const FG=B.feelGrid;
+  if(feelBox&&FG){
+    Object.assign(feelBox.style,{left:pct(FG.x),top:pct(FG.y),width:pct(FG.w),height:pct(FG.h)});
+    Object.assign(feelImg.style,{width:FG.cols*100+"%",height:FG.rows*100+"%"});
+  }
   const cell=(im,i,g)=>{ im.style.transform=`translate(${-(i%g.cols)*100/g.cols}%,${-Math.floor(i/g.cols)*100/g.rows}%)`; };
-  const show=(im,i)=>{ if(i==null){ im.style.visibility="hidden"; } else { cell(im,i,B.face); im.style.visibility="visible"; } };
+  const show=(im,i,g)=>{ if(i==null){ im.style.visibility="hidden"; } else { cell(im,i,g||B.face); im.style.visibility="visible"; } };
   const still=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Day and night atlases share their indices. Night ones load when the kampung first gets dark, and the
+  // reaction faces only when she first needs one; each swaps in once it has loaded, never half-drawn.
+  const ATLAS={poses:"img/bu-lastri-poses",face:"img/bu-lastri-face",feel:"img/bu-lastri-feel"};
+  const loaded={}, want=k=>ATLAS[k]+(night?"-malam":"")+".webp";
+  function use(k,imgs){
+    const src=want(k);
+    if(imgs.every(im=>im.getAttribute("src")===src)) return true;
+    if(loaded[src]===true){ for(const im of imgs) im.setAttribute("src",src); return true; }
+    if(!loaded[src]){ const pre=new Image(); loaded[src]=pre; pre.onload=()=>{ loaded[src]=true; }; pre.src=src; }
+    return false;
+  }
+  let night=false, feelOn=false;
   let move="rest", since=0, frame=-1, blinkAt=0, blink=null, mouthAt=0, shape=-1, ticking=false;
+  let pose="", via=null, feel=null, feelUntil=0;
   function fade(from){
     if(from<0||still()) return;
     cell(ghostImg,from,B.poses); ghost.style.transition="none"; ghost.style.opacity="1";
@@ -251,9 +290,18 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
   function tick(t){
     ticking=false;
     if(cook.offsetParent===null){ schedule(); return; }               // the warung is not on screen
+    night=document.documentElement.dataset.kampung==="malam";
+    use("poses",[now,ghostImg]); use("face",[eyes,mouth]);
+    const feelReady=feelOn&&feelImg&&use("feel",[feelImg]);
+    const calm=still();
     // After a few quiet seconds she settles into her listening pose, head tilted toward the visitor.
-    const plan=move==="rest"&&t-since>3500?{pose:"listen"}:WARUNG_PLAN[move]||WARUNG_PLAN.rest, set=B.role[plan.pose], calm=still();
-    const f=set[plan.fps&&!calm?Math.floor((t-since)*plan.fps/1000)%set.length:0];
+    let plan=move==="rest"&&t-since>3500?{pose:"listen"}:WARUNG_PLAN[move]||WARUNG_PLAN.rest, p=plan.pose, pt=t-since;
+    if(plan.seq){ let acc=0; p=plan.seq[plan.seq.length-1][0]; for(const [name,ms] of plan.seq){ if(ms&&pt<acc+ms){ p=name; break; } acc+=ms; } }
+    // a new pose: pass through its in-between frame first
+    if(p!==pose){ const v=calm?null:warungVia(pose,p); via=v&&B.role[v]?{f:B.role[v][0],until:t+130}:null; pose=p; }
+    if(via&&t>=via.until) via=null;
+    const set=B.role[p]||B.role.talk;
+    const f=via?via.f:set[plan.fps&&!calm?Math.floor(pt*plan.fps/1000)%set.length:0];
     if(f!==frame){ if(!set.includes(frame)) fade(frame); cell(now,f,B.poses); frame=f; }
     // a blink every few seconds, now and then a double one
     const lids=B.eyes[f];
@@ -264,24 +312,78 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
       const step=seq.find(s=>d<s[1]);
       if(!step){ blink=null; blinkAt=t+2400+Math.random()*3600; } else if(step[0]>=0) e=step[0];
     }
-    show(eyes,lids&&e!=null&&!calm?lids[e]:null);
     // the mouth flaps while she talks, never the same shape twice running, with short closed beats
     const lips=B.mouth[f], talking=WARUNG_TALKING.has(move)&&!calm;
-    if(talking&&lips){ if(t>=mouthAt){ let n; do{ n=Math.random()<.22?-1:Math.floor(Math.random()*lips.length); }while(n===shape); shape=n; mouthAt=t+85+Math.random()*70; } }
+    if(talking&&(lips||B.feel&&B.feel[f])){ if(t>=mouthAt){ const n0=lips?lips.length:1; let n; do{ n=Math.random()<.22?-1:Math.floor(Math.random()*n0); }while(n===shape&&n0>1); shape=n; mouthAt=t+85+Math.random()*70; } }
     else shape=-1;
-    show(mouth,talking&&lips&&shape>=0?lips[shape]:null);
+    // a feeling: her whole inner face changes (eyes, brows, mouth); it still blinks and talks
+    if(feel&&t>feelUntil) feel=null;
+    const fc=feel&&feelReady&&!via&&B.feel&&B.feel[f]&&B.feel[f][feel];
+    if(fc){
+      show(feelImg,e===1?fc[2]:talking&&shape>=0?fc[1]:fc[0],FG);
+      show(eyes,null); show(mouth,null);
+    } else {
+      if(feelImg) show(feelImg,null);
+      show(eyes,lids&&e!=null&&!calm?lids[e]:null);
+      show(mouth,talking&&lips&&shape>=0?lips[shape]:null);
+    }
     schedule();
   }
   function schedule(){ if(!ticking){ ticking=true; requestAnimationFrame(tick); } }
   schedule();
-  return m=>{ if(m!==move){ move=m; since=performance.now(); } };
+  const api=m=>{ if(m!==move){ move=m; since=performance.now(); } if(m==="rest"||m==="think"||m==="glance") feel=null; };
+  // A feeling lasts at least a moment, so a short sentence does not flash it.
+  api.feel=x=>{ if(!x) return; feelOn=true; feel=x; feelUntil=performance.now()+1800; };
+  return api;
+})();
+function warungFeel(x){ if(warungAnimate&&warungAnimate.feel) warungAnimate.feel(x); }
+// The warung around her: steam, smoke over Merapi, a sleeping cat, a strip of kopi sachets, and at night a
+// cicak on the beam. Placed from WARUNG_SCENE (js/data/warung-scene.js, built by scripts/build-warung-scene.py);
+// each loop is a strip of frames that CSS steps through. They sit behind her and never cross her.
+(function warungScene(){
+  if(typeof WARUNG_SCENE==="undefined") return;
+  const world=document.querySelector(".warung-world"), cook=document.getElementById("warungCook");
+  if(!world||!cook) return;
+  const W=WARUNG_SCENE.w, H=WARUNG_SCENE.h;
+  for(const L of WARUNG_SCENE.loops){
+    const box=document.createElement("div");
+    box.className="wl wl-"+L.key+(L.when==="day"?" wl-siang":L.when==="night"?" warung-malam":"");
+    Object.assign(box.style,{left:L.x*100/W+"%",top:L.y*100/H+"%",width:L.w*100/W+"%",height:L.h*100/H+"%"});
+    if(L.opacity) box.style.setProperty("--wl-o",L.opacity);
+    const im=document.createElement("img");
+    im.alt=""; im.decoding="async"; im.loading="lazy"; im.src=L.src;
+    im.style.width=L.n*100+"%"; im.style.setProperty("--n",L.n); im.style.animationDuration=L.n/L.fps+"s";
+    if(L.path) im.style.animation="none";                       // the cicak is moved by hand, below
+    box.append(im); world.insertBefore(box,cook);
+    if(L.path) warungCicak(box,im,L);
+  }
+  // A cicak waits on the beam, dashes a little way, freezes, dashes again, then slips out of sight.
+  function warungCicak(box,im,L){
+    const n=L.n, still=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const at=(i,f)=>{ box.style.transform=`translate(${L.path[i][0]*100/L.w}%,${L.path[i][1]*100/L.h}%) rotate(var(--wl-turn))`; im.style.transform=`translateX(${-f*100/n}%)`; };
+    let leg=0;
+    function step(){
+      if(still()||document.documentElement.dataset.kampung!=="malam"||box.offsetParent===null){ leg=0; at(0,0); box.style.opacity=""; setTimeout(step,3000); return; }
+      if(leg>=L.path.length-1){ box.style.opacity="0"; setTimeout(()=>{ leg=0; at(0,0); box.style.opacity=""; setTimeout(step,2500+Math.random()*3000); },5000); return; }
+      // the dash: crawl frames while sliding to the next spot, then the still frame
+      const from=L.path[leg], to=L.path[leg+1], t0=performance.now(), dur=520;
+      const run=t=>{
+        const k=Math.min(1,(t-t0)/dur), x=from[0]+(to[0]-from[0])*k, y=from[1]+(to[1]-from[1])*k;
+        box.style.transform=`translate(${x*100/L.w}%,${y*100/L.h}%) rotate(var(--wl-turn))`;
+        im.style.transform=`translateX(${-(1+Math.floor(k*24)%(n-1))*100/n}%)`;
+        if(k<1) requestAnimationFrame(run); else { leg++; at(leg,0); setTimeout(step,2200+Math.random()*2600); }
+      };
+      requestAnimationFrame(run);
+    }
+    at(0,0); setTimeout(step,2000);
+  }
 })();
 // Sentence spans of a reply, so her pose can follow the sentence being typed.
 function warungSentences(text){
   const out=[], re=/[^.!?…\n]*(?:[.!?…]+|\n+|$)/g; let m;
   let prev="";
-  while((m=re.exec(text))&&m[0]){ out.push({end:m.index+m[0].length,move:warungMoveFor(m[0],prev)}); prev=m[0]; }
-  return out.length?out:[{end:text.length,move:warungMoveFor(text)}];
+  while((m=re.exec(text))&&m[0]){ out.push({end:m.index+m[0].length,move:warungMoveFor(m[0],prev),feel:warungFeelFor(m[0])}); prev=m[0]; }
+  return out.length?out:[{end:text.length,move:warungMoveFor(text),feel:warungFeelFor(text)}];
 }
 function warungResponse(r){
   const reply=typeof r==="string"?r:r&&typeof r.reply==="string"?r.reply:"";
@@ -302,12 +404,12 @@ function warungSay(text,instant,greet){
   if(instant||matchMedia("(prefers-reduced-motion: reduce)").matches){ p.textContent=text; return Promise.resolve(); }
   const spans=warungSentences(text); let k=0;
   if(greet&&(spans[0].move==="talk"||spans[0].move==="offer")) spans[0].move="greet";   // her welcome: an open palm, monggo
-  warungMovement(spans[0].move);
+  warungMovement(spans[0].move); warungFeel(spans[0].feel);
   return new Promise(res=>{
     let i=0; const step=()=>{
       if(speech!==warungSpeech){ res(); return; }
       i=Math.min(text.length,i+2); p.textContent=text.slice(0,i); $("#warungLog").scrollTop=$("#warungLog").scrollHeight;
-      while(k<spans.length-1&&i>=spans[k].end){ k++; warungMovement(spans[k].move); }
+      while(k<spans.length-1&&i>=spans[k].end){ k++; warungMovement(spans[k].move); warungFeel(spans[k].feel); }
       if(i<text.length) setTimeout(step,28); else { warungMovement("rest"); res(); }
     };
     step();

@@ -444,7 +444,7 @@ body.peek .bar,body.peek main,body.peek footer,body.peek .kawung,body.peek .veil
 /* Warung: Bu Lastri behind her counter (scene 1672×941; she stands between the cobek and the baskets) */
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .warung{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
-.warung-stage{--vw:940;--vx:380;position:relative;align-self:start;width:100%;aspect-ratio:var(--vw)/941;overflow:hidden;border-radius:18px;border:1px solid var(--line);background:#c8b48a}
+.warung-stage{--vw:940;--vx:356;position:relative;align-self:start;width:100%;aspect-ratio:var(--vw)/941;overflow:hidden;border-radius:18px;border:1px solid var(--line);background:#c8b48a}
 .warung-world{position:absolute;top:0;left:calc(var(--vx)/var(--vw)*-100%);width:calc(1672/var(--vw)*100%);aspect-ratio:1672/941}
 .warung-world img{position:absolute;display:block;max-width:none}
 .warung-scene{inset:0;width:100%;height:100%}
@@ -458,19 +458,29 @@ body.peek .bar,body.peek main,body.peek footer,body.peek .kawung,body.peek .veil
 .warung-world .bl-pose{left:0;top:0;width:600%;height:300%}
 .bl-face{position:absolute;overflow:hidden}
 .warung-world .bl-eyes,.warung-world .bl-mouth{left:0;top:0;width:800%;height:800%;visibility:hidden}
+.bl-feelbox{position:absolute;overflow:hidden}
+.warung-world .bl-feel{left:0;top:0;visibility:hidden}
 @keyframes bl-breathe{0%,100%{transform:none}45%{transform:scale(1.004,1.008)}}
 @media (prefers-reduced-motion:reduce){.bl-layer{animation:none}.bl-ghost{display:none}}
 .warung-meja{left:0;top:72.37%;width:100%;height:27.63%}
-/* night: the painted night warung and its counter fade in over the day ones; the oil lamp on the left lights Bu Lastri,
-   so her shadow falls to the right */
+/* ambient loops (js/warung.js warungScene): each img is a row of frames that steps along; they sit behind her */
+.wl{position:absolute;overflow:hidden;pointer-events:none;opacity:var(--wl-o,1)}
+.warung-world .wl img{left:0;top:0;height:100%;animation:wl-run 1s steps(var(--n)) infinite}
+@keyframes wl-run{to{transform:translateX(-100%)}}
+.wl-cicak{--wl-turn:52deg;overflow:visible;clip-path:inset(0);transition:opacity .8s}
+.wl-cicak img{transition:none}
+:root[data-kampung="malam"] .warung-world .wl-siang{opacity:0}
+@media (prefers-reduced-motion:reduce){.warung-world .wl img{animation:none}}
+/* night: the painted night warung and its counter fade in over the day ones; the senthir on the counter, left of her,
+   lights Bu Lastri (her night frames are drawn lit by it), so her shadow falls to the right */
 .warung-world .warung-malam{opacity:0;transition:opacity .6s}
 .warung-lamp{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .6s;mix-blend-mode:screen;
-  background:radial-gradient(ellipse 22% 30% at 13.5% 38%,#ffb04a55,transparent 70%),radial-gradient(ellipse 30% 40% at 40% 45%,#ff9a3a22,transparent 70%)}
+  background:radial-gradient(ellipse 9% 14% at 34.6% 71%,#ffb04a44,transparent 70%),radial-gradient(ellipse 26% 40% at 44% 52%,#ff9a3a1c,transparent 70%)}
 :root[data-kampung="malam"] .warung-world .warung-malam{opacity:1}
 :root[data-kampung="malam"] .warung-lamp{opacity:1;animation:pelita 3.2s ease-in-out infinite}
 @keyframes pelita{0%,100%{opacity:1}35%{opacity:.82}55%{opacity:.95}70%{opacity:.86}}
 @media (prefers-reduced-motion:reduce){:root[data-kampung="malam"] .warung-lamp{animation:none}}
-:root[data-kampung="malam"] .warung-cook{filter:brightness(.72) saturate(.85) sepia(.3) drop-shadow(6px 10px 18px #0008)}
+:root[data-kampung="malam"] .warung-cook{filter:brightness(.9) drop-shadow(6px 10px 18px #0008)}
 .warung-chat{display:grid;grid-template-rows:minmax(0,1fr) auto auto auto;gap:10px;min-height:0;height:min(72vh,620px);padding:14px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 94%,transparent)}
 .warung-log{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px;min-height:220px}
 .wbubble{max-width:88%;padding:10px 14px;border-radius:16px;line-height:1.5;font-size:.95rem}
