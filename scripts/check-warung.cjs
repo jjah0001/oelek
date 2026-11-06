@@ -45,7 +45,24 @@ async function main(){
   assert.equal(moveFor('Coba tebak, Ibu umurnya berapa?'),'talk');
   assert.equal(moveFor('Coba ceritakan, kamu suka makan apa?'),'talk');
   assert.equal(moveFor('The heat here is terrible in the afternoon.'),'talk');
-  assert.equal(moveFor('Selamat jalan, hati-hati di jalan ya, Nak!'),'greet');
+  assert.equal(moveFor('Selamat jalan, hati-hati di jalan ya, Nak!'),'farewell');
+  assert.equal(moveFor('Goodbye, come back soon!'),'farewell');
+  assert.equal(moveFor('Besok mampir lagi, ya.'),'farewell');
+  // Her face follows the feeling of a sentence; most sentences have none.
+  const feelFor=t=>vm.runInContext(`warungFeelFor(${JSON.stringify(t)})`,context);
+  assert.equal(feelFor('Hahaha, you are funny!'),'laugh');
+  assert.equal(feelFor('Aduh, kasihan sekali, pasti capek.'),'sympathy');
+  assert.equal(feelFor('Waduh, ten chillies?'),'waduh');
+  assert.equal(feelFor('Hmm, let me think.'),'thinking');
+  assert.equal(feelFor('Sambal terasi itu dari cabai.'),null);
+  // In-between frames: her hand travels to and from the spoon, the open palm and the wave.
+  const via=(a,b)=>vm.runInContext(`warungVia(${JSON.stringify(a)},${JSON.stringify(b)})`,context);
+  assert.equal(via('talk','offer'),'raise');
+  assert.equal(via('offer','chat'),'lower');
+  assert.equal(via('chat','greet'),'release');
+  assert.equal(via('greet','talk'),'reach');
+  assert.equal(via('wave','nod'),'reach');
+  assert.equal(via('talk','chat'),null);
   assert.equal(moveFor('Monggo, mampir dulu! Mau es teh?'),'greet');
   assert.equal(moveFor('Sambal terasi itu dari cabai dan terasi bakar.'),'gentle_grind');
   assert.equal(moveFor('Orang Jawa biasanya sarapan nasi pecel atau gudeg.'),'talk');
