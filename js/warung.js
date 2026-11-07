@@ -260,7 +260,10 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
   Object.assign(face.style,{left:pct(B.face.x),top:pct(B.face.y),width:pct(B.face.w),height:pct(B.face.h)});
   for(const im of [now,ghostImg]) Object.assign(im.style,{width:B.poses.cols*100+"%",height:B.poses.rows*100+"%"});
   for(const im of [eyes,mouth]) Object.assign(im.style,{width:B.face.cols*100+"%",height:B.face.rows*100+"%"});
-  const FG=B.feelGrid;
+  const FG=B.feelGrid, SG=B.sambal;
+  // the sambal in the cobek: whole chillies and shallots when a visit starts, crushed as it goes on
+  const sambals=[...cook.querySelectorAll(".bl-sambal")], sambalNow=cook.querySelector(".bl-now .bl-sambal"), sambalGhost=cook.querySelector(".bl-ghost .bl-sambal");
+  if(SG) for(const im of sambals){ Object.assign(im.parentNode.style,{left:pct(SG.x),top:pct(SG.y),width:pct(SG.w),height:pct(SG.h)}); Object.assign(im.style,{width:SG.cols*100+"%",height:SG.rows*100+"%"}); }
   if(feelBox&&FG){
     Object.assign(feelBox.style,{left:pct(FG.x),top:pct(FG.y),width:pct(FG.w),height:pct(FG.h)});
     Object.assign(feelImg.style,{width:FG.cols*100+"%",height:FG.rows*100+"%"});
@@ -270,7 +273,7 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
   const still=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
   // Day and night atlases share their indices. Night ones load when the kampung first gets dark, and the
   // reaction faces only when she first needs one; each swaps in once it has loaded, never half-drawn.
-  const ATLAS={poses:"img/bu-lastri-poses",face:"img/bu-lastri-face",feel:"img/bu-lastri-feel"};
+  const ATLAS={poses:"img/bu-lastri-poses",face:"img/bu-lastri-face",feel:"img/bu-lastri-feel",sambal:"img/bu-lastri-sambal"};
   const loaded={}, want=k=>ATLAS[k]+(night?"-malam":"")+".webp";
   function use(k,imgs){
     const src=want(k);
@@ -281,10 +284,11 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
   }
   let night=false, feelOn=false;
   let move="rest", since=0, frame=-1, blinkAt=0, blink=null, mouthAt=0, shape=-1, ticking=false;
-  let pose="", via=null, feel=null, feelUntil=0;
+  let pose="", via=null, feel=null, feelUntil=0, stage=0, sambalReady=false;
+  const sambalCell=f=>SG&&sambalReady&&f>=0?stage*B.poses.count+f:null;
   function fade(from){
     if(from<0||still()) return;
-    cell(ghostImg,from,B.poses); ghost.style.transition="none"; ghost.style.opacity="1";
+    cell(ghostImg,from,B.poses); if(sambalGhost) show(sambalGhost,sambalCell(from),SG); ghost.style.transition="none"; ghost.style.opacity="1";
     void ghost.offsetWidth; ghost.style.transition="opacity .16s ease-out"; ghost.style.opacity="0";
   }
   function tick(t){
@@ -293,6 +297,7 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
     night=document.documentElement.dataset.kampung==="malam";
     use("poses",[now,ghostImg]); use("face",[eyes,mouth]);
     const feelReady=feelOn&&feelImg&&use("feel",[feelImg]);
+    sambalReady=!!SG&&use("sambal",sambals);
     const calm=still();
     // After a few quiet seconds she settles into her listening pose, head tilted toward the visitor.
     let plan=move==="rest"&&t-since>3500?{pose:"listen"}:WARUNG_PLAN[move]||WARUNG_PLAN.rest, p=plan.pose, pt=t-since;
@@ -303,6 +308,7 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
     const set=B.role[p]||B.role.talk;
     const f=via?via.f:set[plan.fps&&!calm?Math.floor(pt*plan.fps/1000)%set.length:0];
     if(f!==frame){ if(!set.includes(frame)) fade(frame); cell(now,f,B.poses); frame=f; }
+    if(sambalNow) show(sambalNow,sambalCell(f),SG);
     // a blink every few seconds, now and then a double one
     const lids=B.eyes[f];
     if(!blink&&t>=blinkAt){ blink={start:t,twice:Math.random()<.18}; }
@@ -333,10 +339,13 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
   schedule();
   const api=m=>{ if(m!==move){ move=m; since=performance.now(); } if(m==="rest"||m==="think"||m==="glance") feel=null; };
   // A feeling lasts at least a moment, so a short sentence does not flash it.
+  api.stage=n=>{ stage=SG?Math.max(0,Math.min(SG.stages-1,n)):0; };
   api.feel=x=>{ if(!x) return; feelOn=true; feel=x; feelUntil=performance.now()+1800; };
   return api;
 })();
 function warungFeel(x){ if(warungAnimate&&warungAnimate.feel) warungAnimate.feel(x); }
+// The sambal moves on with the visit: whole until the visitor first speaks, coarse for a while, then smooth.
+function warungSambalStage(){ if(!warungAnimate||!warungAnimate.stage) return; const n=warungLog.filter(m=>m.role==="user").length; warungAnimate.stage(n<1?0:n<3?1:2); }
 // The warung around her: steam from the teh poci, a sleeping cat, a strip of kopi sachets, and at night a
 // cicak on the beam. Placed from WARUNG_SCENE (js/data/warung-scene.js, built by scripts/build-warung-scene.py);
 // each loop is a strip of frames that CSS steps through. They sit behind her and never cross her.
@@ -438,7 +447,7 @@ async function openWarung(){
   const visit=warungVisit;
   const country=await warungCountry(); if(visit!==warungVisit) return; wait.remove();
   warungSetLang(country==="Indonesia"?"id":"en"); const g=warungGreeting(country);
-  warungLog=[{role:"assistant",content:g}]; warungIdeas();
+  warungLog=[{role:"assistant",content:g}]; warungSambalStage(); warungIdeas();
   warungBusy=true; $("#warungSend").disabled=true;
   await warungSay(g,false,true);
   if(visit===warungVisit){ warungBusy=false; $("#warungSend").disabled=false; }
@@ -466,7 +475,7 @@ async function warungAsk(text){
   text=String(text||"").trim().slice(0,1000); if(!text||warungBusy) return;
   const visit=warungVisit;
   warungBusy=true; warungMovement("rest"); $("#warungSend").disabled=true; $("#warungInput").value=""; $("#warungIdeas").replaceChildren();
-  warungBubble("user",text); warungLog.push({role:"user",content:text});
+  warungBubble("user",text); warungLog.push({role:"user",content:text}); warungSambalStage();
   const wait=el("div",{class:"wbubble wbu wthinking"},el("b",{class:"wname",text:"Bu Lastri"}),el("p",{text:"…"})); $("#warungLog").append(wait); $("#warungLog").scrollTop=$("#warungLog").scrollHeight;
   warungMovement("think");
   warungCtl=new AbortController();
@@ -476,7 +485,7 @@ async function warungAsk(text){
     await warungSay(reply);
   }catch(err){
     if(visit!==warungVisit) return;
-    wait.remove(); warungLog.pop();
+    wait.remove(); warungLog.pop(); warungSambalStage();
     const code=err&&(err.code||err.name);
     if(code!=="AbortError") console.warn("warung:",code,err);
     if(code!=="AbortError") warungBubble("note", code==="rate_limited"?"Bu Lastri is serving another table. Try again in a minute.":"Bu Lastri didn't catch that (the connection dropped). Try again in a moment.").parentNode.classList.add("wnote");

@@ -1,0 +1,194 @@
+{
+  "source_commit": "773537f",
+  "source_atlas_sha256": "b1b7c173d938d22375ad471357715d0e15e0d262323f04472b2d2649ece8a1c3",
+  "frame_size": 627,
+  "gutter": 20,
+  "columns": 4,
+  "rows": 2,
+  "frames": [
+    {
+      "frame": 1,
+      "sheet": "bu-lastri-sambal-masks-v3-a.png",
+      "x": 0,
+      "y": 0,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 2,
+      "sheet": "bu-lastri-sambal-masks-v3-a.png",
+      "x": 647,
+      "y": 0,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 3,
+      "sheet": "bu-lastri-sambal-masks-v3-a.png",
+      "x": 1294,
+      "y": 0,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 4,
+      "sheet": "bu-lastri-sambal-masks-v3-a.png",
+      "x": 1941,
+      "y": 0,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 5,
+      "sheet": "bu-lastri-sambal-masks-v3-a.png",
+      "x": 0,
+      "y": 647,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 6,
+      "sheet": "bu-lastri-sambal-masks-v3-a.png",
+      "x": 647,
+      "y": 647,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 7,
+      "sheet": "bu-lastri-sambal-masks-v3-a.png",
+      "x": 1294,
+      "y": 647,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 8,
+      "sheet": "bu-lastri-sambal-masks-v3-a.png",
+      "x": 1941,
+      "y": 647,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 9,
+      "sheet": "bu-lastri-sambal-masks-v3-b.png",
+      "x": 0,
+      "y": 0,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 10,
+      "sheet": "bu-lastri-sambal-masks-v3-b.png",
+      "x": 647,
+      "y": 0,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 11,
+      "sheet": "bu-lastri-sambal-masks-v3-b.png",
+      "x": 1294,
+      "y": 0,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 12,
+      "sheet": "bu-lastri-sambal-masks-v3-b.png",
+      "x": 1941,
+      "y": 0,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 13,
+      "sheet": "bu-lastri-sambal-masks-v3-b.png",
+      "x": 0,
+      "y": 647,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 14,
+      "sheet": "bu-lastri-sambal-masks-v3-b.png",
+      "x": 647,
+      "y": 647,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 15,
+      "sheet": "bu-lastri-sambal-masks-v3-b.png",
+      "x": 1294,
+      "y": 647,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 16,
+      "sheet": "bu-lastri-sambal-masks-v3-b.png",
+      "x": 1941,
+      "y": 647,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 17,
+      "sheet": "bu-lastri-sambal-masks-v3-c.png",
+      "x": 0,
+      "y": 0,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 18,
+      "sheet": "bu-lastri-sambal-masks-v3-c.png",
+      "x": 647,
+      "y": 0,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 19,
+      "sheet": "bu-lastri-sambal-masks-v3-c.png",
+      "x": 1294,
+      "y": 0,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 20,
+      "sheet": "bu-lastri-sambal-masks-v3-c.png",
+      "x": 1941,
+      "y": 0,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 21,
+      "sheet": "bu-lastri-sambal-masks-v3-c.png",
+      "x": 0,
+      "y": 647,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 22,
+      "sheet": "bu-lastri-sambal-masks-v3-c.png",
+      "x": 647,
+      "y": 647,
+      "width": 627,
+      "height": 627
+    },
+    {
+      "frame": 23,
+      "sheet": "bu-lastri-sambal-masks-v3-c.png",
+      "x": 1294,
+      "y": 647,
+      "width": 627,
+      "height": 627
+    }
+  ]
+}
