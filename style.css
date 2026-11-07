@@ -458,8 +458,8 @@ body.peek .bar,body.peek main,body.peek footer,body.peek .kawung,body.peek .veil
 .warung-world .bl-pose{left:0;top:0;width:600%;height:300%}
 .bl-face{position:absolute;overflow:hidden}
 .warung-world .bl-eyes,.warung-world .bl-mouth{left:0;top:0;width:800%;height:800%;visibility:hidden}
-.bl-feelbox{position:absolute;overflow:hidden}
-.warung-world .bl-feel{left:0;top:0;visibility:hidden}
+.bl-feelbox,.bl-sambalbox{position:absolute;overflow:hidden}
+.warung-world .bl-feel,.warung-world .bl-sambal{left:0;top:0;visibility:hidden}
 @keyframes bl-breathe{0%,100%{transform:none}45%{transform:scale(1.004,1.008)}}
 @media (prefers-reduced-motion:reduce){.bl-layer{animation:none}.bl-ghost{display:none}}
 .warung-meja{left:0;top:72.37%;width:100%;height:27.63%}

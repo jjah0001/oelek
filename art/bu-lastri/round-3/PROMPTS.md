@@ -1,0 +1,17 @@
+# Round 3 artwork prompts
+
+Generated with built-in image generation. Masks are pixel-coordinate segmentation data derived from the registered source atlas, not generated replacement artwork.
+
+## bu-lastri-faces-laugh-v3
+
+Use case: identity-preserve. Round3 revision of this exact elderly Javanese woman Bu Lastri. Keep her exact identity, head angle, hair silhouette, age lines and daylight lighting. FULL HEADS ONLY on genuine transparent alpha, square2x2 sheet, identical head size/position in each cell with at least20px clear gutters. No shoulders, neck, text, labels, borders, scenery or glow. Expression must remain very clearly distinguishable when head is reduced to120px high. Do NOT repeat the ordinary resting smile. Make laughter much STRONGER than reference: eyes deeply squeezed into crescent slits, cheeks pushed HIGH under eyes, prominent crow's feet, nose subtly scrunched with joy. Warm spontaneous slightly shy real laughter, not a posed grin. Cell1 top left: closed mouth holding back laughter, eyes squeezed and cheeks high must still unmistakably laugh. Cell2 top right: mid-laugh open mouth with upper teeth visible, eyes almost shut, cheeks high. Cell3 bottom left: eyelids fully closed while laughing, relaxed closed lips. Cell4 bottom right: spare repeat of cell2. Only facial expression changes; head remains at master angle. Push eye/cheek contraction enough to read at thumbnail size.
+
+## bu-lastri-faces-sympathy-v3
+
+Use case: identity-preserve. Round3 revision of this exact elderly Javanese woman Bu Lastri. Keep her exact identity, head angle, hair silhouette, age lines and daylight lighting. FULL HEADS ONLY on genuine transparent alpha, square2x2 sheet, identical head size/position in each cell with at least20px clear gutters. No shoulders, neck, text, labels, borders, scenery or glow. Expression must remain very clearly distinguishable when head is reduced to120px high. Do NOT repeat the ordinary resting smile. Replace smiling expression with clearly visible sympathetic CONCERN, not happiness. Inner ends of eyebrows raised strongly and pulled inward, gentle vertical worry crease over nose, eyes softened slightly narrowed, mouth corners slightly downturned, lips pressed into small sad empathetic line. No cheerful smile, no teeth, no grin, no tears. Cell1 top left closed mouth concerned expression. Cell2 top right same concerned brows and eyes with lips slightly parted mid-word, mouth corners remain down. Cell3 bottom left eyes gently closed blink, brows still worried and closed sad lips. Cell4 bottom right spare repeat of cell1. Preserve exact head angle and hair. The brow shape and mouth must be clearly sad/concerned at120px.
+
+## bu-lastri-night-chat-v3
+
+Use case: lighting-weather. Relight this EXACT four-frame registered grinding animation sheet, NOT new poses. Square1254x1254, four627x627 cells in2x2. Keep all pixel positions of face, hair, fingers, forearms, pestle and bowl unchanged in EVERY cell. In particular different pestle positions are the animation: preserve each one exactly. Change ONLY illumination to warm amber-orange key from SCREEN LEFT, dimensional warm highlight on left face and sleeve, dim cool blue fill at right. Match natural senthir lamp lighting; do not uniformly darken or just tint. Keep skin natural. Preserve transparent alpha background, remove any near-transparent coloured encoding fringes in empty space, no backdrop, no extra objects, no scene, no text. No anatomical, crop, scale or layout changes.
+
+
