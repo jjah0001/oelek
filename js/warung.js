@@ -337,7 +337,7 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
   return api;
 })();
 function warungFeel(x){ if(warungAnimate&&warungAnimate.feel) warungAnimate.feel(x); }
-// The warung around her: steam, smoke over Merapi, a sleeping cat, a strip of kopi sachets, and at night a
+// The warung around her: steam from the teh poci, a sleeping cat, a strip of kopi sachets, and at night a
 // cicak on the beam. Placed from WARUNG_SCENE (js/data/warung-scene.js, built by scripts/build-warung-scene.py);
 // each loop is a strip of frames that CSS steps through. They sit behind her and never cross her.
 (function warungScene(){

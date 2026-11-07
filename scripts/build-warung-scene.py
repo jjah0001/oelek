@@ -4,7 +4,7 @@
 Inputs, all in art/warung/ (kept out of the published site), from the round 2 artwork:
   warung-day-v2.webp, warung-night-v2.webp   1672 x 941 plates
   loop-steam-day-v2.webp     4x2 steam wisps (one set, day and night)
-  loop-smoke-day-v2.webp     2x4 thin smoke over Merapi (one set, day and night)
+  loop-smoke-day-v2.webp     2x4 thin smoke (not used: over Merapi it looked out of place)
   loop-kucing-day-v2.webp, loop-kucing-night-v2.webp   4x2 a sleeping cat breathing
   loop-cicak-night-v2.webp   3x3 still, six crawl frames, two holds
   loop-sachet-day-v2.webp, loop-sachet-night-v2.webp   3x3 a strip of kopi sachets swaying
@@ -80,8 +80,6 @@ def loop(key, frames, seq, scale, anchor, at, fps, when, **extra):
 
 steam = cells("loop-steam-day-v2.webp", 4, 2)
 loop("steam", steam, list(range(8)), 0.30, "bottom", (1182, 652), 6, "both", opacity=0.7)
-smoke = cells("loop-smoke-day-v2.webp", 2, 4)
-loop("smoke", smoke, list(range(8)), 0.32, "bottom", (764, 206), 4, "both", opacity=0.7)
 for when, src in [("day", "loop-kucing-day-v2.webp"), ("night", "loop-kucing-night-v2.webp")]:
     cat = cells(src, 4, 2)
     loop("kucing-" + when, cat, [0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1], 0.39, "bottom", (470, 868), 5, when)
