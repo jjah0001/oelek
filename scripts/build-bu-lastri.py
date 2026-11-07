@@ -14,12 +14,19 @@ Inputs, all in art/bu-lastri/ (kept out of the published site):
   bu-lastri-night-b-v2.webp        2x2 welcome, then chat-grind (single frames, not used: chat is a moving grind)
   bu-lastri-faces-<feel>-v2.webp   2x2 heads for laugh, sympathy, waduh, thinking:
                                    mouth closed, mouth open, eyes closed, (half-closed, not used)
+  round 3 (see art/bu-lastri/round-3/handoff.md):
+  bu-lastri-faces-<feel>-v3.webp   stronger laugh and sympathy heads; they replace the v2 ones
+  bu-lastri-night-chat-v3.webp     2x2 the four chat-grind frames lit by the senthir, already registered
+  bu-lastri-sambal-masks-v3-*.png  one greyscale mask per frame (white where sambal shows), laid out as in
+                                   round-3/mask-layout.json, drawn on the registered day frames
+  bu-lastri-sambal-stages-v2.webp  2x2 the cobek's contents: whole, coarse, smooth, (glossy, not used)
 
 Outputs:
   img/bu-lastri-poses.webp   every full pose, registered to one camera
   img/bu-lastri-face.webp    eye and mouth overlays, fitted to each pose's face
   img/bu-lastri-feel.webp    reaction faces (laugh, sympathy, waduh, thinking), fitted to each pose's face
-  img/bu-lastri-*-malam.webp the same three at night: her lamp-lit frames, and the rest graded to match them
+  img/bu-lastri-sambal.webp  the bowl's contents at each stage, cut to each frame's mask
+  img/bu-lastri-*-malam.webp the same four at night: her lamp-lit frames, and the rest graded to match them
   js/data/bu-lastri.js       frame tables for js/warung.js
 
 Generated frames drift a little in scale and position, so every frame is
@@ -125,6 +132,10 @@ for name, file, n, splitter in [
     for k, (xy, sub) in enumerate(splitter(im, n)):
         s, tx, ty = fit_bowl(sub)
         frames[f"{name}{k}"] = place(sub, s, tx, ty)
+# Night chat-grind: drawn on the registered chat frames, so the cells are used as they are.
+_nc = load(os.path.join(ART, "bu-lastri-night-chat-v3.webp"))
+for k in range(4):
+    r, q = divmod(k, 2); frames[f"nc{k}"] = _nc[r * S:(r + 1) * S, q * S:(q + 1) * S].copy()
 # The acting sheet draws her lower behind the cobek than the talking sheet does,
 # so lift it part way: the head pops less and the cobek still sits on the counter.
 for k in range(4):
@@ -232,14 +243,18 @@ def head_to_master(h):
     except cv2.error as e: print("feel ECC failed, using the size guess", e)
     return cv2.warpAffine(h, M, (S, S), flags=cv2.INTER_AREA, borderValue=(0, 0, 0, 0)).astype(np.float32)
 feels_ref = {}
+def _feel_sheet(feel):   # the newest round of each feeling
+    for v in ("v3", "v2"):
+        p = os.path.join(ART, f"bu-lastri-faces-{feel}-{v}.webp")
+        if os.path.exists(p): return p
 for feel in FEELS:
-    heads = [sub for _, sub in components(load(os.path.join(ART, f"bu-lastri-faces-{feel}-v2.webp")), 4)]
+    heads = [sub for _, sub in components(load(os.path.join(ART, _feel_sheet(feel))), 4)]
     feels_ref[feel] = [head_to_master(heads[i]) for i in FEEL_VARIANTS]
 
 # ---------------------------------------------------------------- night frames
 # Her lamp-lit frames replace the five poses they were drawn for; every other frame is graded to match
 # them: warm on the side of the senthir (screen left), cooler on the other.
-NIGHT = {"ngobrol0": "na0", "act0": "na1", "act1": "na2", "act2": "na3", "act3": "nb0"}
+NIGHT = {"ngobrol0": "na0", "act0": "na1", "act1": "na2", "act2": "na3", "act3": "nb0", **{f"chat{k}": f"nc{k}" for k in range(4)}}
 def halves(im):
     a = im[..., 3] > 200; x = np.arange(S)[None, :].repeat(S, 0); mid = np.median(x[a])
     out = []
@@ -247,7 +262,7 @@ def halves(im):
         px = im[..., :3][a & side].astype(np.float32); out.append((px.mean(0), px.std(0) + 1e-3))
     return out
 gain = [[], []]
-for d, n in NIGHT.items():
+for d, n in list(NIGHT.items())[:5]:   # the round 2 pairs set the grade; it has not changed since
     for k, ((dm, ds), (nm, ns)) in enumerate(zip(halves(frames[d]), halves(frames[n]))):
         gain[k].append((ns / ds, nm - ns / ds * dm))
 gain = [(np.mean([g[0] for g in G], 0), np.mean([g[1] for g in G], 0)) for G in gain]
@@ -288,6 +303,54 @@ _ys, _xs = np.where(_u > 0.02); ex, ey = int(_xs.min()) - 2, int(_ys.min()) - 2;
 night_frames = {n: (frames[NIGHT[n]] if n in NIGHT else grade(frames[n])) for n in POSES}
 night_warps = {n: (warps[NIGHT[n]] if n in NIGHT else warps[n]) for n in POSES}
 
+# ---------------------------------------------------------------- sambal stages
+# The stage patches are fitted once to the bowl's contents, then cut by each frame's mask, so her fingers, the
+# ulekan and the spoon stay in front. Only a band across the bowl changes: that band is what the atlas holds.
+_layout = json.load(open(os.path.join(ART, "round-3", "mask-layout.json")))
+_sheets = {}
+SMASK = {}
+for e in _layout["frames"]:
+    sh = _sheets.setdefault(e["sheet"], np.array(Image.open(os.path.join(ART, e["sheet"])).convert("L")))
+    SMASK[POSES[e["frame"] - 1]] = cv2.GaussianBlur(sh[e["y"]:e["y"] + S, e["x"]:e["x"] + S].astype(np.float32) / 255, (0, 0), 0.7)   # soften the pixel steps
+assert len(SMASK) == len(POSES)
+_u = np.max([m for m in SMASK.values()], 0)
+_cnt = max(cv2.findContours((_u > 0.5).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0], key=cv2.contourArea)
+(_bx, _by), (_bw, _bh), _ang = cv2.fitEllipse(_cnt)
+_bw, _bh = max(_bw, _bh) * 1.04, min(_bw, _bh) * 1.12      # a little past the food's edge, so no old sambal shows at the rim
+STAGES = [sub for _, sub in components(load(os.path.join(ART, "bu-lastri-sambal-stages-v2.webp")), 4)][:3]   # whole, coarse, smooth
+def _stage_patch(st):
+    a = st[..., 3] > 128; ys, xs = np.where(a); x0, x1, y0, y1 = xs.min(), xs.max(), ys.min(), ys.max()
+    M = np.float32([[_bw / (x1 - x0), 0, 0], [0, _bh / (y1 - y0), 0]])
+    M[0, 2] = _bx - M[0, 0] * (x0 + x1) / 2; M[1, 2] = _by - M[1, 1] * (y0 + y1) / 2
+    return cv2.warpAffine(st, M, (S, S), flags=cv2.INTER_AREA, borderValue=(0, 0, 0, 0)).astype(np.float32)
+stage_ref = [_stage_patch(st) for st in STAGES]
+# light the patches like the frame: the smooth stage against the sambal already drawn in the master frame
+_w = SMASK["ngobrol0"] > 0.9
+SGAIN = ref[..., :3][_w].astype(np.float32).mean(0) / (stage_ref[2][..., :3][_w].mean(0) + 1e-3)
+_ys, _xs = np.where(_u > 0.02)
+sx, sy = int(_xs.min()) - 2, int(_ys.min()) - 2; sw, sh = int(_xs.max()) - sx + 3, int(_ys.max()) - sy + 3
+
+def sambal(F, night):
+    """Each stage cut to each frame's mask: stage * len(POSES) + pose index in the sambal atlas."""
+    cells = []
+    for st in stage_ref:
+        for name in POSES:
+            m = SMASK[name] * (st[..., 3] / 255)
+            o = np.zeros((S, S, 4), np.float32); o[..., :3] = st[..., :3] * SGAIN; o[..., 3] = m * 255
+            o = np.clip(o, 0, 255).astype(np.uint8)
+            if night: o = grade_like(o, F[name])
+            cells.append(o[sy:sy + sh, sx:sx + sw])
+    return cells
+
+def grade_like(o, night_frame):
+    """Night: grade the patch, then match it to the sambal that the night frame itself shows under the mask."""
+    g = grade(o); w = o[..., 3] > 230
+    rgb = g[..., :3].astype(np.float32)
+    if w.sum() > 50:
+        nm = night_frame[..., :3][w].astype(np.float32).mean(0); gm = rgb[w].mean(0)
+        rgb = rgb * (0.5 + 0.5 * nm / (gm + 1e-3))
+    g[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8); return g
+
 def faces(F, Wp):
     """Blink and mouth overlays, and the reaction faces, for one set of frames. Same indices day and night."""
     face_cells, eyes_idx, mouth_idx, feel_cells, feel_idx = [], {}, {}, [], {}
@@ -322,14 +385,18 @@ for suffix, F, Wp in [("", frames, warps), ("-malam", night_frames, night_warps)
     feel_img, erow = atlas(feel_cells, 8, ew, eh)
     save(poses_img, f"bu-lastri-poses{suffix}.webp"); save(face_img, f"bu-lastri-face{suffix}.webp", 86)
     save(feel_img, f"bu-lastri-feel{suffix}.webp", 80)
+    sambal_img, srow = atlas(sambal(F, suffix == "-malam"), 8, sw, sh)
+    save(sambal_img, f"bu-lastri-sambal{suffix}.webp", 82)
     print(suffix or "day", "poses", poses_img.shape, "face cells", len(face_cells), "feel cells", len(feel_cells))
 
-data = {"size": S, "poses": {"cols": 6, "rows": prow}, "face": {"cols": 8, "rows": frow, "x": fx, "y": fy, "w": fw, "h": fh},
-        "feelGrid": {"cols": 8, "rows": erow, "x": ex, "y": ey, "w": ew, "h": eh}, "role": ROLE, "eyes": eyes_idx, "mouth": mouth_idx, "feel": feel_idx}
+data = {"size": S, "poses": {"cols": 6, "rows": prow, "count": len(POSES)}, "face": {"cols": 8, "rows": frow, "x": fx, "y": fy, "w": fw, "h": fh},
+        "feelGrid": {"cols": 8, "rows": erow, "x": ex, "y": ey, "w": ew, "h": eh},
+        "sambal": {"cols": 8, "rows": srow, "x": sx, "y": sy, "w": sw, "h": sh, "stages": len(stage_ref)}, "role": ROLE, "eyes": eyes_idx, "mouth": mouth_idx, "feel": feel_idx}
 with open(os.path.join(ROOT, "js", "data", "bu-lastri.js"), "w") as f:
     f.write("// Generated by scripts/build-bu-lastri.py: Bu Lastri's frame tables for js/warung.js.\n")
     f.write("// poses: grid of full frames; face: grid of eye/mouth overlays, placed at x,y,w,h inside a frame.\n")
     f.write("// role: frames per pose; eyes[pose] = [half-closed, closed]; mouth[pose] = three open shapes;\n")
     f.write("// feel[pose][laugh|sympathy|waduh|thinking] = [mouth closed, mouth open, eyes closed] in the feelGrid atlas.\n")
+    f.write("// sambal: the bowl's contents, cell stage * poses + pose (stages: whole, coarse, smooth).\n")
     f.write("// The -malam atlases use the same indices.\n")
     f.write("const BU_LASTRI=" + json.dumps(data, separators=(",", ":")) + ";\n")
