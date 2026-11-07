@@ -16,6 +16,9 @@ function go(v,push=true){
 document.querySelectorAll(".bar [data-view]").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();go(a.dataset.view)}));
 function routeFromHash(){
   let h="";try{h=location.hash.slice(1)}catch(e){}
+  // An in-page link such as #saksikan (inside About us): open the page that holds it, then scroll to it.
+  const t=h&&!VIEWS.includes(h)&&document.getElementById(h), sec=t&&t.closest(VIEWS.map(v=>"#"+v).join(","));
+  if(sec){ go(sec.id,false); t.scrollIntoView(); return; }
   go(h==="top"?"beranda":h,false);
 }
 window.addEventListener("hashchange",routeFromHash);
