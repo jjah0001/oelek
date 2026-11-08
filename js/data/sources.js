@@ -433,5 +433,25 @@ Object.assign(SRC, {
   "https://www.waroengss.com/article/products-list": {
     "t": "Waroeng SS, official menu: Sambal Gobal Gabul",
     "u": "https://www.waroengss.com/article/products-list"
+  },
+  "https://cookpad.com/id/resep/15752449": {
+    "t": "Cookpad Indonesia, resep 15752449 (sambal rebus for mie ayam)",
+    "u": "https://cookpad.com/id/resep/15752449"
+  },
+  "https://www.fimela.com/food/read/5440680/resep-sambal-soto-4-bahan": {
+    "t": "Resep Sambal Soto 4 Bahan - Fimela",
+    "u": "https://www.fimela.com/food/read/5440680/resep-sambal-soto-4-bahan"
+  },
+  "https://www.fimela.com/food/read/5425194/resep-sambal-terasi-tomat-rebus-yang-gurih-dan-segar": {
+    "t": "Resep Sambal Terasi Tomat Rebus yang Gurih dan Segar - Fimela",
+    "u": "https://www.fimela.com/food/read/5425194/resep-sambal-terasi-tomat-rebus-yang-gurih-dan-segar"
+  },
+  "https://www.fimela.com/lifestyle/read/4155117/4-pilihan-sambal-rebus-yang-mudah-dibuat": {
+    "t": "4 Pilihan Sambal Rebus yang Mudah Dibuat - Fimela",
+    "u": "https://www.fimela.com/lifestyle/read/4155117/4-pilihan-sambal-rebus-yang-mudah-dibuat"
+  },
+  "https://www.popbela.com/lifestyle/food/resep-sambal-bakso-kampung-pedas-00-rhrd4-nrb7q0": {
+    "t": "Resep Sambal Bakso Kampung Pedas - Popbela",
+    "u": "https://www.popbela.com/lifestyle/food/resep-sambal-bakso-kampung-pedas-00-rhrd4-nrb7q0"
   }
 });

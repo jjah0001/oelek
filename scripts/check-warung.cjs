@@ -25,6 +25,13 @@ async function main(){
   assert.deepEqual(await (await reply('{"reply":"Soto","movement":"rest"}')).json(),{reply:'Soto'});
   assert.equal((await reply('')).status,502);
   assert.equal((await reply('{"reply":42}')).status,502);
+  // She knows what is in her warung picture: the krupuk tin, the sleeping cat, the teh poci, and at night the lit senthir.
+  upstream='Monggo.';
+  await vm.runInContext('warung({messages:[{role:"user",content:"What is in that tin?"}],malam:true,sambal:2},{headers:new Headers()}, {}, "*")',worker);
+  assert.match(sent.system,/kaleng kerupuk/); assert.match(sent.system,/kucing/); assert.match(sent.system,/teh poci/);
+  assert.match(sent.system,/senthir[^.]*sedang menyala/); assert.match(sent.system,/cicak/); assert.match(sent.system,/sudah halus/);
+  await vm.runInContext('warung({messages:[{role:"user",content:"Hi"}],malam:"yes",sambal:7},{headers:new Headers()}, {}, "*")',worker);
+  assert.match(sent.system,/belum dinyalakan/); assert.doesNotMatch(sent.system,/cicak|Di dalam cobek/);
 
   const nodes=new Map(), timers=[];
   function node(){return {dataset:{},classList:{add(){},remove(){}},append(){},replaceChildren(){},addEventListener(){},remove(){}};}
