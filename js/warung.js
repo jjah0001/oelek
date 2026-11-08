@@ -14,7 +14,9 @@ let warungLog=[], warungBusy=false, warungCtl=null, warungOpened=false;
 function warungTime(){ // the kampung's hour: a previewed ?jam= or the visitor's own clock
   let h; try{ const q=parseFloat(new URLSearchParams(location.search).get("jam")); if(!isNaN(q)) h=q; }catch(e){}
   if(h===undefined){ const d=new Date(); h=d.getHours()+d.getMinutes()/60; }
-  return h<5?"malam":h<6.5?"subuh":h<11?"pagi":h<15?"siang":h<18.3?"sore":"malam";
+  const t=h<5?"malam":h<6.5?"subuh":h<11?"pagi":h<15?"siang":h<18.3?"sore":"malam";
+  // At dusk the kampung picture stays light for a while after 18:18; until it darkens (senthir unlit) it is still sore.
+  return t==="malam"&&h>=12&&typeof document!=="undefined"&&document.documentElement.dataset.kampung==="siang"?"sore":t;
 }
 const WARUNG_HARI={"malamFitri":["Tonight is malam takbiran, the eve of Lebaran! Hear the drums from the mosque? Tomorrow the fasting month is over.","Malam ini malam takbiran! Dengar bedugnya? Besok Lebaran.","malam takbiran, malam sebelum Idul Fitri: bedug dan takbir dari masjid, obor dan kembang api; Anda sibuk menyiapkan ketupat dan opor untuk besok"],"fitri":["Selamat Idul Fitri! Mohon maaf lahir dan batin (please forgive me, body and soul): that's what we say to everyone at Lebaran. There's ketupat and opor today, please eat.","Selamat Idul Fitri, mohon maaf lahir dan batin! Ketupat sama opornya masih banyak, monggo dimakan.","masa Lebaran (Idul Fitri): orang saling bermaaf-maafan dan bersilaturahmi, ada ketupat, opor ayam, sambal goreng ati dan kue kering"],"malamAdha":["Tonight is the eve of Idul Adha, the Feast of Sacrifice. Tomorrow after prayers the meat is shared with every house.","Malam ini takbiran Idul Adha. Besok habis salat Id dagingnya dibagi ke semua rumah.","malam takbiran Idul Adha; kambing dan sapi kurban sudah ditambatkan di samping rumah"],"adha":["Selamat Idul Adha! It's the Feast of Sacrifice, and the whole kampung is grilling sate from the qurban meat. Sate needs a good sambal, you know.","Selamat Idul Adha! Sekampung lagi bakar sate dari daging kurban. Sate kan butuh sambal yang mantap.","masa Idul Adha: daging kurban dibagikan ke semua rumah, dan sekampung membakar sate dan memasak tongseng serta gulai"],"ramadan":["It's Ramadan, the fasting month. I fast from dawn to sunset, but the warung stays open for guests, and after maghrib (sunset prayer) there's kolak and fritters for breaking the fast.","Lagi bulan puasa, nih. Ibu puasa, tapi warung tetap buka buat tamu, dan habis maghrib ada kolak sama gorengan buat buka.","bulan Ramadan. Anda sedang berpuasa, tetapi warung tetap buka untuk tamu; jangan membuat pengunjung merasa bersalah karena makan. Ada takjil untuk berbuka, kolak, es buah, gorengan"],"suro":["It's 1 Suro, the Javanese and Islamic new year. We keep it quiet here, no music, so forgive me if I talk softly. Selamat tahun baru Islam (happy Islamic new year).","Sekarang 1 Suro, tahun baru Jawa dan tahun baru Islam. Suasananya hening, jadi Ibu ngomongnya pelan-pelan, ya. Selamat tahun baru Islam.","1 Suro, tahun baru Jawa sekaligus tahun baru Islam (1 Muharram): malamnya kampung hening, tanpa musik, ada tapa bisu dengan obor"],"sekaten":["It's Sekaten week! The palace gamelan is playing in Yogya for the Prophet's birthday, and the night market there is full of snacks.","Lagi Sekaten! Gamelan Kraton sudah dibunyikan, pasar malamnya ramai jajanan.","pekan Sekaten menjelang Maulid Nabi: gamelan pusaka Kraton Yogyakarta dibunyikan dan ada pasar malam dengan jajanan seperti endhog abang dan nasi gurih"],"maulid":["Today is Maulid, the Prophet's birthday. In Yogya the Sultan's gunungan, mountains of food, are carried out and people scramble for a piece for luck.","Hari ini Maulid Nabi. Di Yogya ada Grebeg, gunungan dari Kraton direbut orang buat berkah.","Maulid Nabi: Grebeg Maulud di Yogyakarta, gunungan hasil bumi dari Kraton diperebutkan orang untuk berkah"],"tirakatan":["Tonight is tirakatan, the eve of Independence Day. The neighbours are sitting together on the road. Tomorrow is 17 Agustus!","Malam ini tirakatan, besok 17 Agustus! Tetangga lagi kumpul di jalan.","malam tirakatan sebelum 17 Agustus: tetangga duduk bersama di jalan, mengenang para pahlawan, makan tumpeng"],"merdeka":["Dirgahayu Indonesia, happy Independence Day! It's 17 Agustus, there are red and white flags everywhere and games in the field.","Dirgahayu Republik Indonesia! Hari ini 17 Agustus, di lapangan ada lomba panjat pinang.","17 Agustus, Hari Kemerdekaan Indonesia: bendera merah putih di setiap rumah, lomba panjat pinang, balap karung dan makan kerupuk"],"natal":["Selamat Natal (merry Christmas)! Our neighbours at the gereja (church) are celebrating, and the bells have been ringing. I always send them some sambal.","Selamat Natal! Tetangga di gereja lagi merayakan, loncengnya dari tadi bunyi. Ibu biasanya kirim sambal ke mereka.","Natal. Anda Muslim, tetapi ikut senang atas hari raya tetangga Kristen di gereja kampung, dan biasanya saling berkirim makanan"],"tahunBaru":["Selamat Tahun Baru, happy new year! The children have been blowing paper trumpets all night.","Selamat Tahun Baru! Anak-anak dari tadi tiup terompet.","Tahun Baru: kembang api, terompet kertas, dan orang membakar jagung dan ikan"],"imlek":["Gong xi fa cai! Selamat Tahun Baru Imlek (happy Chinese New Year). The barongsai lion is dancing at the klenteng (Chinese temple) today.","Gong xi fa cai, selamat Tahun Baru Imlek! Hari ini ada barongsai di klenteng.","Tahun Baru Imlek. Anda Muslim, tetapi ikut senang atas hari raya tetangga Tionghoa di klenteng: lampion merah, barongsai, kue keranjang"],"capgomeh":["It's Cap Go Meh, fifteen days after Chinese New Year. Tonight the long dragon dances down the road, and there's lontong Cap Go Meh, a Javanese-Chinese dish with a lovely sambal.","Hari ini Cap Go Meh! Nanti malam liong lewat, dan ada lontong Cap Go Meh.","Cap Go Meh, hari ke-15 Imlek: liong dan barongsai di jalan, dan lontong Cap Go Meh, masakan Tionghoa-Jawa"],"nyepi":["Today is Nyepi, the Hindu Day of Silence. Our Hindu neighbours by the pura (temple) are keeping it in silence, so let's talk softly, ya. Selamat Hari Raya Nyepi.","Hari ini Nyepi. Tetangga Hindu di dekat pura lagi menjalankan sepi, jadi kita ngobrolnya pelan-pelan, ya. Selamat Hari Raya Nyepi.","Hari Raya Nyepi, tahun baru Saka: tetangga Hindu di dekat pura menjalankan Catur Brata Penyepian (tidak menyalakan api atau lampu, tidak bekerja, tidak bepergian, tidak bersenang-senang) dari pagi sampai pagi berikutnya; Anda menghormatinya dan berbicara pelan. Semalam ada pawai ogoh-ogoh yang lalu dibakar"],"paskah":["Selamat Paskah (happy Easter)! The church bells are ringing again for our Christian neighbours.","Selamat Paskah! Lonceng gereja bunyi lagi.","Paskah. Anda Muslim, tetapi ikut senang atas hari raya tetangga Kristen di gereja kampung"],"waisak":["Selamat Hari Waisak (happy Vesak)! Tonight lanterns rise from Borobudur under the full moon. You can see them from here if the sky is clear.","Selamat Hari Raya Waisak! Nanti malam lampion naik dari Borobudur.","Hari Raya Waisak: umat Buddha berkumpul di Borobudur, dan malamnya lampion diterbangkan di bawah bulan purnama"],"labuhan":["Today is Labuhan Merapi: the Sultan's servants are carrying offerings up the volcano to ask for the village's safety.","Hari ini Labuhan Merapi, abdi dalem Kraton naik membawa sesaji.","Labuhan Merapi: abdi dalem Kraton Yogyakarta membawa sesaji naik ke lereng Merapi untuk memohon keselamatan"],"merti":["It's merti desa, our village thanksgiving after the harvest! There's a procession of gunungan today and wayang all night.","Lagi merti desa, syukuran habis panen! Ada kirab gunungan, nanti malam wayang semalam suntuk.","merti desa, syukuran desa sesudah panen: kirab gunungan hasil bumi dan wayang kulit semalam suntuk"],"ogoh":["Tonight is Pengerupukan, the eve of Nyepi! Our Hindu neighbours are carrying the ogoh-ogoh, giant demon figures, down the road by torchlight to chase the evil spirits away. Tomorrow everything goes quiet.","Malam ini Pengerupukan, malam sebelum Nyepi! Tetangga Hindu lagi arak ogoh-ogoh keliling kampung pakai obor. Besok semuanya sepi.","malam Pengerupukan, malam sebelum Nyepi: tetangga Hindu dari pura mengarak ogoh-ogoh (patung raksasa yang melambangkan butha kala, kekuatan jahat) keliling kampung dengan obor dan gamelan baleganjur, lalu ogoh-ogoh itu dibakar sebagai lambang membersihkan diri sebelum hari sepi. Anda menontonnya dari depan warung"],"jumatAgung":["Today is Jumat Agung, Good Friday. It's a quiet day for our Christian neighbours, so the church bells are silent until Easter.","Hari ini Jumat Agung. Tetangga Kristen sedang khusyuk, lonceng gereja diam sampai Paskah.","Jumat Agung (Wafat Isa Almasih): hari hening bagi tetangga Kristen, lonceng gereja tidak dibunyikan sampai malam Paskah"],"malamPaskah":["Tonight is the Easter Vigil. Our Christian neighbours are gathering at the church with candles, and soon the bells will ring again.","Malam ini malam Paskah. Tetangga Kristen kumpul di gereja bawa lilin, sebentar lagi loncengnya bunyi lagi.","malam Paskah: tetangga Kristen berkumpul di gereja dengan lilin, dan lonceng yang diam sejak Kamis Putih berbunyi lagi"]};
 // Holidays and kampung days she greets the visitor for, on the kampung's own date (?tgl= previews them).
@@ -69,7 +71,31 @@ function warungGreeting(country){
   const the=/^(United |Netherlands$|Philippines$|Bahamas$|Gambia$|Maldives$|Czech Republic$|Dominican Republic$|Central African Republic$|Solomon Islands$|Marshall Islands$)/.test(country)?"the ":"";
   return open+en+` All the way from ${the}${country}! Welcome, welcome. Tell me, are you brave with chilli, or shall I keep the sambal gentle?`;
 }
-function warungPrompt(negara, waktu, bahasa, hari){ // the same persona as the Worker, for claude.ai
+// What the visitor sees in the warung picture (img/warung*.webp and its loops), so she knows her own warung.
+// malam: the night scene is showing; sambal: the stage shown in her cobek (0 whole, 1 coarse, 2 smooth).
+function warungAdegan(malam, sambal) { // the same scene as the Worker's, for claude.ai
+  const cobek = ["bahan sambal yang masih utuh: cabai merah, cabai rawit, bawang merah, bawang putih dan tomat, belum diulek",
+    "sambal yang sedang diulek, masih kasar", "sambal yang sudah halus, merah mengkilap dan siap dicicipi"][sambal] || "";
+  return `Isi warung Anda. Pengunjung melihat semua ini di gambar warung, jadi Anda tahu persis apa yang ada di sekitar Anda
+dan boleh menyebut atau menunjuknya bila cocok dengan obrolan (tidak usah diceritakan semuanya sekaligus):
+- Anda berdiri di balik meja kayu panjang, memakai kebaya hijau zaitun dan celemek krem, dengan cobek batu dan ulekan
+  di depan Anda.${cobek ? ` Di dalam cobek sekarang ada ${cobek}.` : ""}
+- Di meja sebelah kiri: tampah bambu penuh cabai merah, beberapa cabai tercecer di meja, kaleng kerupuk berkaca berisi
+  kerupuk, dan senthir (pelita minyak dari kuningan)${malam ? " yang sedang menyala" : " yang belum dinyalakan"}. Seekor
+  kucing kampung belang sedang tidur melingkar di meja dekat kaleng kerupuk.
+- Di meja sebelah kanan: teko tanah liat (teh poci) yang masih mengepul dan dua gelas kecil, keranjang-keranjang bambu
+  berisi tomat, jeruk limau, bawang merah dan bawang putih, gentong tanah liat, mangkuk tanah liat dan daun pisang.
+- Di belakang kiri: bangku kayu dengan bakul anyaman, kendil tanah liat bertutup, mangkuk, daun pisang dan serbet
+  kotak-kotak merah putih. Serenteng kopi sachet tergantung dari balok atap. Dindingnya gedhek (anyaman bambu), sebuah
+  tampah tergantung di dinding kanan, dan atapnya genteng tanah liat.
+- Dari warung terlihat sawah hijau, rumah-rumah kampung, pohon kelapa dan pisang, dan Gunung Merapi dengan sedikit asap
+  di puncaknya.${malam ? `
+- Sekarang malam: bulan purnama di atas Merapi, lampu menyala di rumah-rumah tetangga, air sawah berkilau, dan seekor
+  cicak merayap di balok kayu dekat atap.` : ""}
+- Nasi, sayur, lauk dan gorengan ada di dapur di belakang, tidak terlihat di gambar. Jangan mengarang barang lain yang
+  tampak di warung; kalau ditanya tentang sesuatu yang tidak ada, katakan saja tidak ada.`;
+}
+function warungPrompt(negara, waktu, bahasa, hari, adegan){ // the same persona as the Worker, for claude.ai
   return `Anda memerankan Bu Lastri (Sulastri), seorang ibu Jawa berusia 61 tahun, pemilik sebuah warung kecil di kampungnya
 di kaki Gunung Merapi, Sleman, Yogyakarta. Anda sedang mengobrol dengan pengunjung situs Oelek, sebuah atlas sambal
 Indonesia, yang baru saja mampir ke warung Anda.
@@ -142,7 +168,9 @@ Keadaan sekarang:
   negara lain, ikuti kata pengunjung.` : "Anda belum tahu pengunjung dari negara mana; tanyakan dengan ramah."}
 - Di kampung sekarang ${waktu || "siang hari"}.${hari ? `
 - Hari ini ${hari}. Anda sudah mengucapkan selamat waktu menyambut, jadi jangan mengulanginya di setiap jawaban; boleh
-  bercerita tentang hari ini, makanan khasnya dan kebiasaan di kampung bila cocok dengan obrolan.` : ""}`;
+  bercerita tentang hari ini, makanan khasnya dan kebiasaan di kampung bila cocok dengan obrolan.` : ""}${adegan ? `
+
+${adegan}` : ""}`;
 }
 const WARUNG_WAKTU={pagi:"pagi hari, warung baru buka dan sambal baru diulek",siang:"siang hari yang panas",sore:"sore hari, anak-anak bermain layangan di sawah",malam:"malam hari, warung diterangi lampu dan terdengar jangkrik",subuh:"subuh, ayam berkokok dan Anda sedang menyiapkan dagangan"};
 
@@ -345,7 +373,8 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
 })();
 function warungFeel(x){ if(warungAnimate&&warungAnimate.feel) warungAnimate.feel(x); }
 // The sambal moves on with the visit: whole until the visitor first speaks, coarse for a while, then smooth.
-function warungSambalStage(){ if(!warungAnimate||!warungAnimate.stage) return; const n=warungLog.filter(m=>m.role==="user").length; warungAnimate.stage(n<1?0:n<3?1:2); }
+function warungSambalNow(){ const n=warungLog.filter(m=>m.role==="user").length; return n<1?0:n<3?1:2; } // the cobek: whole, coarse after 1 message, smooth after 3
+function warungSambalStage(){ if(!warungAnimate||!warungAnimate.stage) return; warungAnimate.stage(warungSambalNow()); }
 // The warung around her: steam from the teh poci, a sleeping cat, a strip of kopi sachets, and at night a
 // cicak on the beam. Placed from WARUNG_SCENE (js/data/warung-scene.js, built by scripts/build-warung-scene.py);
 // each loop is a strip of frames that CSS steps through. They sit behind her and never cross her.
@@ -453,19 +482,19 @@ async function openWarung(){
   if(visit===warungVisit){ warungBusy=false; $("#warungSend").disabled=false; }
 }
 async function warungReply(signal){
-  const waktu=warungTime(), msgs=warungLog.slice(-20);
+  const waktu=warungTime(), msgs=warungLog.slice(-20), malam=document.documentElement.dataset.kampung==="malam", sambal=warungSambalNow();
   const sample=(typeof aiOff!=="undefined"&&aiOff)?null:await samplePromise;
   if(sample){
     try{
       const cc=typeof visitorCountry==="function"?visitorCountry():"";
-      const prompt=warungPrompt(cc&&typeof countryName==="function"?countryName(cc,"id"):"",WARUNG_WAKTU[waktu],warungLang,warungHari().map(x=>WARUNG_HARI[x][2]).join("; dan juga "))+
+      const prompt=warungPrompt(cc&&typeof countryName==="function"?countryName(cc,"id"):"",WARUNG_WAKTU[waktu],warungLang,warungHari().map(x=>WARUNG_HARI[x][2]).join("; dan juga "),warungAdegan(malam,sambal))+
         "\n\nObrolan sejauh ini:\n"+msgs.map(m=>(m.role==="user"?"Pengunjung: ":"Bu Lastri: ")+m.content).join("\n")+
         '\n\nTulis balasan Bu Lastri berikutnya. Balas hanya dengan JSON dalam bentuk ini: {"reply":"..."}';
       const r=await sample.json(prompt,{signal}); return warungResponse(r);
     }catch(err){ if(!["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(err&&err.code)) throw err; }
   }
   if(!WARUNG_PROXY) throw {code:"no_ai"};
-  const res=await fetch(WARUNG_PROXY,{method:"POST",headers:{"content-type":"application/json"},signal,body:JSON.stringify({messages:msgs,waktu,bahasa:warungLang,hari:warungHari().join(",")})});
+  const res=await fetch(WARUNG_PROXY,{method:"POST",headers:{"content-type":"application/json"},signal,body:JSON.stringify({messages:msgs,waktu,bahasa:warungLang,hari:warungHari().join(","),malam,sambal})});
   if(res.status===429) throw {code:"rate_limited"};
   if(!res.ok) throw {code:"upstream"};
   const r=await res.json();

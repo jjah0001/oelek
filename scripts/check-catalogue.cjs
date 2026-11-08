@@ -10,7 +10,7 @@ for (const file of ['sources', 'provinces', 'sambals', 'sambals-regional', 'samb
 }
 vm.runInContext(read('js/art.js'), context);
 const {profiles, additions, styles, provinces, sources, illustrations} = vm.runInContext(`({profiles:S, additions:S.slice(241), styles:STYLE, provinces:PROV, sources:SRC, illustrations:S.map(s => sambalArt(s))})`, context);
-assert.equal(profiles.length, 257);
+assert.equal(profiles.length, 260);
 assert.equal(new Set(profiles.map(s => s.id)).size, profiles.length, 'Duplicate IDs');
 assert.equal(new Set(profiles.map(s => s.name.toLowerCase())).size, profiles.length, 'Duplicate names');
 const schemaIDs = [...read('supabase/schema.sql').matchAll(/^\('([^']+)'\)/gm)].map(m => m[1]);
@@ -32,5 +32,5 @@ for (const svg of illustrations) {
 }
 const html = read('index.html');
 assert.ok(html.indexOf('js/data/sambals-additional.js') < html.indexOf('js/core.js'));
-assert.ok(html.includes('All 257 sambals'));
-console.log('PASS: 257 unique profiles, 16 complete additions, valid illustrations, sources, script order, and matching SQL IDs.');
+assert.ok(html.includes('All 260 sambals'));
+console.log('PASS: 260 unique profiles, 19 complete additions, valid illustrations, sources, script order, and matching SQL IDs.');

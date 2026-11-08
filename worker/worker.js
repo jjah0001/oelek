@@ -1,7 +1,7 @@
 // Sambal pairing and recipe proxy for the GitHub Pages build.
 // POST /pair { dish, catalogue } -> { picks:[{id,reason}], tip } | { error }
 // POST /negara {} -> { code, en, id } : the visitor's country (country level only), so Bu Lastri can greet them by it
-// POST /warung { messages:[{role,content}], waktu, bahasa, hari } -> { reply } : a chat with Bu Lastri at her warung (persona in WARUNG_PROMPT)
+// POST /warung { messages:[{role,content}], waktu, bahasa, hari, malam, sambal } -> { reply } : a chat with Bu Lastri at her warung (persona in warungPrompt, the scene she stands in from warungAdegan)
 // POST /recipe { id, info } -> { serves, time, ingredients:[{item,amount,note}], steps:[], tips:[], keeps:{room,fridge,freezer,signs}, safety } | { error }
 //   Recipes are written for the visitor's country (Cloudflare's request.cf.country; nothing finer is used or kept)
 //   and cached at the edge for 30 days per sambal, description and country, so each one is written once.
@@ -194,7 +194,31 @@ async function recipe(body, req, env, okOrigin) {
 
 // ================= warung: Bu Lastri =================
 // Kept in step with warungPrompt() in js/warung.js (used inside claude.ai). Written in Indonesian on purpose.
-function warungPrompt(negara, waktu, bahasa, hari) {
+// What the visitor sees in the warung picture (img/warung*.webp and its loops), so she knows her own warung.
+// malam: the night scene is showing; sambal: the stage shown in her cobek (0 whole, 1 coarse, 2 smooth).
+function warungAdegan(malam, sambal) {
+  const cobek = ["bahan sambal yang masih utuh: cabai merah, cabai rawit, bawang merah, bawang putih dan tomat, belum diulek",
+    "sambal yang sedang diulek, masih kasar", "sambal yang sudah halus, merah mengkilap dan siap dicicipi"][sambal] || "";
+  return `Isi warung Anda. Pengunjung melihat semua ini di gambar warung, jadi Anda tahu persis apa yang ada di sekitar Anda
+dan boleh menyebut atau menunjuknya bila cocok dengan obrolan (tidak usah diceritakan semuanya sekaligus):
+- Anda berdiri di balik meja kayu panjang, memakai kebaya hijau zaitun dan celemek krem, dengan cobek batu dan ulekan
+  di depan Anda.${cobek ? ` Di dalam cobek sekarang ada ${cobek}.` : ""}
+- Di meja sebelah kiri: tampah bambu penuh cabai merah, beberapa cabai tercecer di meja, kaleng kerupuk berkaca berisi
+  kerupuk, dan senthir (pelita minyak dari kuningan)${malam ? " yang sedang menyala" : " yang belum dinyalakan"}. Seekor
+  kucing kampung belang sedang tidur melingkar di meja dekat kaleng kerupuk.
+- Di meja sebelah kanan: teko tanah liat (teh poci) yang masih mengepul dan dua gelas kecil, keranjang-keranjang bambu
+  berisi tomat, jeruk limau, bawang merah dan bawang putih, gentong tanah liat, mangkuk tanah liat dan daun pisang.
+- Di belakang kiri: bangku kayu dengan bakul anyaman, kendil tanah liat bertutup, mangkuk, daun pisang dan serbet
+  kotak-kotak merah putih. Serenteng kopi sachet tergantung dari balok atap. Dindingnya gedhek (anyaman bambu), sebuah
+  tampah tergantung di dinding kanan, dan atapnya genteng tanah liat.
+- Dari warung terlihat sawah hijau, rumah-rumah kampung, pohon kelapa dan pisang, dan Gunung Merapi dengan sedikit asap
+  di puncaknya.${malam ? `
+- Sekarang malam: bulan purnama di atas Merapi, lampu menyala di rumah-rumah tetangga, air sawah berkilau, dan seekor
+  cicak merayap di balok kayu dekat atap.` : ""}
+- Nasi, sayur, lauk dan gorengan ada di dapur di belakang, tidak terlihat di gambar. Jangan mengarang barang lain yang
+  tampak di warung; kalau ditanya tentang sesuatu yang tidak ada, katakan saja tidak ada.`;
+}
+function warungPrompt(negara, waktu, bahasa, hari, adegan) {
   return `Anda memerankan Bu Lastri (Sulastri), seorang ibu Jawa berusia 61 tahun, pemilik sebuah warung kecil di kampungnya
 di kaki Gunung Merapi, Sleman, Yogyakarta. Anda sedang mengobrol dengan pengunjung situs Oelek, sebuah atlas sambal
 Indonesia, yang baru saja mampir ke warung Anda.
@@ -267,7 +291,9 @@ Keadaan sekarang:
   negara lain, ikuti kata pengunjung.` : "Anda belum tahu pengunjung dari negara mana; tanyakan dengan ramah."}
 - Di kampung sekarang ${waktu || "siang hari"}.${hari ? `
 - Hari ini ${hari}. Anda sudah mengucapkan selamat waktu menyambut, jadi jangan mengulanginya di setiap jawaban; boleh
-  bercerita tentang hari ini, makanan khasnya dan kebiasaan di kampung bila cocok dengan obrolan.` : ""}`;
+  bercerita tentang hari ini, makanan khasnya dan kebiasaan di kampung bila cocok dengan obrolan.` : ""}${adegan ? `
+
+${adegan}` : ""}`;
 }
 
 const HARI = {
@@ -325,6 +351,7 @@ async function warung(body, req, env, okOrigin) {
   const negara = negaraOf(req).id;
   const waktu = WAKTU[String(body?.waktu || "")] || "";
   const bahasa = body?.bahasa === "id" ? "id" : "en"; // the language she greeted the visitor in
+  const adegan = warungAdegan(body?.malam === true, [0, 1, 2].includes(body?.sambal) ? body.sambal : -1);
   const hari = String(body?.hari || "").split(",").filter((k) => Object.hasOwn(HARI, k)).slice(0, 2).map((k) => HARI[k]).join("; dan juga ");
 
   const upstream = await fetch("https://api.anthropic.com/v1/messages", {
@@ -335,7 +362,7 @@ async function warung(body, req, env, okOrigin) {
       max_tokens: 1000,
       thinking: { type: "disabled" },
       // Plain text only: her movement is chosen by js/warung.js from what she says, so no JSON or tokens are spent on it.
-      system: warungPrompt(negara, waktu, bahasa, hari),
+      system: warungPrompt(negara, waktu, bahasa, hari, adegan),
       messages,
     }),
   });
