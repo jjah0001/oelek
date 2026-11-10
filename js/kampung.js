@@ -1491,6 +1491,43 @@ function tick(){
     const hr=Math.floor(m.h); if((hr>=20||hr<=4)&&!F.suro) at("jam",true,hr,.04,()=>kentongan(now+1,hr%12||12));
   }
 }
+// ================= warung: Bu Lastri's sounds =================
+// js/warung.js asks for these as she moves: the ulekan on the cobek, her spoon, the cicak on the beam.
+// They follow the kampung's speaker button and play only while the kampung is heard.
+const WARUNG_SFX={
+  tok(t){ // the ulekan pressed into the cobek: stone on stone, a dull thud with grit
+    const out=A.near[2], o=O("sine",150), g=Gn(), n=Nz(), gn=Gn(), c=Nz(), gc=Gn();
+    o.frequency.setValueAtTime(rand(140,165),t); o.frequency.exponentialRampToValueAtTime(70,t+.07);
+    chain(o,g,out); env(g.gain,t,.004,.3,0,.14);
+    chain(n,Fl("bandpass",rand(800,1000),1),gn,out); env(gn.gain,t,.002,.12,0,.06);
+    chain(c,Fl("bandpass",3200,2),gc,out); env(gc.gain,t,.006,.05,.01,.09);
+    run1(o,t,.25); run1(n,t,.12); run1(c,t,.15);
+  },
+  gerus(t){ // the ulekan dragged through the sambal: wet, gritty, uneven
+    const out=A.near[2], n=Nz(), g=Gn(), c=Nz(), cm=Gn(.5), q=O("square",rand(28,45)), qg=Gn(.5), gc=Gn(), d=rand(.3,.42);
+    chain(n,Fl("bandpass",rand(600,800),.8),g,out);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.07,t+d*.4); g.gain.linearRampToValueAtTime(0,t+d);
+    chain(q,Fl("lowpass",90),qg,cm.gain); chain(c,Fl("bandpass",3500,3),cm,gc,out);
+    gc.gain.setValueAtTime(0,t); gc.gain.linearRampToValueAtTime(.06,t+d*.5); gc.gain.linearRampToValueAtTime(0,t+d);
+    run1(n,t,d); run1(c,t,d); run1(q,t,d);
+  },
+  sendok(t){ // a metal spoon touching the stone rim: a small bright ring
+    const out=A.near[2];
+    for(const [f,v,dec] of [[2380,.05,.5],[3410,.015,.35],[5870,.025,.25],[8300,.012,.14]]){
+      const o=O("sine",f*rand(.99,1.01)), g=Gn(); chain(o,g,out); env(g.gain,t,.001,v,0,dec); run1(o,t,dec+.05);
+    }
+    const n=Nz(), gn=Gn(); chain(n,Fl("highpass",3000),gn,out); env(gn.gain,t,.0005,.04,0,.012); run1(n,t,.05);
+  },
+  cicak(t){ // "ck ck ck ck": a run of dry chirps, falling and fading, from the beam on her left
+    const out=A.near[1], k=rand(.95,1.08);
+    for(let i=0,n=5+(Math.random()*3|0);i<n;i++){
+      const s=t+i*rand(.12,.15), o=O("triangle",2600*k), g=Gn();
+      o.frequency.setValueAtTime(2600*k,s); o.frequency.exponentialRampToValueAtTime(1900*k,s+.045);
+      chain(o,Fl("bandpass",2400,2),g,out); env(g.gain,s,.003,.09*(1-i*.1),.01,.04); run1(o,s,.08);
+    }
+  }
+};
+window.kampungSfx=k=>{ if(A.on&&A.ctx&&A.ctx.state==="running"&&!document.hidden&&WARUNG_SFX[k]) WARUNG_SFX[k](A.ctx.currentTime+.02); };
 const btn=document.getElementById("suara");
 const pref={ get(){ try{return localStorage.getItem("oelek.kampung");}catch(e){return null;} }, set(v){ try{localStorage.setItem("oelek.kampung",v);}catch(e){} } };
 function setSound(on){
