@@ -284,7 +284,7 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
   const now=cook.querySelector(".bl-now .bl-pose"), ghost=cook.querySelector(".bl-ghost"), ghostImg=ghost.querySelector(".bl-pose");
   const face=cook.querySelector(".bl-face"), eyes=cook.querySelector(".bl-eyes"), mouth=cook.querySelector(".bl-mouth");
   const feelBox=cook.querySelector(".bl-feelbox"), feelImg=feelBox&&feelBox.querySelector(".bl-feel");
-  const pct=v=>v*100/B.size+"%";
+  const pct=v=>v*100/B.size+"%", sfx=k=>{ if(typeof kampungSfx==="function") kampungSfx(k); };
   Object.assign(face.style,{left:pct(B.face.x),top:pct(B.face.y),width:pct(B.face.w),height:pct(B.face.h)});
   for(const im of [now,ghostImg]) Object.assign(im.style,{width:B.poses.cols*100+"%",height:B.poses.rows*100+"%"});
   for(const im of [eyes,mouth]) Object.assign(im.style,{width:B.face.cols*100+"%",height:B.face.rows*100+"%"});
@@ -331,11 +331,16 @@ const warungAnimate=typeof BU_LASTRI==="undefined"||typeof requestAnimationFrame
     let plan=move==="rest"&&t-since>3500?{pose:"listen"}:WARUNG_PLAN[move]||WARUNG_PLAN.rest, p=plan.pose, pt=t-since;
     if(plan.seq){ let acc=0; p=plan.seq[plan.seq.length-1][0]; for(const [name,ms] of plan.seq){ if(ms&&pt<acc+ms){ p=name; break; } acc+=ms; } }
     // a new pose: pass through its in-between frame first
-    if(p!==pose){ const v=calm?null:warungVia(pose,p); via=v&&B.role[v]?{f:B.role[v][0],until:t+130}:null; pose=p; }
+    if(p!==pose){ const v=calm?null:warungVia(pose,p); via=v&&B.role[v]?{f:B.role[v][0],until:t+130}:null; pose=p; if(p==="offer") sfx("sendok"); }
     if(via&&t>=via.until) via=null;
     const set=B.role[p]||B.role.talk;
     const f=via?via.f:set[plan.fps&&!calm?Math.floor(pt*plan.fps/1000)%set.length:0];
-    if(f!==frame){ if(!set.includes(frame)) fade(frame); cell(now,f,B.poses); frame=f; }
+    if(f!==frame){
+      if(!set.includes(frame)) fade(frame); cell(now,f,B.poses); frame=f;
+      // the ulekan: a press at the start of each stroke and a drag through the sambal halfway
+      const k=via?-1:set.indexOf(f);
+      if(p==="cycle"){ if(k===0) sfx("tok"); else if(k===4) sfx("gerus"); } else if(p==="chat"&&k===0) sfx("gerus");
+    }
     if(sambalNow) show(sambalNow,sambalCell(f),SG);
     // a blink every few seconds, now and then a double one
     const lids=B.eyes[f];
@@ -405,6 +410,7 @@ function warungSambalStage(){ if(!warungAnimate||!warungAnimate.stage) return; w
       if(leg>=L.path.length-1){ box.style.opacity="0"; setTimeout(()=>{ leg=0; at(0,0); box.style.opacity=""; setTimeout(step,2500+Math.random()*3000); },5000); return; }
       // the dash: crawl frames while sliding to the next spot, then the still frame
       const from=L.path[leg], to=L.path[leg+1], t0=performance.now(), dur=520;
+      if(Math.random()<.4&&typeof kampungSfx==="function") kampungSfx("cicak");   // now and then it calls as it goes
       const run=t=>{
         const k=Math.min(1,(t-t0)/dur), x=from[0]+(to[0]-from[0])*k, y=from[1]+(to[1]-from[1])*k;
         box.style.transform=`translate(${x*100/L.w}%,${y*100/L.h}%) rotate(var(--wl-turn))`;
