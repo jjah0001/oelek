@@ -14,11 +14,10 @@ function visitorCountry(){
 }
 function countryName(code,lang){ try{ return code?new Intl.DisplayNames([lang],{type:"region"}).of(code)||"":""; }catch(e){ return ""; } }
 function recipeInfo(s){
-  if(s.kind==="full") return [
+  return [
     `Sambal: ${s.name}`, `Region: ${s.region}`, `Family: ${STYLE[s.style].en} (${s.style})`, `Heat: ${s.heat} of 5`,
     `Ingredients in the cobek: ${s.ing.join(", ")}`, `Eaten with: ${s.serve.join(", ")}`, `About it: ${s.note}`
   ].join("\n");
-  return [`Sambal: ${s.name}`, `Province: ${provName(s.prov)}`, `What is recorded about it: ${describeListed(s)}`].join("\n");
 }
 function recipePrompt(info,negara){
   // the oma comes from the sambal's own region and is known for this very sambal

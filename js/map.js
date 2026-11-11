@@ -34,13 +34,12 @@ function smoothPath(pts){
   }
   return d+"Z";
 }
-// per-province counts by family (listed entries have unknown family)
+// per-province counts by family
 const provStats = {};
-for(const c of [...Object.keys(PROV),ACROSS]) provStats[c]={raw:0,boiled:0,cooked:0,fermented:0,unknown:0,total:0};
+for(const c of [...Object.keys(PROV),ACROSS]) provStats[c]={raw:0,boiled:0,cooked:0,fermented:0,total:0};
 // sambals made all over Indonesia get their own ring out in the Indian Ocean, west of Sumatra
 const ACROSS_AT=[97.2,-6.6];
 for(const s of S){ if(!provStats[s.prov]) continue; provStats[s.prov][s.style]++; provStats[s.prov].total++; }
-for(const l of L){ if(!provStats[l[1]]) continue; provStats[l[1]].unknown++; provStats[l[1]].total++; }
 
 function arc(cx,cy,R,r,a0,a1){
   if(a1-a0>=Math.PI*2-1e-6) a1=a0+Math.PI*2-1e-4;
@@ -87,7 +86,7 @@ function drawMap(){
     grp.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();zoomTo(b.c);} });
     gBub.append(grp);
   }
-  // markers for profiled sambals (shown when zoomed)
+  // markers for every sambal (shown when zoomed)
   gMk=sv("g",{visibility:"hidden"}); mapSvg.append(gMk);
   // Sambals with a recorded place get a solid pin there. The rest are only recorded by province: they get a hollow pin,
   // laid out in a tidy block at the province's centre, so every sambal is on the map without inventing a location.
@@ -111,7 +110,7 @@ function drawMap(){
   }
   for(const s of S){
     const exact=Number.isFinite(s.lon)&&Number.isFinite(s.lat);
-    if(!exact&&!spot[s.id]) continue; // made across Indonesia: listed under its own ring
+    if(!exact&&!spot[s.id]) continue; // made across Indonesia: shown under its own ring
     const [x,y]=exact?px(s.lon,s.lat):spot[s.id];
     const m=sv("g",{class:"mk "+s.style+(exact?"":" approx"),tabindex:"-1",role:"button","aria-label":`${s.name}, ${exact?s.region:provName(s.prov)}`,"data-id":s.id,"data-x":x,"data-y":y});
     m.append(sv("circle",{class:"halo",cx:x,cy:y}), sv("circle",{class:"core",cx:x,cy:y}));
@@ -175,7 +174,7 @@ function markPin(id,on){ const m=gMk&&gMk.querySelector(`.mk[data-id="${CSS.esca
 $("#mapBack").addEventListener("click",zoomOut);
 function famBar(st){
   const bar=el("div",{class:"bar2"});
-  for(const k of ["raw","boiled","cooked","fermented","unknown"]){ if(!st[k]) continue; const i=el("i"); i.style.width=(st[k]/st.total*100)+"%"; i.style.background=k==="unknown"?"var(--line)":`var(--${k})`; i.title=`${k}: ${st[k]}`; bar.append(i); }
+  for(const k of ["raw","boiled","cooked","fermented"]){ if(!st[k]) continue; const i=el("i"); i.style.width=(st[k]/st.total*100)+"%"; i.style.background=`var(--${k})`; i.title=`${k}: ${st[k]}`; bar.append(i); }
   return bar;
 }
 function renderProv(code){

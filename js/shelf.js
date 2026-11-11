@@ -56,7 +56,7 @@ function shelfJar(s,e){
   // family colour. Status shows in how full it is: stocked (by weight when recorded), a little left once tried,
   // and an empty dashed jar for one still to try.
   const L=LOOK[s.id]||(s._look||(s._look=autoLook(s))), base=L.b, dark=shade(base,-40), light=shade(base,35);
-  const fam=s.kind==="full"?`var(--${s.style})`:"#8a7f6c", uid="j"+s.id.replace(/[^a-z0-9]/gi,"");
+  const fam=`var(--${s.style})`, uid="j"+s.id.replace(/[^a-z0-9]/gi,"");
   const lvl=e.status==="wish"?0:e.status==="tried"?.22:e.grams?Math.max(.3,Math.min(.92,e.grams/350)):.8;
   const body="M27 29Q17 33 17 46V98Q17 109 29 109H71Q83 109 83 98V46Q83 33 73 29Z", top=109-lvl*78;
   let fill="";
@@ -84,7 +84,7 @@ function renderShelf(){
   const provinces=[...new Set(tasted.map(x=>x.s.prov))].filter(p=>PROV[p]);
   const grams=have.reduce((n,x)=>n+(x.e.grams||0),0);
   $("#shelfCount").textContent=entries.length||"";
-  $("#shelfStats").replaceChildren(...[[have.length,"jars on the shelf"],[grams.toLocaleString()+" g","recorded in stock"],[entries.filter(x=>x.e.status==="wish").length,"sambals to try"],[`${provinces.length} / ${Object.keys(PROV).filter(p=>ALL.some(s=>s.prov===p)).length}`,"provinces tasted"]].map(([value,label])=>el("div",{},el("strong",{text:value}),el("span",{text:label}))));
+  $("#shelfStats").replaceChildren(...[[have.length,"jars on the shelf"],[grams.toLocaleString()+" g","recorded in stock"],[entries.filter(x=>x.e.status==="wish").length,"sambals to try"],[`${provinces.length} / ${Object.keys(PROV).filter(p=>S.some(s=>s.prov===p)).length}`,"provinces tasted"]].map(([value,label])=>el("div",{},el("strong",{text:value}),el("span",{text:label}))));
   const host=$("#shelfRows");host.replaceChildren();
   if(!entries.length)host.append(el("div",{class:"shelf-empty"},el("p",{class:"eyebrow",text:"A little space for something pedas"}),el("h3",{text:"Your first jar is waiting"}),el("p",{text:'Open a sambal in the Atlas and choose “Add to my shelf”, “Want to try” or “Tried before”.'}),shelfButton("Explore the sambal atlas →",()=>go("peta"))));
   else{
@@ -94,7 +94,7 @@ function renderShelf(){
   }
   const map=$("#shelfMap");map.replaceChildren();for(const pts of Object.values(ISLANDS))map.append(sv("path",{d:smoothPath(pts),fill:"var(--land)",stroke:"var(--land-edge)","stroke-width":1}));
   const links=$("#shelfProvinces");links.replaceChildren();
-  const browse=code=>{$("#provSel").value=code;$("#q").value="";$("#heatSel").value="0";document.querySelector('.chip.kind[data-k="all"]').click();document.querySelector('.chip.fam[data-f="all"]').click();go("peta");$("#grid").scrollIntoView({block:"start"});};
+  const browse=code=>{$("#provSel").value=code;$("#q").value="";$("#heatSel").value="0";document.querySelector('.chip.fam[data-f="all"]').click();go("peta");$("#grid").scrollIntoView({block:"start"});};
   for(const code of provinces){const [name,lon,lat]=PROV[code],[x,y]=px(lon,lat),count=tasted.filter(t=>t.s.prov===code).length;const mark=sv("g",{role:"button",tabindex:0,"aria-label":`${name}: ${count} tasted sambals`});mark.append(sv("circle",{cx:x,cy:y,r:11,fill:"var(--ink)"}));const label=sv("text",{x,y:y+4,"text-anchor":"middle",fill:"var(--surface)","font-size":11});label.textContent=count;mark.append(label);mark.addEventListener("click",()=>browse(code));mark.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();browse(code);}});map.append(mark);links.append(shelfButton(`${name} · ${count}`,()=>browse(code)));}
   if(!provinces.length)links.append(el("p",{class:"lede",text:"Your journey appears here as you add or try sambals."}));
 }

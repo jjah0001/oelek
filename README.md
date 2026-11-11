@@ -1,6 +1,6 @@
 # Oelek
 
-An English atlas of Indonesian sambal: 260 fully profiled sambals across 35 provinces, each illustrated as a card, with a province map, sambal of the day, dish pairing, a spice primer and a "Which sambal are you?" quiz.
+An English atlas of Indonesian sambal: 260 sambals across 35 provinces, each illustrated as a card, with a province map, sambal of the day, dish pairing, a spice primer and a "Which sambal are you?" quiz.
 
 Plain HTML, CSS and JavaScript with no build step (fonts load from Google Fonts). Open `index.html` in a browser.
 
@@ -21,7 +21,7 @@ js/data/
   moments.js               moments listed on About us, with English explanations
   hari-besar.js            holiday dates the kampung celebrates (update yearly from the SKB)
 js/
-  core.js                  helpers and the combined index (ALL, byId)
+  core.js                  helpers and the sambal index (byId)
   art.js                   procedural recipe illustrations
   dialog.js                flavour radar and the detail dialog
   home.js                  sambal of the day and families panel
@@ -61,7 +61,7 @@ The scripts share globals and must load in the order listed in `index.html`: dat
 
 ## Profile coverage
 
-All 207 formerly Listed entries now use the existing full-profile layout, initially bringing the atlas to 241 Profiled entries and 0 Listed entries. Each has representative ingredients, suggested pairings, a six-axis editorial flavour profile, a description and source links. Regional recipes vary; supporting seasonings are editorial reconstructions where a source records only a defining ingredient. Province-only records appear in the map panel without invented coordinates. Original catalogue IDs are preserved. The source spelling Picak corrects the old Pikak entry, which remains searchable as an alias. Duo Sale now uses dried small fish, correcting the original mango/coconut data.
+Every sambal has the same profile: there is no separate "listed" tier, flag or filter. Each has representative ingredients, suggested pairings, a six-axis editorial flavour profile, a description and source links. Regional recipes vary; supporting seasonings are editorial reconstructions where a source records only a defining ingredient. Province-only records appear in the map panel without invented coordinates. Original catalogue IDs are preserved. The source spelling Picak corrects the old Pikak entry, which remains searchable as an alias. Duo Sale now uses dried small fish, correcting the original mango/coconut data.
 
 ## Live website
 

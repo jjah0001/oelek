@@ -1,6 +1,6 @@
 "use strict";
 // Flavour axes, the 34 core profiles and the raw/cooked/fermented families.
-// ================= full profiles =================
+// ================= core profiles =================
 // p = [heat, funk, sour, sweet, fresh, rich] on 0–5
 const DIMS = [["Heat","pedas"],["Funk","terasi"],["Sour","asam"],["Sweet","manis"],["Fresh","segar"],["Rich","gurih"]];
 const S = [

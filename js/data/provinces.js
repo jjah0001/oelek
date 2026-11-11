@@ -14,5 +14,5 @@ const PROV = {
  MA:["Maluku",129.0,-3.3,280], MU:["North Maluku",127.9,1.0,240], GO:["Gorontalo",122.6,0.7,200],
  PB:["West Papua",133.6,-1.3,320], PT:["Central Papua",136.9,-4.0,320], PA:["Papua",140.2,-2.9,300], PS:["South Papua",139.8,-7.4,300]
 };
-const ACROSS = "ID"; // listed sambals made across Indonesia with no single home province
+const ACROSS = "ID"; // sambals made across Indonesia with no single home province
 const provName = c => c===ACROSS ? "Across Indonesia" : PROV[c][0];

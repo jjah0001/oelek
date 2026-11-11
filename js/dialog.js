@@ -17,23 +17,20 @@ function radar(sets, size=280){
 const dlg = $("#dlg");
 function openSambal(id){
   const s = byId[id]; if(!s) return;
-  const full = s.kind==="full";
   paintShelfControls(s);
   paintPublicRatings(s);
   $("#dArt").innerHTML = sambalArt(s);
-  $("#dStyle").textContent = full ? STYLE[s.style].label : "Listed sambal";
+  $("#dStyle").textContent = STYLE[s.style].label;
   $("#dName").textContent = s.name;
-  $("#dReg").textContent = full ? s.region : provName(s.prov);
-  $("#dHeat").innerHTML = full ? chilis(s.heat) : "";
-  $("#dNote").textContent = full ? s.note : describeListed(s) + " This is a listed sambal: there is no full recipe profile or flavour chart yet.";
+  $("#dReg").textContent = s.region;
+  $("#dHeat").innerHTML = chilis(s.heat);
+  $("#dNote").textContent = s.note;
   const fill = (ul, arr) => ul.replaceChildren(...arr.map(t=>el("li",{text:t})));
-  $("#dIngH").textContent = full ? "Into the cobek" : "Defining ingredient";
-  fill($("#dIng"), full ? s.ing : [s.note||"Unrecorded"]);
-  $("#dServeBox").hidden = !full; if(full) fill($("#dServe"), s.serve);
+  fill($("#dIng"), s.ing);
+  fill($("#dServe"), s.serve);
   $("#dSrc").replaceChildren(...s.src.map(k=>{ const i=srcInfo(k); return el("a",{href:i.u,target:"_blank",rel:"noopener",text:i.t}); }));
-  $("#dArtNote").firstChild.textContent = full ? "Illustration drawn from the recipe, not a photograph. " : "Illustration drawn from the recorded ingredient, not a photograph. ";
-  $("#dPhoto").href = "https://commons.wikimedia.org/w/index.php?search="+encodeURIComponent(s.name)+"&title=Special:MediaSearch&type=image";
-  $("#dRadarBox").hidden = !full; $("#dRadar").innerHTML = full ? radar([{name:s.name,p:s.p,cls:"s-sambal"}]) : "";
+    $("#dPhoto").href = "https://commons.wikimedia.org/w/index.php?search="+encodeURIComponent(s.name)+"&title=Special:MediaSearch&type=image";
+  $("#dRadar").innerHTML = radar([{name:s.name,p:s.p,cls:"s-sambal"}]);
   if (typeof paintRecipe === "function") paintRecipe(s);
   if (typeof dlg.showModal === "function") { try{ if(!dlg.open) dlg.showModal(); }catch(e){ dlg.setAttribute("open",""); } } else dlg.setAttribute("open","");
 }
