@@ -181,10 +181,7 @@ section{padding-block:64px}
 .atlas-head{display:grid;gap:8px;margin-top:44px}
 .atlas-head h3{font-size:1.8rem}
 .chip small{font:400 .72rem var(--f-mono);opacity:.7;margin-left:2px}
-.sep{width:1px;height:24px;background:var(--line);margin:0 4px}
 .count{font:500 .75rem var(--f-mono);letter-spacing:.08em;color:var(--muted);margin-bottom:10px;text-transform:uppercase}
-.t-list{background:var(--muted)}
-.card .ing{font-size:.8rem;color:var(--muted);grid-column:2;line-height:1.35}
 .more{display:flex;justify-content:center;margin-top:20px}
 .prov li button{all:unset;cursor:pointer;font-weight:600;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}

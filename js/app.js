@@ -24,10 +24,8 @@ function routeFromHash(){
 window.addEventListener("hashchange",routeFromHash);
 
 // ================= boot =================
-$("#stAll").textContent=S.length+L.length;
-$("#stFull").textContent=S.length;
+$("#stAll").textContent=S.length;
 $("#stProv").textContent=Object.entries(provStats).filter(([c,s])=>s.total&&c!==ACROSS).length;
-$("#cAll").textContent=ALL.length; $("#cFull").textContent=S.length; $("#cList").textContent=L.length;
 $("#srcList").replaceChildren(...Object.entries(SRC).filter(([key])=>!key.startsWith("http")).map(([,s])=>el("li",{},el("a",{href:s.u,target:"_blank",rel:"noopener",text:s.t}))));
 renderToday(); renderFam(); drawMap(); renderProv(null); renderGrid();
 // The quiz always starts fresh: results are not kept between visits. Clear any result an older version saved.

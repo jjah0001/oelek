@@ -3,8 +3,6 @@
 // ================= completed regional profiles =================
 // Stable l0–l206 IDs preserve the original catalogue references.
 // Province-only records are shown in the map panel, not given invented coordinates.
-const L = [];
-
 S.push(
 {
   "id": "l0",
