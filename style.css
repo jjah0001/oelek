@@ -419,6 +419,12 @@ footer{background:color-mix(in srgb,var(--bg) 90%,transparent)}
 .about-try a{padding:4px 12px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--bg)}
 .about-try a:hover{border-color:var(--chili)}
 @media (max-width:760px){.about-grid{grid-template-columns:1fr;gap:24px}.about-block{padding:18px}}
+.sibling-card{display:flex;align-items:center;gap:14px;padding:12px 16px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);text-decoration:none;max-width:520px}
+.sibling-card:hover{border-color:var(--chili)}
+.sibling-logo{width:44px;height:44px;flex:none;border-radius:10px}
+.sibling-card span{display:grid;gap:2px}
+.sibling-card b{font:400 1.2rem/1.2 var(--f-display)}
+.sibling-card small{font-size:.86rem;color:var(--muted);line-height:1.4}
 .about-sources p{font-size:.9rem;color:var(--muted)}
 .about-sources ul{margin:6px 0 0;padding-left:18px;display:grid;gap:5px;font-size:.88rem}
 footer a{color:var(--ink)}
