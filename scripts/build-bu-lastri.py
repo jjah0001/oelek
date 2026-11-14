@@ -19,6 +19,8 @@ Inputs, all in art/bu-lastri/ (kept out of the published site):
   bu-lastri-night-chat-v3.webp     2x2 the four chat-grind frames lit by the senthir, already registered
   bu-lastri-sambal-masks-v3-*.png  one greyscale mask per frame (white where sambal shows), laid out as in
                                    round-3/mask-layout.json, drawn on the registered day frames
+  round 4 (see art/bu-lastri/round-4/handoff.md):
+  bu-lastri-night-ulek-v4.webp     4x2 the eight ulek-stroke frames lit by the senthir, drawn on the registered day frames
   bu-lastri-sambal-stages-v2.webp  2x2 the cobek's contents: whole, coarse, smooth, (glossy, not used)
 
 Outputs:
@@ -136,10 +138,58 @@ for name, file, n, splitter in [
 _nc = load(os.path.join(ART, "bu-lastri-night-chat-v3.webp"))
 for k in range(4):
     r, q = divmod(k, 2); frames[f"nc{k}"] = _nc[r * S:(r + 1) * S, q * S:(q + 1) * S].copy()
-# The acting sheet draws her lower behind the cobek than the talking sheet does,
-# so lift it part way: the head pops less and the cobek still sits on the counter.
+# Night ulek stroke (round 4): the same, on the registered cycle frames.
+_nu = load(os.path.join(ART, "bu-lastri-night-ulek-v4.webp"))
+for k in range(8):
+    r, q = divmod(k, 4); frames[f"nu{k}"] = _nu[r * S:(r + 1) * S, q * S:(q + 1) * S].copy()
+RELIT = {**{f"nc{k}": f"chat{k}" for k in range(4)}, **{f"nu{k}": f"cycle{k}" for k in range(8)}}   # relit frame -> the day frame it was drawn on
+
+# ---------------------------------------------------------------- one counter for every frame
+# The fit above matches the cobek's outline, but each sheet draws the cobek a little differently, so the
+# sheets still ended up to 18 px apart and the cobek hopped when she changed pose. Here every frame is moved
+# (whole pixels, so nothing is resampled) until the cobek's foot stands on the master's line, centred where
+# the master's is. A loop moves as one, so its frames keep their places relative to each other.
+def shift(im, dx, dy):
+    out = np.zeros_like(im); h, w = im.shape[:2]
+    ys, yd = (slice(max(0, -dy), h - max(0, dy)), slice(max(0, dy), h - max(0, -dy)))
+    xs, xd = (slice(max(0, -dx), w - max(0, dx)), slice(max(0, dx), w - max(0, -dx)))
+    out[yd, xd] = im[ys, xs]; return out
+def bowl(im):
+    """Where the cobek stands: its lowest row, and the centre of its foot (no hand ever covers the foot)."""
+    a = im[..., 3] > 128; b = int(np.where(a.sum(1) > 60)[0].max())
+    xs = np.where(a[b - 6:b + 1].any(0))[0]
+    return b, (xs.min() + xs.max()) / 2
+def _gray8(im): return cv2.cvtColor(im[..., :3], cv2.COLOR_RGB2GRAY).astype(np.float32)
+# A relit frame first goes back onto its day frame: the same drawing, so the cobek's texture says how far it
+# slipped. Its outline is then cut to the day frame's (relighting grows a soft fringe around her).
+for n, d in RELIT.items():
+    win = (slice(540, 612), slice(190, 440))
+    (dx, dy), _ = cv2.phaseCorrelate(_gray8(frames[d])[win], _gray8(frames[n])[win], cv2.createHanningWindow((250, 72), cv2.CV_32F))
+    f = shift(frames[n], -int(round(dx)), -int(round(dy)))
+    f[..., 3] = np.minimum(f[..., 3], cv2.dilate(frames[d][..., 3], np.ones((3, 3), np.uint8)))
+    frames[n] = f; print("relit", n, "slipped", round(dx, 1), round(dy, 1))
+B0, C0 = bowl(frames["ngobrol0"])
+LOOPS = [[f"chat{k}" for k in range(4)], [f"cycle{k}" for k in range(8)]]
+FIX = {}
+for n in frames:
+    if n in RELIT: continue
+    b, c = bowl(frames[n]); FIX[n] = (C0 - c, B0 - b)
+for loop in LOOPS:
+    m = np.median([FIX[n] for n in loop], 0)
+    for n in loop: FIX[n] = tuple(m)
+FIX = {n: (int(round(dx)), int(round(dy))) for n, (dx, dy) in FIX.items()}
+for n, d in RELIT.items(): FIX[n] = FIX[d]
+frames = {n: shift(f, *FIX[n]) for n, f in frames.items()}
+print("counter fix", {n: v for n, v in FIX.items() if v != (0, 0)})
+# The acting sheet draws her smaller behind the cobek than the talking sheet does, so her head would drop when
+# she listens. Lift her head and shoulders and let the apron stretch a little; the cobek and her hands stay put.
+LIFT, LIFT_Y0, LIFT_Y1 = 18, 250, 480
+def lift(im):
+    y = np.arange(S, dtype=np.float32); d = LIFT * np.clip((LIFT_Y1 - y) / (LIFT_Y1 - LIFT_Y0), 0, 1)
+    mx, my = np.meshgrid(np.arange(S, dtype=np.float32), y + d)
+    return cv2.remap(im, mx, my, cv2.INTER_LINEAR, borderValue=(0, 0, 0, 0))
 for k in range(4):
-    frames[f"act{k}"] = np.roll(frames[f"act{k}"], -14, axis=0)
+    frames[f"act{k}"] = lift(frames[f"act{k}"])
 frames = {k: defringe(v) for k, v in frames.items()}
 ref = frames["ngobrol0"]
 
@@ -254,7 +304,7 @@ for feel in FEELS:
 # ---------------------------------------------------------------- night frames
 # Her lamp-lit frames replace the five poses they were drawn for; every other frame is graded to match
 # them: warm on the side of the senthir (screen left), cooler on the other.
-NIGHT = {"ngobrol0": "na0", "act0": "na1", "act1": "na2", "act2": "na3", "act3": "nb0", **{f"chat{k}": f"nc{k}" for k in range(4)}}
+NIGHT = {"ngobrol0": "na0", "act0": "na1", "act1": "na2", "act2": "na3", "act3": "nb0", **{f"chat{k}": f"nc{k}" for k in range(4)}, **{f"cycle{k}": f"nu{k}" for k in range(8)}}
 def halves(im):
     a = im[..., 3] > 200; x = np.arange(S)[None, :].repeat(S, 0); mid = np.median(x[a])
     out = []
@@ -311,7 +361,10 @@ _sheets = {}
 SMASK = {}
 for e in _layout["frames"]:
     sh = _sheets.setdefault(e["sheet"], np.array(Image.open(os.path.join(ART, e["sheet"])).convert("L")))
-    SMASK[POSES[e["frame"] - 1]] = cv2.GaussianBlur(sh[e["y"]:e["y"] + S, e["x"]:e["x"] + S].astype(np.float32) / 255, (0, 0), 0.7)   # soften the pixel steps
+    _n = POSES[e["frame"] - 1]
+    # the masks were drawn on the frames as they stood in round 3 (acting frames 14 px higher): move each with its frame
+    _m = shift(sh[e["y"]:e["y"] + S, e["x"]:e["x"] + S], FIX[_n][0], FIX[_n][1] + (14 if _n.startswith("act") else 0))
+    SMASK[_n] = cv2.GaussianBlur(_m.astype(np.float32) / 255, (0, 0), 0.7)   # soften the pixel steps
 assert len(SMASK) == len(POSES)
 _u = np.max([m for m in SMASK.values()], 0)
 _cnt = max(cv2.findContours((_u > 0.5).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0], key=cv2.contourArea)
