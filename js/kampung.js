@@ -548,14 +548,45 @@ function ketupat(x,y,s,m,t,ph){ // ketupat of young janur hung under the eaves
   cx.strokeStyle=rgb(mix([150,140,50],P.hill,night(m)*.75)); cx.lineWidth=.7; cx.beginPath(); cx.moveTo(k-s*.21,cy-s*.25); cx.lineTo(k+s*.21,cy+s*.25); cx.moveTo(k+s*.21,cy-s*.25); cx.lineTo(k-s*.21,cy+s*.25); cx.stroke();
   cx.beginPath(); cx.moveTo(k,cy+s*.5); cx.lineTo(k+s*.1,cy+s*.85); cx.stroke(); // the janur tail
 }
-function hewan(x,y,s,goat,col,t,ph){ // a goat or a cow tethered for qurban, grazing now and then
-  const bob=Math.max(0,Math.sin(t*.7+ph))*s*.18, L=goat?s:s*1.5, bh=goat?s*.42:s*.6;
-  cx.fillStyle=col; cx.strokeStyle=col; cx.lineWidth=Math.max(1,s*.1);
-  cx.beginPath(); cx.ellipse(x,y-s*.55,L*.5,bh*.5,0,0,TAU); cx.fill();
-  cx.beginPath(); for(const dx of [-.35,-.2,.2,.35]){ cx.moveTo(x+dx*L,y-s*.4); cx.lineTo(x+dx*L,y); } cx.stroke();
-  const hx=x+L*.55, hy=y-s*.75+bob; cx.beginPath(); cx.moveTo(x+L*.38,y-s*.62); cx.lineTo(hx,hy); cx.stroke();
-  cx.beginPath(); cx.ellipse(hx+s*.08,hy+s*.04,s*.16,s*.1,.5,0,TAU); cx.fill();
-  if(goat){ cx.beginPath(); cx.moveTo(hx,hy-s*.05); cx.quadraticCurveTo(hx-s*.1,hy-s*.3,hx-s*.25,hy-s*.25); cx.stroke(); }
+// Qurban animals as Javanese villagers would tether them: kambing with swept-back horns, a beard, hanging
+// ears and a flag of a tail; sapi Ongole (white, grey hump and dewlap) and sapi Bali (red-brown with white
+// socks and rump), each with horns, a long face and a switch of a tail, roped to a peg and grazing now and then.
+const HEWAN={
+  kambing:{white:[[236,232,220],[96,80,64]],brown:[[132,86,52],[60,44,32]],black:[[54,46,42],[150,136,120]],piebald:[[236,232,220],[60,48,40],[60,48,40]]},
+  sapi:{ongole:[[230,228,220],[184,182,176],[70,64,58]],bali:[[168,86,38],[245,240,228],[40,30,26]]}
+};
+function hewan(x,y,s,kind,coat,dir,t,ph,dk){
+  const goat=kind==="kambing", [b0,b1,b2]=HEWAN[kind][coat], c=v=>rgb(mix(v,P.hill,dk)), B=c(b0), lw=f=>Math.max(1,s*f);
+  const g=ss(Math.sin(t*.35+ph)*1.6-.3), lerp=(a,b)=>a+(b-a)*g, rot=(a,px,py,hx,hy)=>[hx+px*Math.cos(a)-py*Math.sin(a),hy+px*Math.sin(a)+py*Math.cos(a)];
+  cx.save(); cx.translate(x,y); cx.scale(dir*s,s); cx.lineCap="round"; cx.lineJoin="round";
+  const ln=(w,col,pts,q)=>{ cx.lineWidth=lw(w)/s; cx.strokeStyle=col; cx.beginPath(); cx.moveTo(pts[0],pts[1]); if(q) cx.quadraticCurveTo(pts[2],pts[3],pts[4],pts[5]); else for(let i=2;i<pts.length;i+=2) cx.lineTo(pts[i],pts[i+1]); cx.stroke(); };
+  const ell=(col,ex,ey,rx,ry,a=0)=>{ cx.fillStyle=col; cx.beginPath(); cx.ellipse(ex,ey,rx,ry,a,0,TAU); cx.fill(); };
+  if(goat){
+    const H2=b2?c(b2):B, horn=c([86,72,58]), hx=lerp(.5,.62), hy=lerp(-.98,-.36), a=lerp(.55,1.35);
+    ln(.03,c([150,120,80]),[.36,-.62,.78,-.05,.95,-.14],1); ln(.07,c([110,84,56]),[.95,0,.95,-.18]); // the rope to its peg
+    ln(.08,B,[-.38,-.66,-.47,-.86]); // tail held up
+    for(const lx of [-.3,-.2,.22,.32]) ln(.09,lx<0?H2:B,[lx,-.5,lx,0]);
+    cx.save(); ell(B,0,-.6,.44,.2); cx.clip(); if(b2) ell(H2,-.3,-.6,.22,.3); cx.restore(); // body, and a dark rump on a piebald goat
+    ln(.17,B,[.28,-.64,hx-.02,hy+.06]); // neck
+    ell(B,...rot(a,.09,0,hx,hy),.15,.075,a); // the head, nose down
+    const chin=rot(a,.13,.06,hx,hy); cx.fillStyle=c(b1); cx.beginPath(); cx.moveTo(chin[0]-.04,chin[1]); cx.lineTo(chin[0]-.02,chin[1]+.17); cx.lineTo(chin[0]+.04,chin[1]+.02); cx.fill(); // beard
+    ln(.08,c(mix(b0,b1,.25)),[hx-.01,hy+.02,hx-.1,hy+.16]); // a hanging ear
+    ln(.08,horn,[hx,hy-.05,hx-.06,hy-.32,hx-.27,hy-.3],1); // horns swept back
+  } else {
+    const D=c(b2), hx=lerp(.84,.93), hy=lerp(-.9,-.32), a=lerp(.95,1.45), bali=coat==="bali";
+    ln(.035,c([150,120,80]),[.5,-.7,1.12,-.05,1.3,-.16],1); ln(.08,c([110,84,56]),[1.3,0,1.3,-.2]);
+    ln(.05,B,[-.62,-.78,-.7,-.55,-.67,-.32],1); ell(D,-.67,-.28,.04,.08); // tail with its dark switch
+    for(const lx of [-.48,-.34,.3,.44]){ ln(.13,B,[lx,-.5,lx,0]); if(bali) ln(.13,c(b1),[lx,-.2,lx,0]); }
+    cx.save(); cx.beginPath(); cx.ellipse(0,-.66,.66,.27,0,0,TAU); cx.fillStyle=B; cx.fill(); cx.clip();
+    if(bali) ell(c(b1),-.62,-.56,.2,.22); else ell(c(b1),.5,-.66,.22,.32); cx.restore(); // Bali's white rump; Ongole's grey shoulders
+    if(!bali) ell(c(b1),.36,-.9,.16,.12); // the Ongole hump
+    cx.fillStyle=bali?B:c(b1); cx.beginPath(); cx.moveTo(.42,-.62); cx.quadraticCurveTo(.5,-.3,.62,-.4); cx.lineTo(hx-.04,hy+.08); cx.fill(); // dewlap
+    ln(.26,bali?B:c(b1),[.42,-.72,hx-.04,hy+.05]); // neck
+    ell(B,...rot(a,.13,0,hx,hy),.22,.11,a); ell(D,...rot(a,.32,0,hx,hy),.075,.08); // long face and dark muzzle
+    ln(.08,bali?B:c(b1),[hx-.02,hy+.05,hx-.2,hy+.12]); // an ear out to the side
+    const hc=c(bali?[232,222,196]:[92,86,78]); ln(.075,hc,[hx-.07,hy-.02,hx-.2,hy-.2,hx-.04,hy-.27],1); ln(.075,hc,[hx+.01,hy-.04,hx-.07,hy-.22,hx+.1,hy-.26],1); // horns curving up and forward
+  }
+  cx.restore();
 }
 function lampionMerah(x,y,s,m,t,ph){ // a red lantern with a gold tassel
   const sw=Math.sin(t*1.3+ph)*s*.12, lx=x+sw, ly=y+s*.9;
@@ -614,8 +645,14 @@ function liongDraw(t,m){
   pts.forEach(([x,y],i)=>{ const gy=G.hY(x)+H*.017; cx.moveTo(x,y); cx.lineTo(x,gy); }); cx.stroke(); // poles and bearers
   cx.globalCompositeOperation="lighter"; pts.forEach(([x,y],i)=>{ cx.globalAlpha=.55; const r=s*1.6; cx.drawImage(i%2?SP.warm:SP.lamp[1],x-r,y-r,r*2,r*2); }); cx.globalCompositeOperation="source-over"; cx.globalAlpha=1;
   for(let i=n-1;i>=0;i--){ const [x,y]=pts[i]; cx.fillStyle=rgb(mix(i%2?[40,160,80]:[230,190,50],P.hill,dk)); cx.beginPath(); cx.arc(x,y,s*(i?1-i/n*.45:1.35),0,TAU); cx.fill(); }
-  const [hx,hy]=pts[0]; cx.fillStyle=rgb(mix([214,36,30],P.hill,dk)); cx.beginPath(); cx.moveTo(hx+s*2,hy); cx.lineTo(hx,hy-s*1.2); cx.lineTo(hx-s*.4,hy+s); cx.fill();
-  cx.strokeStyle=rgb([250,230,160]); cx.lineWidth=1; cx.beginPath(); cx.moveTo(hx+s*1.6,hy-s*.2); cx.quadraticCurveTo(hx+s*2.6,hy-s*1.2+Math.sin(t*4)*s*.3,hx+s*3.2,hy-s*.6); cx.stroke(); // whisker
+  cx.fillStyle=rgb(mix([214,36,30],P.hill,dk)); for(let i=2;i<n;i+=2){ const [x,y]=pts[i], r=s*(1-i/n*.45); cx.beginPath(); cx.moveTo(x-r*.5,y-r*.8); cx.lineTo(x,y-r*1.6); cx.lineTo(x+r*.5,y-r*.8); cx.fill(); } // spines along the back
+  // the head: a long snout with an open jaw, a gold mane, antlers, and a big eye
+  const [hx,hy]=pts[0], jaw=(Math.sin(t*3)*.5+.5)*s*.5, gold=rgb(mix([244,190,50],P.hill,dk)), red=rgb(mix([214,36,30],P.hill,dk));
+  cx.strokeStyle=gold; cx.lineWidth=Math.max(1.2,s*.25); cx.lineCap="round"; cx.beginPath(); cx.moveTo(hx,hy-s*.9); cx.quadraticCurveTo(hx-s*.6,hy-s*2.2,hx-s*1.5,hy-s*2.3); cx.moveTo(hx-s*.6,hy-s*1.8); cx.lineTo(hx-s*.4,hy-s*2.5); cx.moveTo(hx+s*.4,hy-s*.9); cx.quadraticCurveTo(hx,hy-s*2,hx-s*.7,hy-s*2.6); cx.stroke(); // antlers
+  cx.fillStyle=red; cx.beginPath(); cx.moveTo(hx-s*.8,hy-s*1.1); cx.quadraticCurveTo(hx+s*.8,hy-s*1.4,hx+s*2.4,hy-s*.3); cx.lineTo(hx+s*2.2,hy+s*.1); cx.lineTo(hx-s*.6,hy+s*.6); cx.fill(); // upper jaw
+  cx.beginPath(); cx.moveTo(hx-s*.4,hy+s*.6); cx.lineTo(hx+s*1.9,hy+s*.4+jaw); cx.lineTo(hx+s*1.7,hy+s*.9+jaw); cx.lineTo(hx-s*.2,hy+s*1.1); cx.fill(); // lower jaw, snapping
+  cx.fillStyle="#fff"; cx.beginPath(); cx.arc(hx+s*.5,hy-s*.6,s*.38,0,TAU); cx.fill(); cx.fillStyle="#201010"; cx.beginPath(); cx.arc(hx+s*.62,hy-s*.6,s*.18,0,TAU); cx.fill();
+  cx.strokeStyle=rgb([250,230,160]); cx.lineWidth=1; cx.beginPath(); cx.moveTo(hx+s*2.2,hy-s*.1); cx.quadraticCurveTo(hx+s*3,hy-s*1.2+Math.sin(t*4)*s*.3,hx+s*3.6,hy-s*.6); cx.stroke(); // whisker
   // the pearl the dragon chases, on its own pole
   const px=hx+s*4.5, py=hy-s*.8+Math.sin(t*2.5)*s*.6; cx.globalCompositeOperation="lighter"; cx.globalAlpha=.9; cx.drawImage(SP.warm,px-s*1.4,py-s*1.4,s*2.8,s*2.8); cx.globalCompositeOperation="source-over"; cx.globalAlpha=1;
 }
@@ -722,8 +759,8 @@ function festHill(m,t){
   if(F.ketupat) G.houses.forEach((h,i)=>{ ketupat(h.x-h.w*.36,h.y-h.h,h.w*.24,m,t,i); ketupat(h.x+h.w*.36,h.y-h.h,h.w*.24,m,t,i+2); });
   if(F.ternak){
     const dk=night(m)*.8;
-    [[.34,1,[236,232,220]],[.36,1,[120,84,52]],[.41,1,[236,232,220]],[.68,0,[200,176,150]],[.7,1,[60,50,44]],[.75,1,[236,232,220]],[.86,0,[150,110,80]]].forEach(([u,goat,c],i)=>{
-      const x=W*u; hewan(x,G.hY(x)+H*.022,H*(goat?.019:.024),goat,rgb(mix(c,P.hill,dk)),t,i); });
+    [[.34,"kambing","white",1],[.365,"kambing","brown",1],[.41,"kambing","piebald",-1],[.66,"sapi","ongole",1],[.715,"kambing","black",-1],[.755,"kambing","white",1],[.835,"sapi","bali",-1]].forEach(([u,k,coat,dir],i)=>{
+      const x=W*u; hewan(x,G.hY(x)+H*.022,H*(k==="kambing"?.021:.027),k,coat,dir,t,i*1.7,dk); });
   }
   if(F.lomba){ // panjat pinang in the lapangan, with the crowd around it
     const x=W*.8, y=G.eY(5,x)+H*.01, hgt=H*.15, ink=rgb(mix(P.fg,[0,0,0],.1));
