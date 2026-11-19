@@ -387,9 +387,7 @@ function sawah(c,m){
   const ink=rgb(mix(mix(P.hill,P.fg,.5),[0,0,0],.15)), F=G.figs;
   gubuk(c,F.gubuk.x,F.gubuk.y,H*.05,ink,m);
   orang(c,F.orang.x,F.orang.y,H*.045,ink);
-  // farmers weed the growing padi in the cool hours, not in the midday heat, the rain or the dark
-  const work=(bump(m.h,6,6.8,10.6,11.4)+bump(m.h,14.6,15.2,17,17.6))*(1-m.rain);
-  if(work>.5&&(FEST.padi==="muda"||FEST.padi==="hijau")) F.tani.forEach((f,i)=>tani(c,f.x,f.y,H*(.04+i*.008),ink,i));
+  // the farmers weeding the padi are drawn each frame in padiLife, so they move
 }
 function caping(c,x,y,w){ c.beginPath(); c.moveTo(x-w,y); c.lineTo(x,y-w*.55); c.lineTo(x+w,y); c.closePath(); c.fill(); }
 function gubuk(c,x,y,s,col,m){ // a hut on stilts for watching the birds off the padi
@@ -405,14 +403,6 @@ function orang(c,x,y,s,col){ // orang-orangan sawah
   c.beginPath(); c.moveTo(x,y); c.lineTo(x,y-s); c.moveTo(x-s*.38,y-s*.72); c.lineTo(x+s*.38,y-s*.68); c.stroke();
   c.beginPath(); c.moveTo(x-s*.2,y-s*.78); c.lineTo(x+s*.2,y-s*.78); c.lineTo(x+s*.26,y-s*.4); c.lineTo(x-s*.26,y-s*.4); c.fill();
   c.beginPath(); c.arc(x,y-s*.9,s*.09,0,TAU); c.fill(); caping(c,x,y-s*.96,s*.24);
-}
-function tani(c,x,y,s,col,pose){ // a farmer bent over the rice, caping on
-  c.strokeStyle=col; c.fillStyle=col; c.lineCap="round"; c.lineWidth=Math.max(1.2,s*.12);
-  const hx=x+s*(pose?-.38:.38), hy=y-s*.62;
-  c.beginPath(); c.moveTo(x-s*.12,y); c.lineTo(x,y-s*.5); c.lineTo(x+s*.12,y); // legs
-  c.moveTo(x,y-s*.5); c.quadraticCurveTo(x+(hx-x)*.4,y-s*.85,hx,hy); // back
-  c.moveTo(hx-(hx-x)*.2,hy+s*.02); c.lineTo(hx+(hx-x)*.1,y-s*.12); c.stroke(); // arm reaching to the padi
-  caping(c,hx+(hx-x)*.1,hy-s*.02,s*.24);
 }
 function glowAt(c,x,y,w,lit,col){ if(!lit) return; c.globalCompositeOperation="lighter"; c.globalAlpha=lit*.5; c.drawImage(col||SP.warm,x-w,y-w*.4,w*2,w*1.4); c.globalAlpha=1; c.globalCompositeOperation="source-over"; }
 function drawGereja(c,q,m,lit){ // a small kampung church: whitewashed, a steep roof and a bell tower with a cross
@@ -657,11 +647,24 @@ function liongDraw(t,m){
   const px=hx+s*4.5, py=hy-s*.8+Math.sin(t*2.5)*s*.6; cx.globalCompositeOperation="lighter"; cx.globalAlpha=.9; cx.drawImage(SP.warm,px-s*1.4,py-s*1.4,s*2.8,s*2.8); cx.globalCompositeOperation="source-over"; cx.globalAlpha=1;
 }
 // ================= padi: people at work =================
-function bentFig(x,y,s,col,ph,t,reach){ // a farmer bent over the sawah, caping on; reach animates the arm
-  cx.strokeStyle=col; cx.fillStyle=col; cx.lineCap="round"; cx.lineWidth=Math.max(1.2,s*.12);
-  const hx=x+s*.38, hy=y-s*.62, arm=Math.sin(t*reach+ph)*s*.1;
-  cx.beginPath(); cx.moveTo(x-s*.12,y); cx.lineTo(x,y-s*.5); cx.lineTo(x+s*.12,y); cx.moveTo(x,y-s*.5); cx.quadraticCurveTo(x+s*.15,y-s*.85,hx,hy);
-  cx.moveTo(hx-s*.08,hy+s*.02); cx.lineTo(hx+s*.05+arm,y-s*.1); cx.stroke(); caping(cx,hx+s*.04,hy-s*.02,s*.24);
+// A farmer in the padi, caping on: bent over with a hand down in the rows, pulling weeds or setting seedlings,
+// then now and then straightening up to ease the back before bending again. A round head under a straw caping
+// and a faded shirt keep them reading as people, not as birds, at this size.
+function petani(x,y,s,dir,t,ph,reach,m){
+  const dk=night(m)*.75, ink=rgb(mix(mix(P.hill,P.fg,.5),[0,0,0],.15)), shirt=rgb(mix([[92,120,150],[226,222,206],[150,96,70]][(ph|0)%3],P.hill,dk*.9+.15)), straw=rgb(mix([214,186,118],P.hill,dk+.1));
+  const cyc=(t+ph*3.7)%14, up=ss((cyc-11)/.8)*(1-ss((cyc-13.2)/.8)), b=1-up; // up: standing for a breather
+  const pull=Math.sin(t*reach+ph), dip=Math.max(0,pull)*b, sway=Math.sin(t*1.3+ph)*s*.02;
+  cx.save(); cx.translate(x+sway,y); cx.scale(dir*s,s); cx.lineCap="round"; cx.lineJoin="round";
+  const L=a=>{ cx.lineWidth=Math.max(1.1,s*a)/s; };
+  const hip=[0,-.5+b*.04], sh=[.36*b+.02*up,-.6*b-1*up+dip*.04], hd=[sh[0]+.13*b+.02*up,sh[1]+.03*b-.12*up+dip*.03];
+  cx.strokeStyle=ink; L(.11); cx.beginPath(); cx.moveTo(-.13,0); cx.lineTo(hip[0]-.02,hip[1]+.12*b); cx.lineTo(hip[0],hip[1]); cx.moveTo(.13,0); cx.lineTo(hip[0]+.05,hip[1]+.1*b); cx.lineTo(hip[0],hip[1]); cx.stroke(); // legs, knees bent
+  cx.strokeStyle=shirt; L(.22); cx.beginPath(); cx.moveTo(...hip); cx.quadraticCurveTo(hip[0]+.12*b,hip[1]-.25,...sh); cx.stroke(); // shirt
+  const hand=b>.5?[sh[0]+.06+dip*.04,-.12+(1-dip)*.14]:[-.08,-.58]; // down in the rows, or on the small of the back
+  cx.strokeStyle=ink; L(.09); cx.beginPath(); cx.moveTo(...sh); cx.lineTo(b>.5?sh[0]+.08:sh[0]-.06,b>.5?(sh[1]+hand[1])/2:sh[1]+.22); cx.lineTo(...hand); cx.stroke();
+  cx.fillStyle=ink; cx.beginPath(); cx.arc(hd[0],hd[1],.1,0,TAU); cx.fill(); // head
+  cx.save(); cx.translate(hd[0]+.01,hd[1]-.05); cx.rotate(.5*b); cx.fillStyle=straw; cx.beginPath(); cx.moveTo(-.27,0); cx.lineTo(0,-.15); cx.lineTo(.27,0); cx.closePath(); cx.fill(); cx.restore(); // caping
+  if(b>.5&&pull>.6){ cx.strokeStyle=rgb(mix([70,120,40],P.hill,dk)); L(.05); cx.beginPath(); cx.moveTo(...hand); cx.lineTo(hand[0]+.04,hand[1]-.12); cx.moveTo(...hand); cx.lineTo(hand[0]-.03,hand[1]-.1); cx.stroke(); } // a tuft in the hand
+  cx.restore();
 }
 function padiLife(m,t){
   const A2=G.act; if(!A2) return;
@@ -670,6 +673,8 @@ function padiLife(m,t){
   // the work happens on a plot in the middle rows, right of the hero text and below the card
   const score=p=>Math.abs(p.i-4)*W*.25+Math.abs((p.x0+p.x1)/2-W*.68)-Math.min(p.x1-p.x0,W*.12);
   const pick=list=>list.length?list.reduce((a,b)=>score(b)<score(a)?b:a):null;
+  // farmers weed the growing padi in the cool hours, not in the midday heat, the rain or the dark
+  if(work&&(FEST.padi==="muda"||FEST.padi==="hijau")) G.figs.tani.forEach((f,i)=>petani(f.x,f.y,H*(.04+i*.008),i?-1:1,t,i*1.9+.5,1.6,m));
   if(work){
     const o=pick(A2.olah); if(o){ // traktor tangan ploughing the mud, back and forth, the driver walking behind
       const u=.15+.7*(Math.sin(t*.12)*.5+.5), dir=Math.cos(t*.12)>=0?1:-1, [x,y]=yOf(o,u), s=H*(.018+o.i*.004);
@@ -680,10 +685,10 @@ function padiLife(m,t){
       cx.fillStyle=rgb(mix(P.field,[120,96,60],.5),.6); for(let k=0;k<3;k++){ const a=t*8+k*2; cx.beginPath(); cx.arc(x+dir*s*.25+Math.cos(a)*s*.4,y-s*.1-Math.abs(Math.sin(a))*s*.3,s*.06,0,TAU); cx.fill(); } // mud flying
     }
     const tp=pick(A2.tandur); if(tp){ // tandur: a line of planters stepping backwards across the plot
-      const prog=Math.min(1,(tp.days-10)/7); for(let k=0;k<5;k++){ const [x,y]=yOf(tp,Math.min(.95,prog*.6+.1+k*.06)); bentFig(x,y+k*H*.002,H*(.03+tp.i*.004),ink,k,t,3); }
+      const prog=Math.min(1,(tp.days-10)/7); for(let k=0;k<5;k++){ const [x,y]=yOf(tp,Math.min(.95,prog*.6+.1+k*.06)); petani(x,y+k*H*.002,H*(.03+tp.i*.004),-1,t,k,3,m); }
     }
     const pn=pick(A2.panen); if(pn){ // panen: cutters at the edge of the standing padi, and the gebyok frame where it is threshed
-      const prog=Math.min(1,Math.max(0,(pn.days-103)/7)); for(let k=0;k<3;k++){ const [x,y]=yOf(pn,Math.min(.95,prog+.02+k*.04)); bentFig(x,y,H*(.03+pn.i*.004),ink,k*2,t,4); }
+      const prog=Math.min(1,Math.max(0,(pn.days-103)/7)); for(let k=0;k<3;k++){ const [x,y]=yOf(pn,Math.min(.95,prog+.02+k*.04)); petani(x,y,H*(.03+pn.i*.004),1,t,k*2,4,m); }
       const [gx,gy]=yOf(pn,Math.max(.05,prog-.12)), s=H*(.028+pn.i*.004), lift=Math.max(0,Math.sin(t*2.6))*s*.5;
       cx.strokeStyle=ink; cx.fillStyle=ink; cx.lineWidth=Math.max(1,s*.1); cx.beginPath(); cx.moveTo(gx-s*.5,gy); cx.lineTo(gx-s*.2,gy-s*.5); cx.lineTo(gx+s*.2,gy-s*.5); cx.lineTo(gx+s*.5,gy); cx.stroke(); // the frame
       const px=gx-s*.8; cx.beginPath(); cx.moveTo(px,gy); cx.lineTo(px,gy-s*.6); cx.lineTo(px,gy-s*1.1); cx.moveTo(px,gy-s*.9); cx.lineTo(gx-s*.2,gy-s*.7-lift); cx.stroke(); caping(cx,px,gy-s*1.15,s*.26); // the thresher swings the sheaf
